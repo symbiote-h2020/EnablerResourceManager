@@ -29,21 +29,22 @@ public class RabbitManager {
     private String rabbitUsername;
     @Value("${rabbit.password}")
     private String rabbitPassword;
-    @Value("${rabbit.exchange.placeholder.name}")
-    private String placeholderExchangeName;
-    @Value("${rabbit.exchange.placeholder.type}")
-    private String placeholderExchangeType;
-    @Value("${rabbit.exchange.placeholder.durable}")
-    private boolean placeholderExchangeDurable;
-    @Value("${rabbit.exchange.placeholder.autodelete}")
-    private boolean placeholderExchangeAutodelete;
-    @Value("${rabbit.exchange.placeholder.internal}")
-    private boolean placeholderExchangeInternal;
-    @Value("${rabbit.routingKey.placeholder.placeholder}")
-    private String placeholderRoutingKey;
+
+    @Value("${rabbit.exchange.resourceManager.name}")
+    private String resourceManagerExchangeName;
+    @Value("${rabbit.exchange.resourceManager.type}")
+    private String resourceManagerExchangeType;
+    @Value("${rabbit.exchange.resourceManager.durable}")
+    private boolean resourceManagerExchangeDurable;
+    @Value("${rabbit.exchange.resourceManager.autodelete}")
+    private boolean resourceManagerExchangeAutodelete;
+    @Value("${rabbit.exchange.resourceManager.internal}")
+    private boolean resourceManagerExchangeInternal;
+    @Value("${rabbit.routingKey.resourceManager.getResourceDetails}")
+    private String getResourceDetailsRoutingKey;
+
     private Connection connection;
 
-    @Autowired
     public RabbitManager() {
     }
 
@@ -70,6 +71,7 @@ public class RabbitManager {
      */
     public void init() {
         Channel channel = null;
+        log.info("Rabbit is being initialized!");
 
         try {
             getConnection();
@@ -83,11 +85,11 @@ public class RabbitManager {
             try {
                 channel = this.connection.createChannel();
 
-                channel.exchangeDeclare(this.placeholderExchangeName,
-                        this.placeholderExchangeType,
-                        this.placeholderExchangeDurable,
-                        this.placeholderExchangeAutodelete,
-                        this.placeholderExchangeInternal,
+                channel.exchangeDeclare(this.resourceManagerExchangeName,
+                        this.resourceManagerExchangeType,
+                        this.resourceManagerExchangeDurable,
+                        this.resourceManagerExchangeAutodelete,
+                        this.resourceManagerExchangeInternal,
                         null);
 
                 startConsumers();
@@ -111,8 +113,8 @@ public class RabbitManager {
             Channel channel;
             if (this.connection != null && this.connection.isOpen()) {
                 channel = connection.createChannel();
-                channel.queueUnbind("placeholderQueue", this.placeholderExchangeName, this.placeholderRoutingKey);
-                channel.queueDelete("placeholderQueue");
+                channel.queueUnbind("resourceManagerGetResourceDetails", this.resourceManagerExchangeName, this.getResourceDetailsRoutingKey);
+                channel.queueDelete("resourceManagerGetResourceDetails");
                 closeChannel(channel);
                 this.connection.close();
             }
@@ -126,7 +128,7 @@ public class RabbitManager {
      */
     public void startConsumers() {
         try {
-            startConsumerOfPlaceholderMessages();
+            startConsumerOfGetResourceDetailsMessages();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -134,12 +136,12 @@ public class RabbitManager {
         }
     }
 
-    public void sendPlaceholderMessage(String placeholder) { // arg should be object instead of String, e.g. Resource
-        Gson gson = new Gson();
-        String message = gson.toJson(placeholder);
-        sendMessage(this.placeholderExchangeName, this.placeholderRoutingKey, message);
-        log.info("- placeholder message sent");
-    }
+    // public void sendPlaceholderMessage(String placeholder) { // arg should be object instead of String, e.g. Resource
+    //     Gson gson = new Gson();
+    //     String message = gson.toJson(placeholder);
+    //     sendMessage(this.placeholderExchangeName, this.placeholderRoutingKey, message);
+    //     log.info("- placeholder message sent");
+    // }
 
     public void sendCustomMessage(String exchange, String routingKey, String objectInJson) {
         sendMessage(exchange, routingKey, objectInJson);
@@ -153,18 +155,21 @@ public class RabbitManager {
      * @throws InterruptedException
      * @throws IOException
      */
-    private void startConsumerOfPlaceholderMessages() throws InterruptedException, IOException {
-        String queueName = "placeholderQueue";
+    private void startConsumerOfGetResourceDetailsMessages() throws InterruptedException, IOException {
+       
+        String queueName = "resourceManagerGetResourceDetails";
         Channel channel;
+
+        
         try {
             channel = this.connection.createChannel();
             channel.queueDeclare(queueName, true, false, false, null);
-            channel.queueBind(queueName, this.placeholderExchangeName, this.placeholderRoutingKey);
+            channel.queueBind(queueName, this.resourceManagerExchangeName, this.getResourceDetailsRoutingKey);
 //            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
             log.info("Receiver waiting for Placeholder messages....");
 
-            Consumer consumer = new PlaceholderConsumer(channel, this);
+            Consumer consumer = new GetResourceDetailsConsumer(channel, this);
             channel.basicConsume(queueName, false, consumer);
         } catch (IOException e) {
             e.printStackTrace();
