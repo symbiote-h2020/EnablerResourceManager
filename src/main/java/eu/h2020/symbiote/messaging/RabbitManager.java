@@ -7,6 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
@@ -45,6 +46,10 @@ public class RabbitManager {
 
     private Connection connection;
 
+    @Autowired
+    RabbitTemplate rabbitTemplate;
+
+    
     public RabbitManager() {
     }
 
@@ -160,7 +165,7 @@ public class RabbitManager {
         String queueName = "resourceManagerGetResourceDetails";
         Channel channel;
 
-        
+
         try {
             channel = this.connection.createChannel();
             channel.queueDeclare(queueName, true, false, false, null);

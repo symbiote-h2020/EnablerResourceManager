@@ -9,6 +9,8 @@ import eu.h2020.symbiote.model.PlaceholderResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.json.simple.JSONObject;
+
 import java.io.IOException;
 
 /**
@@ -20,6 +22,7 @@ public class GetResourceDetailsConsumer extends DefaultConsumer {
 
     private static Log log = LogFactory.getLog(GetResourceDetailsConsumer.class);
     private RabbitManager rabbitManager;
+
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
@@ -50,14 +53,14 @@ public class GetResourceDetailsConsumer extends DefaultConsumer {
                                AMQP.BasicProperties properties, byte[] body)
             throws IOException {
         Gson gson = new Gson();
-        // String response = "";
-        String message = new String(body, "UTF-8");
-        log.info(" [x] Received Resource Details message: '" + message + "'");
+        JSONObject jsonResponse = new JSONObject();
+        jsonResponse.put("status", "ok");
 
-        // AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-        //         .Builder()
-        //         .correlationId(properties.getCorrelationId())
-        //         .build();
+        AMQP.BasicProperties replyProps = new AMQP.BasicProperties
+                .Builder()
+                .correlationId(properties.getCorrelationId())
+                .contentType("application/json")
+                .build();
 
         // PlaceholderResponse placeholderResponse = new PlaceholderResponse();
         // try {
@@ -70,11 +73,14 @@ public class GetResourceDetailsConsumer extends DefaultConsumer {
         //     placeholderResponse.setStatus(400);
         // }
 
-        // response = gson.toJson(placeholderResponse);
-
-        // this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, response.getBytes());
-        // log.info("Message with status: " + placeholderResponse.getStatus() + " sent back");
-
-        // this.getChannel().basicAck(envelope.getDeliveryTag(), false);
+        
+       // this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, response.getBytes());
+        rabbitManager.rabbitTemplate.convertAndSend(properties.getReplyTo(), jsonResponse,
+            m -> {
+                    // m.setMessageProperties(properties);
+                    m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
+                    log.info(m.getMessageProperties());
+                    return m;
+                 });
     }
 }
