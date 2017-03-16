@@ -7,7 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
@@ -46,10 +46,9 @@ public class RabbitManager {
 
     private Connection connection;
 
-    @Autowired
-    RabbitTemplate rabbitTemplate;
+    @Autowired 
+    private AutowireCapableBeanFactory beanFactory;
 
-    
     public RabbitManager() {
     }
 
@@ -175,6 +174,7 @@ public class RabbitManager {
             log.info("Receiver waiting for Placeholder messages....");
 
             Consumer consumer = new GetResourceDetailsConsumer(channel, this);
+            beanFactory.autowireBean(consumer);
             channel.basicConsume(queueName, false, consumer);
         } catch (IOException e) {
             e.printStackTrace();

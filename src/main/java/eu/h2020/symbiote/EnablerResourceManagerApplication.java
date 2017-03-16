@@ -21,7 +21,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-
+import org.springframework.web.client.AsyncRestTemplate;
 
 /**
  * Created by tipech on 06.03.2017.
@@ -42,6 +42,8 @@ public class EnablerResourceManagerApplication {
     @Value("${rabbit.password}") 
     private String rabbitPassword;
 
+    @Value("${symbIoTe.core.url}")
+    private String symbIoTeCoreUrl; 
 
     public static void main(String[] args) {
         SpringApplication.run(EnablerResourceManagerApplication.class, args);
@@ -51,6 +53,12 @@ public class EnablerResourceManagerApplication {
     public AlwaysSampler defaultSampler() {
         return new AlwaysSampler();
     }
+
+    @Bean(name="symbIoTeCoreUrl")
+    String symbIoTeCoreUrl() {
+        return symbIoTeCoreUrl.replaceAll("(/*)$", "");
+    }
+
 
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
@@ -106,6 +114,12 @@ public class EnablerResourceManagerApplication {
 
         return asyncRabbitTemplate;
     }
+
+    @Bean
+    AsyncRestTemplate asyncRestTemplate() {
+        return new AsyncRestTemplate();
+    }
+
 
     @Component
     public static class CLR implements CommandLineRunner {
