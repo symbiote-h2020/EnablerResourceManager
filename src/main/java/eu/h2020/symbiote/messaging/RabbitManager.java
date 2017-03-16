@@ -41,8 +41,8 @@ public class RabbitManager {
     private boolean resourceManagerExchangeAutodelete;
     @Value("${rabbit.exchange.resourceManager.internal}")
     private boolean resourceManagerExchangeInternal;
-    @Value("${rabbit.routingKey.resourceManager.getResourceDetails}")
-    private String getResourceDetailsRoutingKey;
+    @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
+    private String startDataAcquisitionRoutingKey;
 
     private Connection connection;
 
@@ -117,8 +117,8 @@ public class RabbitManager {
             Channel channel;
             if (this.connection != null && this.connection.isOpen()) {
                 channel = connection.createChannel();
-                channel.queueUnbind("resourceManagerGetResourceDetails", this.resourceManagerExchangeName, this.getResourceDetailsRoutingKey);
-                channel.queueDelete("resourceManagerGetResourceDetails");
+                channel.queueUnbind("resourceManagerStartDataAcquisition", this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
+                channel.queueDelete("resourceManagerStartDataAcquisition");
                 closeChannel(channel);
                 this.connection.close();
             }
@@ -132,7 +132,7 @@ public class RabbitManager {
      */
     public void startConsumers() {
         try {
-            startConsumerOfGetResourceDetailsMessages();
+            startConsumerOfStartDataAcquisition();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -159,21 +159,21 @@ public class RabbitManager {
      * @throws InterruptedException
      * @throws IOException
      */
-    private void startConsumerOfGetResourceDetailsMessages() throws InterruptedException, IOException {
+    private void startConsumerOfStartDataAcquisition() throws InterruptedException, IOException {
        
-        String queueName = "resourceManagerGetResourceDetails";
+        String queueName = "resourceManagerStartDataAcquisition";
         Channel channel;
 
 
         try {
             channel = this.connection.createChannel();
             channel.queueDeclare(queueName, true, false, false, null);
-            channel.queueBind(queueName, this.resourceManagerExchangeName, this.getResourceDetailsRoutingKey);
+            channel.queueBind(queueName, this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
 //            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
             log.info("Receiver waiting for Placeholder messages....");
 
-            Consumer consumer = new GetResourceDetailsConsumer(channel, this);
+            Consumer consumer = new StartDataAcquisitionConsumer(channel, this);
             beanFactory.autowireBean(consumer);
             channel.basicConsume(queueName, false, consumer);
         } catch (IOException e) {

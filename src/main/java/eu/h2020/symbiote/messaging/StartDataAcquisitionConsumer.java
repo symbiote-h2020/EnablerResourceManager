@@ -33,9 +33,9 @@ import org.springframework.util.concurrent.ListenableFuture;
  *
  * Created by vasgl
  */
-public class GetResourceDetailsConsumer extends DefaultConsumer {
+public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
-    private static Log log = LogFactory.getLog(GetResourceDetailsConsumer.class);
+    private static Log log = LogFactory.getLog(StartDataAcquisitionConsumer.class);
     private RabbitManager rabbitManager;
 
     private final Queue<ListenableFuture<ResponseEntity<JSONObject>>> futuresQueue = 
@@ -57,9 +57,8 @@ public class GetResourceDetailsConsumer extends DefaultConsumer {
      *
      * @param channel           the channel to which this consumer is attached
      * @param rabbitManager     rabbit manager bean passed for access to messages manager
-     * @param repositoryManager repository manager bean passed for persistence actions
      */
-    public GetResourceDetailsConsumer(Channel channel,
+    public StartDataAcquisitionConsumer(Channel channel,
                                            RabbitManager rabbitManager) {
         super(channel);
         this.rabbitManager = rabbitManager;

@@ -71,8 +71,8 @@ public class RabbitManagerTests {
     private boolean resourceManagerExchangeAutodelete;
     @Value("${rabbit.exchange.resourceManager.internal}")
     private boolean resourceManagerExchangeInternal;
-    @Value("${rabbit.routingKey.resourceManager.getResourceDetails}")
-    private String getResourceDetailsRoutingKey;
+    @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
+    private String startDataAcquisitionRoutingKey;
 
     private MockRestServiceServer mockServer;
 
@@ -116,7 +116,7 @@ public class RabbitManagerTests {
 
         log.info("Before sending the message");
 
-        RabbitConverterFuture<JSONObject> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, getResourceDetailsRoutingKey, query);
+        RabbitConverterFuture<JSONObject> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
 
         log.info("After sending the message");
 
