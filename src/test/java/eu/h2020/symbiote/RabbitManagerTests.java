@@ -22,7 +22,9 @@ import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 
 import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.test.web.client.MockRestServiceServer;
+import static org.springframework.test.web.client.ExpectedCount.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
@@ -31,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 
 import eu.h2020.symbiote.messaging.RabbitManager;
 
@@ -42,7 +45,7 @@ import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes={EnablerResourceManagerApplication.class})
-@SpringBootTest({"eureka.client.enabled=false"})
+@SpringBootTest({"eureka.client.enabled=false", "spring.sleuth.enabled=false"})
 public class RabbitManagerTests {
 
     private static Logger log = LoggerFactory
@@ -56,6 +59,9 @@ public class RabbitManagerTests {
 
     @Autowired    
     AsyncRestTemplate asyncRestTemplate;
+
+    @Autowired    
+    RestTemplate restTemplate;
 
     @Autowired
     @Qualifier("symbIoTeCoreUrl")
@@ -80,34 +86,100 @@ public class RabbitManagerTests {
 	// Execute the Setup method before the test.
 	@Before
 	public void setUp() throws Exception {
-        mockServer = MockRestServiceServer.createServer(asyncRestTemplate);
+        mockServer = MockRestServiceServer.createServer(restTemplate);
         
     }
 
     @Test
     public void testResourceManagerGetResourceDetails() throws Exception {
 
-        String url = symbIoTeCoreUrl;
+        String url;
         String message = "search_resources";
-        JSONObject query = new JSONObject();
         final AtomicReference<JSONObject> resultRef = new AtomicReference<JSONObject>();
-        query.put("test", "test");
+        JSONObject query = new JSONObject();
+        JSONArray resources = new JSONArray();
 
-        mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.POST))
+        JSONObject object1 = new JSONObject();
+        JSONArray observesProperty1 = new JSONArray();
+        object1.put("taskID", "1");
+        object1.put("count", "2");
+        object1.put("location", "Paris");
+        observesProperty1.add("temperature");
+        observesProperty1.add("humidity");
+        object1.put("observesProperty", observesProperty1);
+        object1.put("queryInterval", "60");
+        resources.add(object1);
+
+        JSONObject object2 = new JSONObject();
+        JSONArray observesProperty2 = new JSONArray();
+        object2.put("taskID", "2");
+        object2.put("count", "1");
+        object2.put("location", "Athens");
+        observesProperty2.add("air quality");
+        object2.put("observesProperty", observesProperty2);
+        object2.put("queryInterval", "60");
+        resources.add(object2);
+
+        query.put("resources", resources);
+        
+        url = "http://www.example.com/v1/query?location=Paris&observed_property=temperature,humidity";
+        mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
                 .andRespond(request -> {
                     try {
                         Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
                     } catch (InterruptedException ignored) {}
 
                     // JSONParser parser = new JSONParser();
-                    JSONObject response = new JSONObject();
+                    JSONArray response = new JSONArray();
+
+                    JSONObject resource1 = new JSONObject();
+                    resource1.put("id", "1");
+                    response.add(resource1);
+
+                    JSONObject resource2 = new JSONObject();
+                    resource2.put("id", "2");
+                    response.add(resource2);
+
+                    JSONObject resource3 = new JSONObject();
+                    resource3.put("id", "3");
+                    response.add(resource3);
 
                     // try {
                     //     response = (JSONObject) parser.parse(request.getBody().toString());
 
                     // } catch (Exception ignored) {}
 
-                    response.put("status", "ok");
+                    // response.put("status", "ok");
+                    log.info(message + "_test: Server received " + request.getBody().toString());
+                    log.info(message + "_test: Server woke up and will answer with " + response);
+
+                    return withStatus(HttpStatus.OK).body(response.toString()).contentType(MediaType.APPLICATION_JSON).createResponse(request);
+        });
+
+        url = "http://www.example.com/v1/query?location=Athens&observed_property=air%20quality";
+        mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
+                .andRespond(request -> {
+                    try {
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
+                    } catch (InterruptedException ignored) {}
+
+                    // JSONParser parser = new JSONParser();
+                    JSONArray response = new JSONArray();
+
+                    JSONObject resource4 = new JSONObject();
+                    resource4.put("id", "4");
+                    response.add(resource4);
+
+                    JSONObject resource5 = new JSONObject();
+                    resource5.put("id", "5");
+                    response.add(resource5);
+
+                    // try {
+                    //     response = (JSONObject) parser.parse(request.getBody().toString());
+
+                    // } catch (Exception ignored) {}
+
+                    // response.put("status", "ok");
                     log.info(message + "_test: Server received " + request.getBody().toString());
                     log.info(message + "_test: Server woke up and will answer with " + response);
 

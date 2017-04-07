@@ -22,6 +22,7 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Created by tipech on 06.03.2017.
@@ -114,6 +115,12 @@ public class EnablerResourceManagerApplication {
 
         return asyncRabbitTemplate;
     }
+
+    @Bean
+    RestTemplate RestTemplate() {
+        return new RestTemplate();
+    }
+
 
     @Bean
     AsyncRestTemplate asyncRestTemplate() {

@@ -13,6 +13,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,10 +22,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
+import com.google.gson.Gson;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.util.Queue;
+import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.springframework.util.concurrent.ListenableFuture;
 
@@ -43,6 +50,9 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
     @Autowired
     private AsyncRestTemplate asyncRestTemplate;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -80,51 +90,84 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             throws IOException {
 
         String message = "Search for resources";
-        String url = symbIoTeCoreUrl;
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        // httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>("test", httpHeaders); 
 
-        // Gson gson = new Gson();
-        // JSONObject jsonResponse = new JSONObject();
-        // jsonResponse.put("status", "ok");
+        String requestInString = new String(body, "UTF-8");
 
-        // AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-        //         .Builder()
-        //         .correlationId(properties.getCorrelationId())
-        //         .contentType("application/json")
-        //         .build();
+        log.info("Received StartDataAcquisition request : " + requestInString);
 
-        // PlaceholderResponse placeholderResponse = new PlaceholderResponse();
-        // try {
+        JSONParser parser = new JSONParser();
+        JSONObject messageToEnablerLogic = new JSONObject();
 
-            // do stuff
-            // placeholderResponse.setStatus(200);
+        try {
+            Object obj = parser.parse(requestInString);
+            JSONObject requestObject = (JSONObject) obj;
+            JSONArray requestArray = (JSONArray) requestObject.get("resources");
 
-        // } catch (Exception e) {
-        //     log.error("Error occurred during Placeholder", e);
-        //     placeholderResponse.setStatus(400);
-        // }
+            if (requestArray.size() != 0) {
 
-        
-       // this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, response.getBytes());
-        // rabbitManager.rabbitTemplate.convertAndSend(properties.getReplyTo(), jsonResponse,
-        //     m -> {
-        //             // m.setMessageProperties(properties);
-        //             m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
-        //             log.info(m.getMessageProperties());
-        //             return m;
-        //          });
+                for (Iterator<JSONObject> iter = requestArray.iterator(); iter.hasNext();) {
+                    JSONObject resourceRequest = (JSONObject) iter.next();
+                    log.info("DEBUG: " + resourceRequest);
 
-        ListenableFuture<ResponseEntity<JSONObject>> future = asyncRestTemplate.exchange(
-            url, HttpMethod.POST, entity, JSONObject.class);
+                    String url = symbIoTeCoreUrl + "/query?";
+                    if (resourceRequest.get("location") != null)
+                        url += "location=" + resourceRequest.get("location");
+                    if (resourceRequest.get("observesProperty") != null) {
+                        url += "&observed_property=";
+                        JSONArray observesProperty = (JSONArray) resourceRequest.get("observesProperty");
+                        log.info("observesProperty= " + observesProperty);
 
-        RestAPICallback<ResponseEntity<JSONObject>> callback = 
-            new RestAPICallback<ResponseEntity<JSONObject>> (message, properties, futuresQueue, future, rabbitTemplate);
-        future.addCallback(callback);
-        
-        futuresQueue.add(future);
+                        for (Iterator<String> it = observesProperty.iterator(); it.hasNext();) {
+                            String property = (String) it.next();
+                            url += property + ',';
+                            log.info("property = " + property + ", url = " + url);
+                        }
+                       url = url.substring(0, url.length() - 1);                   
+                    }
 
+                    log.info("url= " + url);
+
+                    HttpHeaders httpHeaders = new HttpHeaders();
+                    httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+                    // httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    HttpEntity<String> entity = new HttpEntity<>("test", httpHeaders); 
+
+                    ResponseEntity<String> queryResponse = restTemplate.exchange(
+                        url, HttpMethod.GET, entity, String.class);
+
+                    log.info("SymbIoTe Core Response: " + queryResponse);
+
+                    JSONParser parserOfQueryResult = new JSONParser();
+                    try {
+
+                        Object queryResponseObj = parser.parse((String) queryResponse.getBody());
+                        JSONArray queryResult = (JSONArray) queryResponseObj;
+                        log.info("queryResult: " + queryResult);
+
+                        JSONArray resourceIds = new JSONArray();
+                        Integer numberOfResourcesNeeded = Integer.parseInt((String) resourceRequest.get("count"));
+                        Integer count = 0;
+
+                        for (Iterator<JSONObject> it = queryResult.iterator(); it.hasNext() && count < numberOfResourcesNeeded; count++) {
+                            JSONObject resource = (JSONObject) it.next();
+                            resourceIds.add(resource.get("id"));
+                        } 
+                        resourceRequest.put("resourceIds", resourceIds);
+                        log.info("resourceRequest: " + resourceRequest);
+
+                        // ListenableFuture<ResponseEntity<JSONObject>> future = asyncRestTemplate.exchange(
+                        //     url, HttpMethod.GET, entity, JSONObject.class);
+
+                        // RestAPICallback<ResponseEntity<JSONObject>> callback = 
+                        //     new RestAPICallback<ResponseEntity<JSONObject>> (message, properties, futuresQueue, future, rabbitTemplate);
+                        // future.addCallback(callback);
+                        
+                        // futuresQueue.add(future);
+                    }
+                    catch (ParseException e) {}
+                }
+            }
+        } 
+        catch (ParseException e) {}
     }
 }
