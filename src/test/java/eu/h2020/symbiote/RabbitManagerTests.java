@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import eu.h2020.symbiote.messaging.RabbitManager;
 
@@ -213,8 +215,26 @@ public class RabbitManagerTests {
             TimeUnit.SECONDS.sleep(1);
         }
       
-        
-        assertEquals("ok", resultRef.get().get("status"));
+        JSONParser parser = new JSONParser();
+        try {
+
+            Object obj = parser.parse(resultRef.get().toString());
+            JSONObject response = (JSONObject) obj;
+            JSONArray responseArray = (JSONArray) response.get("resources");
+            JSONObject firstRequest = (JSONObject) responseArray.get(0);
+            JSONObject secondRequest = (JSONObject) responseArray.get(1);
+
+
+            assertEquals(2, ((JSONArray) firstRequest.get("resourceIds")).size());
+            assertEquals(1, ((JSONArray) secondRequest.get("resourceIds")).size());
+
+            assertEquals("1", (String) ((JSONArray) firstRequest.get("resourceIds")).get(0));
+            assertEquals("2", (String) ((JSONArray) firstRequest.get("resourceIds")).get(1));
+            assertEquals("4", (String) ((JSONArray) secondRequest.get("resourceIds")).get(0));
+
+
+        } 
+        catch (ParseException e) {}
 
     }
 

@@ -97,6 +97,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
         JSONParser parser = new JSONParser();
         JSONObject messageToEnablerLogic = new JSONObject();
+        JSONArray messageToEnablerLogicResourceArray = new JSONArray();
 
         try {
             Object obj = parser.parse(requestInString);
@@ -154,6 +155,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                         } 
                         resourceRequest.put("resourceIds", resourceIds);
                         log.info("resourceRequest: " + resourceRequest);
+                        messageToEnablerLogicResourceArray.add(resourceRequest);
 
                         // ListenableFuture<ResponseEntity<JSONObject>> future = asyncRestTemplate.exchange(
                         //     url, HttpMethod.GET, entity, JSONObject.class);
@@ -167,6 +169,13 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                     catch (ParseException e) {}
                 }
             }
+            messageToEnablerLogic.put("resources", messageToEnablerLogicResourceArray);
+            log.info("messageToEnablerLogic: " + messageToEnablerLogic);
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), messageToEnablerLogic,
+            m -> {
+                    m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
+                    return m;
+                 });
         } 
         catch (ParseException e) {}
     }
