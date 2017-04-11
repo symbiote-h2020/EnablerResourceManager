@@ -98,6 +98,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         JSONParser parser = new JSONParser();
         JSONObject messageToEnablerLogic = new JSONObject();
         JSONArray messageToEnablerLogicResourceArray = new JSONArray();
+        ArrayList<JSONObject> messagesToEnablerPlatformProxy = new ArrayList<JSONObject>();
 
         try {
             Object obj = parser.parse(requestInString);
@@ -139,6 +140,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                     log.info("SymbIoTe Core Response: " + queryResponse);
 
                     JSONParser parserOfQueryResult = new JSONParser();
+                    JSONArray messageToPlatformProxyResourceArray = new JSONArray();
                     try {
 
                         Object queryResponseObj = parser.parse((String) queryResponse.getBody());
@@ -152,10 +154,21 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                         for (Iterator<JSONObject> it = queryResult.iterator(); it.hasNext() && count < numberOfResourcesNeeded; count++) {
                             JSONObject resource = (JSONObject) it.next();
                             resourceIds.add(resource.get("id"));
+
+                            JSONObject messageToPlatformProxyResource = new JSONObject();
+                            messageToPlatformProxyResource.put("resourceId", resource.get("id"));
+                            messageToPlatformProxyResource.put("accessURL", resource.get("interworkingServiceURL"));
+                            messageToPlatformProxyResourceArray.add(messageToPlatformProxyResource);
                         } 
                         resourceRequest.put("resourceIds", resourceIds);
                         log.info("resourceRequest: " + resourceRequest);
                         messageToEnablerLogicResourceArray.add(resourceRequest);
+
+                        JSONObject messageToPlatformProxy = new JSONObject();
+                        messageToPlatformProxy.put("taskId", resourceRequest.get("taskID"));
+                        messageToPlatformProxy.put("interval", Integer.parseInt((String) resourceRequest.get("queryInterval")));
+                        messageToPlatformProxy.put("resources", messageToPlatformProxyResourceArray);
+                        messagesToEnablerPlatformProxy.add(messageToPlatformProxy);
 
                         // ListenableFuture<ResponseEntity<JSONObject>> future = asyncRestTemplate.exchange(
                         //     url, HttpMethod.GET, entity, JSONObject.class);
@@ -176,6 +189,10 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                     m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
                     return m;
                  });
+                        
+            for (Iterator<JSONObject> it = messagesToEnablerPlatformProxy.iterator(); it.hasNext();) {
+                log.info("messagesToEnablerPlatformProxy: " + (JSONObject) it.next());
+            }
         } 
         catch (ParseException e) {}
     }

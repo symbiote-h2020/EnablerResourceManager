@@ -136,14 +136,17 @@ public class RabbitManagerTests {
 
                     JSONObject resource1 = new JSONObject();
                     resource1.put("id", "1");
+                    resource1.put("interworkingServiceURL", "http://www.example/1");
                     response.add(resource1);
 
                     JSONObject resource2 = new JSONObject();
                     resource2.put("id", "2");
+                    resource2.put("interworkingServiceURL", "http://www.example/2");
                     response.add(resource2);
 
                     JSONObject resource3 = new JSONObject();
                     resource3.put("id", "3");
+                    resource3.put("interworkingServiceURL", "http://www.example/3");
                     response.add(resource3);
 
                     // try {
@@ -170,10 +173,12 @@ public class RabbitManagerTests {
 
                     JSONObject resource4 = new JSONObject();
                     resource4.put("id", "4");
+                    resource4.put("interworkingServiceURL", "http://www.example/4");
                     response.add(resource4);
 
                     JSONObject resource5 = new JSONObject();
                     resource5.put("id", "5");
+                    resource5.put("interworkingServiceURL", "http://www.example/5");
                     response.add(resource5);
 
                     // try {
