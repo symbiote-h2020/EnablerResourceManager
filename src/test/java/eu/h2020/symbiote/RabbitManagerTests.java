@@ -31,11 +31,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import java.util.ArrayList;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -105,31 +101,32 @@ public class RabbitManagerTests {
         String url;
         String message = "search_resources";
         final AtomicReference<EnablerLogicAcquisitionStartResponse> resultRef = new AtomicReference<EnablerLogicAcquisitionStartResponse>();
-        JSONObject query = new JSONObject();
-        JSONArray resources = new JSONArray();
+        EnablerLogicAcquisitionStartRequest query = new EnablerLogicAcquisitionStartRequest();
+        ArrayList<EnablerLogicTaskInfoRequest> resources = new ArrayList<EnablerLogicTaskInfoRequest>();
 
-        JSONObject object1 = new JSONObject();
-        JSONArray observesProperty1 = new JSONArray();
-        object1.put("taskId", "1");
-        object1.put("count", "2");
-        object1.put("location", "Paris");
+
+        EnablerLogicTaskInfoRequest request1 = new EnablerLogicTaskInfoRequest();
+        ArrayList<String> observesProperty1 = new ArrayList<String>();
+        request1.setTaskId("1");
+        request1.setCount(2);
+        request1.setLocation("Paris");
         observesProperty1.add("temperature");
         observesProperty1.add("humidity");
-        object1.put("observesProperty", observesProperty1);
-        object1.put("interval", "60");
-        resources.add(object1);
+        request1.setObservesProperty(observesProperty1);
+        request1.setInterval(60);
+        resources.add(request1);
 
-        JSONObject object2 = new JSONObject();
-        JSONArray observesProperty2 = new JSONArray();
-        object2.put("taskId", "2");
-        object2.put("count", "1");
-        object2.put("location", "Athens");
+        EnablerLogicTaskInfoRequest request2 = new EnablerLogicTaskInfoRequest();
+        ArrayList<String> observesProperty2 = new ArrayList<String>();
+        request2.setTaskId("2");
+        request2.setCount(1);
+        request2.setLocation("Athens");
         observesProperty2.add("air quality");
-        object2.put("observesProperty", observesProperty2);
-        object2.put("interval", "60");
-        resources.add(object2);
+        request2.setObservesProperty(observesProperty2);
+        request2.setInterval(60);
+        resources.add(request2);
 
-        query.put("resources", resources);
+        query.setResources(resources);
         
         url = "http://www.example.com/v1/query?location=Paris&observed_property=temperature,humidity";
         mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
