@@ -57,6 +57,12 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    @Value("${rabbit.exchange.enablerPlatformProxy.name}") 
+    private String platformProxyExchange; 
+
+    @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStartRequested}") 
+    private String platformProxyAcquisitionStartRequestedRoutingKey; 
+
     @Autowired
     @Qualifier("symbIoTeCoreUrl")
     private String symbIoTeCoreUrl;
@@ -69,7 +75,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
      * @param rabbitManager     rabbit manager bean passed for access to messages manager
      */
     public StartDataAcquisitionConsumer(Channel channel,
-                                           RabbitManager rabbitManager) {
+                                        RabbitManager rabbitManager) {
         super(channel);
         this.rabbitManager = rabbitManager;
     }
@@ -190,9 +196,14 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                     return m;
                  });
                         
-            for (Iterator<JSONObject> it = messagesToEnablerPlatformProxy.iterator(); it.hasNext();) {
-                log.info("messagesToEnablerPlatformProxy: " + (JSONObject) it.next());
-            }
+            // for (Iterator<JSONObject> it = messagesToEnablerPlatformProxy.iterator(); it.hasNext();) {
+            //     log.info("messagesToEnablerPlatformProxy: " + (JSONObject) it.next());
+            //     rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, (JSONObject) it.next(),
+            //     m -> {
+            //             m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
+            //             return m;
+            //          }); 
+            // }
         } 
         catch (ParseException e) {}
     }
