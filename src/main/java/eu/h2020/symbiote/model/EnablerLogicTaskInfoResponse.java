@@ -12,11 +12,20 @@ public class EnablerLogicTaskInfoResponse extends EnablerLogicTaskInfoRequest{
     public EnablerLogicTaskInfoResponse() {
     }
 
-    public List<String> getObservesProperty() {
+    public EnablerLogicTaskInfoResponse(EnablerLogicTaskInfoRequest enablerLogicTaskInfoRequest) {
+        setTaskId(enablerLogicTaskInfoRequest.getTaskId());
+        setCount(enablerLogicTaskInfoRequest.getCount());
+        setLocation(enablerLogicTaskInfoRequest.getLocation());
+        setObservesProperty(enablerLogicTaskInfoRequest.getObservesProperty());
+        setInterval(enablerLogicTaskInfoRequest.getInterval());
+
+    }
+
+    public List<String> getResourceIds() {
         return resourceIds;
     }
 
-    public void setObservesProperty(List<String> resourceIds) {
+    public void setResourceIds(List<String> resourceIds) {
         this.resourceIds = resourceIds;
     }
 

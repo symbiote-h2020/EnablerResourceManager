@@ -22,7 +22,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
-import com.google.gson.Gson;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
@@ -31,9 +30,13 @@ import org.json.simple.parser.ParseException;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.springframework.util.concurrent.ListenableFuture;
+
+import eu.h2020.symbiote.model.*;
+
 
 /**
  * RabbitMQ Consumer implementation used for getting the resource details from Enabler Logic
@@ -101,110 +104,88 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
         log.info("Received StartDataAcquisition request : " + requestInString);
 
-        JSONParser parser = new JSONParser();
-        JSONObject messageToEnablerLogic = new JSONObject();
-        JSONArray messageToEnablerLogicResourceArray = new JSONArray();
-        ArrayList<JSONObject> messagesToEnablerPlatformProxy = new ArrayList<JSONObject>();
+        Gson gson = new Gson();
+        EnablerLogicAcquisitionStartRequest request  = gson.fromJson(requestInString, EnablerLogicAcquisitionStartRequest.class);
+        EnablerLogicAcquisitionStartResponse response  = new EnablerLogicAcquisitionStartResponse();
+        ArrayList<EnablerLogicTaskInfoResponse> responseList = new ArrayList<EnablerLogicTaskInfoResponse>();
+        ArrayList<PlatformProxyAcquisitionStartRequest> messagesToPlatformProxy = new ArrayList<PlatformProxyAcquisitionStartRequest>();
 
-        try {
-            Object obj = parser.parse(requestInString);
-            JSONObject requestObject = (JSONObject) obj;
-            JSONArray requestArray = (JSONArray) requestObject.get("resources");
-
-            if (requestArray.size() != 0) {
-
-                for (Iterator<JSONObject> iter = requestArray.iterator(); iter.hasNext();) {
-                    JSONObject resourceRequest = (JSONObject) iter.next();
-                    log.info("DEBUG: " + resourceRequest);
-
-                    String url = symbIoTeCoreUrl + "/query?";
-                    if (resourceRequest.get("location") != null)
-                        url += "location=" + resourceRequest.get("location");
-                    if (resourceRequest.get("observesProperty") != null) {
-                        url += "&observed_property=";
-                        JSONArray observesProperty = (JSONArray) resourceRequest.get("observesProperty");
-                        log.info("observesProperty= " + observesProperty);
-
-                        for (Iterator<String> it = observesProperty.iterator(); it.hasNext();) {
-                            String property = (String) it.next();
-                            url += property + ',';
-                            log.info("property = " + property + ", url = " + url);
-                        }
-                       url = url.substring(0, url.length() - 1);                   
-                    }
-
-                    log.info("url= " + url);
-
-                    HttpHeaders httpHeaders = new HttpHeaders();
-                    httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-                    // httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                    HttpEntity<String> entity = new HttpEntity<>("test", httpHeaders); 
-
-                    ResponseEntity<String> queryResponse = restTemplate.exchange(
-                        url, HttpMethod.GET, entity, String.class);
-
-                    log.info("SymbIoTe Core Response: " + queryResponse);
-
-                    JSONParser parserOfQueryResult = new JSONParser();
-                    JSONArray messageToPlatformProxyResourceArray = new JSONArray();
-                    try {
-
-                        Object queryResponseObj = parser.parse((String) queryResponse.getBody());
-                        JSONArray queryResult = (JSONArray) queryResponseObj;
-                        log.info("queryResult: " + queryResult);
-
-                        JSONArray resourceIds = new JSONArray();
-                        Integer numberOfResourcesNeeded = Integer.parseInt((String) resourceRequest.get("count"));
-                        Integer count = 0;
-
-                        for (Iterator<JSONObject> it = queryResult.iterator(); it.hasNext() && count < numberOfResourcesNeeded; count++) {
-                            JSONObject resource = (JSONObject) it.next();
-                            resourceIds.add(resource.get("id"));
-
-                            JSONObject messageToPlatformProxyResource = new JSONObject();
-                            messageToPlatformProxyResource.put("resourceId", resource.get("id"));
-                            messageToPlatformProxyResource.put("accessURL", resource.get("interworkingServiceURL"));
-                            messageToPlatformProxyResourceArray.add(messageToPlatformProxyResource);
-                        } 
-                        resourceRequest.put("resourceIds", resourceIds);
-                        log.info("resourceRequest: " + resourceRequest);
-                        messageToEnablerLogicResourceArray.add(resourceRequest);
-
-                        JSONObject messageToPlatformProxy = new JSONObject();
-                        messageToPlatformProxy.put("taskId", resourceRequest.get("taskID"));
-                        messageToPlatformProxy.put("interval", Integer.parseInt((String) resourceRequest.get("queryInterval")));
-                        messageToPlatformProxy.put("resources", messageToPlatformProxyResourceArray);
-                        messagesToEnablerPlatformProxy.add(messageToPlatformProxy);
-
-                        // ListenableFuture<ResponseEntity<JSONObject>> future = asyncRestTemplate.exchange(
-                        //     url, HttpMethod.GET, entity, JSONObject.class);
-
-                        // RestAPICallback<ResponseEntity<JSONObject>> callback = 
-                        //     new RestAPICallback<ResponseEntity<JSONObject>> (message, properties, futuresQueue, future, rabbitTemplate);
-                        // future.addCallback(callback);
-                        
-                        // futuresQueue.add(future);
-                    }
-                    catch (ParseException e) {}
+        for (Iterator<EnablerLogicTaskInfoRequest> iter = request.getResources().iterator(); iter.hasNext();) {
+            EnablerLogicTaskInfoRequest taskInfoRequest = (EnablerLogicTaskInfoRequest) iter.next();
+            
+            String url = symbIoTeCoreUrl + "/query?";
+            if (taskInfoRequest.getLocation() != null)
+                url += "location=" + taskInfoRequest.getLocation();
+            if (taskInfoRequest.getObservesProperty() != null) {
+                url += "&observed_property=";
+   
+                for (Iterator<String> it = taskInfoRequest.getObservesProperty().iterator(); it.hasNext();) {
+                    String property = (String) it.next();
+                    url += property + ',';
+                    log.info("property = " + property + ", url = " + url);
                 }
+               url = url.substring(0, url.length() - 1);                   
             }
-            messageToEnablerLogic.put("resources", messageToEnablerLogicResourceArray);
-            log.info("messageToEnablerLogic: " + messageToEnablerLogic);
-            rabbitTemplate.convertAndSend(properties.getReplyTo(), messageToEnablerLogic,
+            log.info("url= " + url);
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+            // httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<>(httpHeaders); 
+
+            ResponseEntity<String> queryResponse = restTemplate.exchange(
+                url, HttpMethod.GET, entity, String.class);
+
+            log.info("SymbIoTe Core Response: " + queryResponse);
+
+            JSONParser parser = new JSONParser();
+            EnablerLogicTaskInfoResponse taskInfoResponse = new EnablerLogicTaskInfoResponse(taskInfoRequest);
+            ArrayList<String> resourceIds = new ArrayList<String>();
+            PlatformProxyAcquisitionStartRequest requestToPlatformProxy = new PlatformProxyAcquisitionStartRequest();
+            ArrayList<PlatformProxyResourceInfo> platformProxyResources = new ArrayList<PlatformProxyResourceInfo>();
+
+            try {
+
+                Object queryResponseObj = parser.parse((String) queryResponse.getBody());
+                JSONArray queryResult = (JSONArray) queryResponseObj;
+                log.info("queryResult: " + queryResult);
+
+                Integer count = 0;
+
+                for (Iterator<JSONObject> it = queryResult.iterator(); it.hasNext() && count < taskInfoResponse.getCount(); count++) {
+                    JSONObject resource = (JSONObject) it.next();
+                    resourceIds.add((String) resource.get("id"));
+                    PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+                    platformProxyResourceInfo.setResourceId((String) resource.get("id"));
+                    platformProxyResourceInfo.setAccessURL((String) resource.get("interworkingServiceURL"));
+                    platformProxyResources.add(platformProxyResourceInfo);
+                }
+
+                taskInfoResponse.setResourceIds(resourceIds);
+                responseList.add(taskInfoResponse);
+                requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
+                requestToPlatformProxy.setInterval(taskInfoResponse.getInterval());
+                requestToPlatformProxy.setResources(platformProxyResources);
+                messagesToPlatformProxy.add(requestToPlatformProxy);
+            }
+            catch (ParseException e) {}
+        }
+
+        response.setResources(responseList);
+        rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
+        m -> {
+                m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
+                return m;
+             });
+
+       for (Iterator<PlatformProxyAcquisitionStartRequest> it = messagesToPlatformProxy.iterator(); it.hasNext();) {
+            PlatformProxyAcquisitionStartRequest req = (PlatformProxyAcquisitionStartRequest) it.next();
+
+            rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req,
             m -> {
                     m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
                     return m;
-                 });
-                        
-            // for (Iterator<JSONObject> it = messagesToEnablerPlatformProxy.iterator(); it.hasNext();) {
-            //     log.info("messagesToEnablerPlatformProxy: " + (JSONObject) it.next());
-            //     rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, (JSONObject) it.next(),
-            //     m -> {
-            //             m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
-            //             return m;
-            //          }); 
-            // }
-        } 
-        catch (ParseException e) {}
+                 }); 
+        }
+
     }
 }

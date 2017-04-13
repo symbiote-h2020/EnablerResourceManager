@@ -37,7 +37,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.annotation.Queue;
+import org.springframework.amqp.rabbit.annotation.Exchange;
+import org.springframework.amqp.rabbit.annotation.QueueBinding;
+import org.springframework.amqp.core.ExchangeTypes;
+
 import eu.h2020.symbiote.messaging.RabbitManager;
+import eu.h2020.symbiote.model.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -97,29 +104,29 @@ public class RabbitManagerTests {
 
         String url;
         String message = "search_resources";
-        final AtomicReference<JSONObject> resultRef = new AtomicReference<JSONObject>();
+        final AtomicReference<EnablerLogicAcquisitionStartResponse> resultRef = new AtomicReference<EnablerLogicAcquisitionStartResponse>();
         JSONObject query = new JSONObject();
         JSONArray resources = new JSONArray();
 
         JSONObject object1 = new JSONObject();
         JSONArray observesProperty1 = new JSONArray();
-        object1.put("taskID", "1");
+        object1.put("taskId", "1");
         object1.put("count", "2");
         object1.put("location", "Paris");
         observesProperty1.add("temperature");
         observesProperty1.add("humidity");
         object1.put("observesProperty", observesProperty1);
-        object1.put("queryInterval", "60");
+        object1.put("interval", "60");
         resources.add(object1);
 
         JSONObject object2 = new JSONObject();
         JSONArray observesProperty2 = new JSONArray();
-        object2.put("taskID", "2");
+        object2.put("taskId", "2");
         object2.put("count", "1");
         object2.put("location", "Athens");
         observesProperty2.add("air quality");
         object2.put("observesProperty", observesProperty2);
-        object2.put("queryInterval", "60");
+        object2.put("interval", "60");
         resources.add(object2);
 
         query.put("resources", resources);
@@ -195,15 +202,15 @@ public class RabbitManagerTests {
 
         log.info("Before sending the message");
 
-        RabbitConverterFuture<JSONObject> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+        RabbitConverterFuture<EnablerLogicAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
 
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallback<JSONObject>() {
+        future.addCallback(new ListenableFutureCallback<EnablerLogicAcquisitionStartResponse>() {
 
             @Override
-            public void onSuccess(JSONObject result) {
-                log.info("Successully received response: " + result);
+            public void onSuccess(EnablerLogicAcquisitionStartResponse result) {
+                log.info("Successfully received response: " + result);
                 resultRef.set(result);
 
             }
@@ -220,27 +227,27 @@ public class RabbitManagerTests {
             TimeUnit.SECONDS.sleep(1);
         }
       
-        JSONParser parser = new JSONParser();
-        try {
 
-            Object obj = parser.parse(resultRef.get().toString());
-            JSONObject response = (JSONObject) obj;
-            JSONArray responseArray = (JSONArray) response.get("resources");
-            JSONObject firstRequest = (JSONObject) responseArray.get(0);
-            JSONObject secondRequest = (JSONObject) responseArray.get(1);
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
 
+        assertEquals("1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("4", resultRef.get().getResources().get(1).getResourceIds().get(0));
 
-            assertEquals(2, ((JSONArray) firstRequest.get("resourceIds")).size());
-            assertEquals(1, ((JSONArray) secondRequest.get("resourceIds")).size());
+    }
 
-            assertEquals("1", (String) ((JSONArray) firstRequest.get("resourceIds")).get(0));
-            assertEquals("2", (String) ((JSONArray) firstRequest.get("resourceIds")).get(1));
-            assertEquals("4", (String) ((JSONArray) secondRequest.get("resourceIds")).get(0));
-
-
-        } 
-        catch (ParseException e) {}
-
+    @RabbitListener(bindings = @QueueBinding(
+        value = @Queue(value = "symbIoTe-rap-writeResource", durable = "false", autoDelete = "true", exclusive = "true"),
+        exchange = @Exchange(value = "symbIoTe.enablerPlatformProxy", ignoreDeclarationExceptions = "true", type = ExchangeTypes.TOPIC),
+        key = "symbIoTe.enablerPlatformProxy.acquisitionStartRequested")
+    )
+    public void platformProxyListener(PlatformProxyAcquisitionStartRequest request) {
+       
+        log.info("Received message (taskID, ResourceIds.size(), interval): (" + 
+                  request.getTaskId() + ", " + request.getResources().size() + ", " +
+                  request.getInterval() + ")");
+        // return "YES";
     }
 
 }
