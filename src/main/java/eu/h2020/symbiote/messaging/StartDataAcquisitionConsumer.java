@@ -22,21 +22,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
 import java.io.IOException;
 import java.util.Queue;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import org.springframework.util.concurrent.ListenableFuture;
 
 import eu.h2020.symbiote.model.*;
-
+import eu.h2020.symbiote.core.model.resources.Resource;
 
 /**
  * RabbitMQ Consumer implementation used for getting the resource details from Enabler Logic
@@ -47,9 +41,6 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
     private static Log log = LogFactory.getLog(StartDataAcquisitionConsumer.class);
     private RabbitManager rabbitManager;
-
-    private final Queue<ListenableFuture<ResponseEntity<JSONObject>>> futuresQueue = 
-                   new ConcurrentLinkedQueue<ListenableFuture<ResponseEntity<JSONObject>>>();
 
     @Autowired
     private AsyncRestTemplate asyncRestTemplate;
@@ -132,42 +123,37 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             // httpHeaders.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<String> entity = new HttpEntity<>(httpHeaders); 
 
-            ResponseEntity<String> queryResponse = restTemplate.exchange(
-                url, HttpMethod.GET, entity, String.class);
+            ResponseEntity<Resource[]> queryResponse = restTemplate.exchange(
+                url, HttpMethod.GET, entity, Resource[].class);
 
             log.info("SymbIoTe Core Response: " + queryResponse);
 
-            JSONParser parser = new JSONParser();
             EnablerLogicTaskInfoResponse taskInfoResponse = new EnablerLogicTaskInfoResponse(taskInfoRequest);
             ArrayList<String> resourceIds = new ArrayList<String>();
             PlatformProxyAcquisitionStartRequest requestToPlatformProxy = new PlatformProxyAcquisitionStartRequest();
             ArrayList<PlatformProxyResourceInfo> platformProxyResources = new ArrayList<PlatformProxyResourceInfo>();
 
-            try {
 
-                Object queryResponseObj = parser.parse((String) queryResponse.getBody());
-                JSONArray queryResult = (JSONArray) queryResponseObj;
-                log.info("queryResult: " + queryResult);
+            List<Resource> queryResult = Arrays.asList(queryResponse.getBody());
+            Integer count = 0;
 
-                Integer count = 0;
+            for (Iterator<Resource> it = queryResult.iterator(); it.hasNext() && count < taskInfoResponse.getCount(); count++) {
+                Resource resource = (Resource) it.next();
 
-                for (Iterator<JSONObject> it = queryResult.iterator(); it.hasNext() && count < taskInfoResponse.getCount(); count++) {
-                    JSONObject resource = (JSONObject) it.next();
-                    resourceIds.add((String) resource.get("id"));
-                    PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
-                    platformProxyResourceInfo.setResourceId((String) resource.get("id"));
-                    platformProxyResourceInfo.setAccessURL((String) resource.get("interworkingServiceURL"));
-                    platformProxyResources.add(platformProxyResourceInfo);
-                }
+                resourceIds.add(resource.getId());
 
-                taskInfoResponse.setResourceIds(resourceIds);
-                responseList.add(taskInfoResponse);
-                requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
-                requestToPlatformProxy.setInterval(taskInfoResponse.getInterval());
-                requestToPlatformProxy.setResources(platformProxyResources);
-                messagesToPlatformProxy.add(requestToPlatformProxy);
+                PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+                platformProxyResourceInfo.setResourceId(resource.getId());
+                platformProxyResourceInfo.setAccessURL(resource.getInterworkingServiceURL());
+                platformProxyResources.add(platformProxyResourceInfo);
             }
-            catch (ParseException e) {}
+
+            taskInfoResponse.setResourceIds(resourceIds);
+            responseList.add(taskInfoResponse);
+            requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
+            requestToPlatformProxy.setInterval(taskInfoResponse.getInterval());
+            requestToPlatformProxy.setResources(platformProxyResources);
+            messagesToPlatformProxy.add(requestToPlatformProxy);
         }
 
         response.setResources(responseList);

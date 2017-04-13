@@ -48,7 +48,8 @@ dependencies {
     compile('org.springframework.amqp:spring-amqp:2.0.0.M1')
     compile('org.springframework.amqp:spring-rabbit:2.0.0.M1')
     compile('com.googlecode.json-simple:json-simple:1.1.1')
-    
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT') { changing = true }
+
     testCompile('org.springframework.boot:spring-boot-starter-test')
 
 
