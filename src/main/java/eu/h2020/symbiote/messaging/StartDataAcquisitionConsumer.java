@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
 
-import eu.h2020.symbiote.model.*;
+import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.core.model.resources.Resource;
 
 /**
@@ -96,13 +96,13 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         log.info("Received StartDataAcquisition request : " + requestInString);
 
         Gson gson = new Gson();
-        EnablerLogicAcquisitionStartRequest request  = gson.fromJson(requestInString, EnablerLogicAcquisitionStartRequest.class);
-        EnablerLogicAcquisitionStartResponse response  = new EnablerLogicAcquisitionStartResponse();
-        ArrayList<EnablerLogicTaskInfoResponse> responseList = new ArrayList<EnablerLogicTaskInfoResponse>();
+        ResourceManagerAcquisitionStartRequest request  = gson.fromJson(requestInString, ResourceManagerAcquisitionStartRequest.class);
+        ResourceManagerAcquisitionStartResponse response  = new ResourceManagerAcquisitionStartResponse();
+        ArrayList<ResourceManagerTaskInfoResponse> responseList = new ArrayList<ResourceManagerTaskInfoResponse>();
         ArrayList<PlatformProxyAcquisitionStartRequest> messagesToPlatformProxy = new ArrayList<PlatformProxyAcquisitionStartRequest>();
 
-        for (Iterator<EnablerLogicTaskInfoRequest> iter = request.getResources().iterator(); iter.hasNext();) {
-            EnablerLogicTaskInfoRequest taskInfoRequest = (EnablerLogicTaskInfoRequest) iter.next();
+        for (Iterator<ResourceManagerTaskInfoRequest> iter = request.getResources().iterator(); iter.hasNext();) {
+            ResourceManagerTaskInfoRequest taskInfoRequest = (ResourceManagerTaskInfoRequest) iter.next();
             
             String url = symbIoTeCoreUrl + "/query?";
             if (taskInfoRequest.getLocation() != null)
@@ -128,7 +128,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
             log.info("SymbIoTe Core Response: " + queryResponse);
 
-            EnablerLogicTaskInfoResponse taskInfoResponse = new EnablerLogicTaskInfoResponse(taskInfoRequest);
+            ResourceManagerTaskInfoResponse taskInfoResponse = new ResourceManagerTaskInfoResponse(taskInfoRequest);
             ArrayList<String> resourceIds = new ArrayList<String>();
             PlatformProxyAcquisitionStartRequest requestToPlatformProxy = new PlatformProxyAcquisitionStartRequest();
             ArrayList<PlatformProxyResourceInfo> platformProxyResources = new ArrayList<PlatformProxyResourceInfo>();

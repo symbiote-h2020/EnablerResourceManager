@@ -43,7 +43,7 @@ import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.core.ExchangeTypes;
 
 import eu.h2020.symbiote.messaging.RabbitManager;
-import eu.h2020.symbiote.model.*;
+import eu.h2020.symbiote.enabler.messaging.model.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -103,12 +103,12 @@ public class RabbitManagerTests {
 
         String url;
         String message = "search_resources";
-        final AtomicReference<EnablerLogicAcquisitionStartResponse> resultRef = new AtomicReference<EnablerLogicAcquisitionStartResponse>();
-        EnablerLogicAcquisitionStartRequest query = new EnablerLogicAcquisitionStartRequest();
-        ArrayList<EnablerLogicTaskInfoRequest> resources = new ArrayList<EnablerLogicTaskInfoRequest>();
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<ResourceManagerAcquisitionStartResponse>();
+        ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
+        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<ResourceManagerTaskInfoRequest>();
 
 
-        EnablerLogicTaskInfoRequest request1 = new EnablerLogicTaskInfoRequest();
+        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
         ArrayList<String> observesProperty1 = new ArrayList<String>();
         request1.setTaskId("1");
         request1.setCount(2);
@@ -119,7 +119,7 @@ public class RabbitManagerTests {
         request1.setInterval(60);
         resources.add(request1);
 
-        EnablerLogicTaskInfoRequest request2 = new EnablerLogicTaskInfoRequest();
+        ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest();
         ArrayList<String> observesProperty2 = new ArrayList<String>();
         request2.setTaskId("2");
         request2.setCount(1);
@@ -207,14 +207,14 @@ public class RabbitManagerTests {
 
         log.info("Before sending the message");
 
-        RabbitConverterFuture<EnablerLogicAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
 
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallback<EnablerLogicAcquisitionStartResponse>() {
+        future.addCallback(new ListenableFutureCallback<ResourceManagerAcquisitionStartResponse>() {
 
             @Override
-            public void onSuccess(EnablerLogicAcquisitionStartResponse result) {
+            public void onSuccess(ResourceManagerAcquisitionStartResponse result) {
                 log.info("Successfully received response: " + result);
                 resultRef.set(result);
 
