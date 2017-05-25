@@ -1,4 +1,4 @@
-package eu.h2020.symbiote.messaging;
+package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
 import com.google.gson.Gson;
 import com.rabbitmq.client.*;

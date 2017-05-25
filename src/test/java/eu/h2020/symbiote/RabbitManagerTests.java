@@ -1,4 +1,4 @@
-package eu.h2020.symbiote;
+package eu.h2020.symbiote.enabler.resourcemanager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,17 +33,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.ArrayList;
 
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
-
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.core.ExchangeTypes;
 
-import eu.h2020.symbiote.messaging.RabbitManager;
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.RabbitManager;
 import eu.h2020.symbiote.enabler.messaging.model.*;
+import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.ci.QueryResourceResult;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -89,7 +91,7 @@ public class RabbitManagerTests {
     private String startDataAcquisitionRoutingKey;
 
     private MockRestServiceServer mockServer;
-
+    private ObjectMapper mapper = new ObjectMapper();
 
 	// Execute the Setup method before the test.
 	@Before
@@ -100,7 +102,7 @@ public class RabbitManagerTests {
 
     @Test
     public void testResourceManagerGetResourceDetails() throws Exception {
-
+        
         String url;
         String message = "search_resources";
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<ResourceManagerAcquisitionStartResponse>();
@@ -138,27 +140,27 @@ public class RabbitManagerTests {
                         Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
                     } catch (InterruptedException ignored) {}
 
-                    // JSONParser parser = new JSONParser();
-                    JSONArray response = new JSONArray();
+                    QueryResponse response = new QueryResponse();
+                    ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
 
-                    JSONObject resource1 = new JSONObject();
-                    resource1.put("@c", ".StationarySensor");
-                    resource1.put("id", "1");
-                    resource1.put("interworkingServiceURL", "http://www.example/1");
-                    response.add(resource1);
+                    QueryResourceResult resource1 = new QueryResourceResult();
+                    resource1.setId("resource1");
+                    resource1.setPlatformId("platform1");
+                    responseResources.add(resource1);
 
-                    JSONObject resource2 = new JSONObject();
-                    resource2.put("@c", ".StationarySensor");
-                    resource2.put("id", "2");
-                    resource2.put("interworkingServiceURL", "http://www.example/2");
-                    response.add(resource2);
+                    QueryResourceResult resource2 = new QueryResourceResult();
+                    resource2.setId("resource2");
+                    resource2.setPlatformId("platform2");
+                    responseResources.add(resource2);
 
-                    JSONObject resource3 = new JSONObject();
-                    resource3.put("@c", ".StationarySensor");
-                    resource3.put("id", "3");
-                    resource3.put("interworkingServiceURL", "http://www.example/3");
-                    response.add(resource3);
+                    QueryResourceResult resource3 = new QueryResourceResult();
+                    resource3.setId("resource3");
+                    resource3.setPlatformId("platform3");
+                    responseResources.add(resource3);
 
+                    response.setResources(responseResources);
+                    String responseInString = mapper.writeValueAsString(response);
+                    
                     // try {
                     //     response = (JSONObject) parser.parse(request.getBody().toString());
 
@@ -166,9 +168,9 @@ public class RabbitManagerTests {
 
                     // response.put("status", "ok");
                     log.info(message + "_test: Server received " + request.getBody().toString());
-                    log.info(message + "_test: Server woke up and will answer with " + response);
+                    log.info(message + "_test: Server woke up and will answer with " + responseInString);
 
-                    return withStatus(HttpStatus.OK).body(response.toString()).contentType(MediaType.APPLICATION_JSON).createResponse(request);
+                    return withStatus(HttpStatus.OK).body(responseInString).contentType(MediaType.APPLICATION_JSON).createResponse(request);
         });
 
         url = "http://www.example.com/v1/query?location=Athens&observed_property=air%20quality";
@@ -178,20 +180,21 @@ public class RabbitManagerTests {
                         Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
                     } catch (InterruptedException ignored) {}
 
-                    // JSONParser parser = new JSONParser();
-                    JSONArray response = new JSONArray();
+                    QueryResponse response = new QueryResponse();
+                    ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
 
-                    JSONObject resource4 = new JSONObject();
-                    resource4.put("@c", ".StationarySensor");
-                    resource4.put("id", "4");
-                    resource4.put("interworkingServiceURL", "http://www.example/4");
-                    response.add(resource4);
+                    QueryResourceResult resource4 = new QueryResourceResult();
+                    resource4.setId("resource4");
+                    resource4.setPlatformId("platform4");
+                    responseResources.add(resource4);
 
-                    JSONObject resource5 = new JSONObject();
-                    resource5.put("@c", ".StationarySensor");
-                    resource5.put("id", "5");
-                    resource5.put("interworkingServiceURL", "http://www.example/5");
-                    response.add(resource5);
+                    QueryResourceResult resource5 = new QueryResourceResult();
+                    resource5.setId("resource5");
+                    resource5.setPlatformId("platform5");
+                    responseResources.add(resource5);
+
+                    response.setResources(responseResources);
+                    String responseInString = mapper.writeValueAsString(response);
 
                     // try {
                     //     response = (JSONObject) parser.parse(request.getBody().toString());
@@ -200,9 +203,9 @@ public class RabbitManagerTests {
 
                     // response.put("status", "ok");
                     log.info(message + "_test: Server received " + request.getBody().toString());
-                    log.info(message + "_test: Server woke up and will answer with " + response);
+                    log.info(message + "_test: Server woke up and will answer with " + responseInString);
 
-                    return withStatus(HttpStatus.OK).body(response.toString()).contentType(MediaType.APPLICATION_JSON).createResponse(request);
+                    return withStatus(HttpStatus.OK).body(responseInString).contentType(MediaType.APPLICATION_JSON).createResponse(request);
         });
 
         log.info("Before sending the message");
@@ -215,7 +218,11 @@ public class RabbitManagerTests {
 
             @Override
             public void onSuccess(ResourceManagerAcquisitionStartResponse result) {
-                log.info("Successfully received response: " + result);
+                try {
+                    log.info("Successfully received response: " + mapper.writeValueAsString(result));
+                } catch (JsonProcessingException e) {
+                    log.info(e.toString());
+                }
                 resultRef.set(result);
 
             }
@@ -231,16 +238,146 @@ public class RabbitManagerTests {
         	log.info("Sleeping!!!!!!");
             TimeUnit.SECONDS.sleep(1);
         }
-      
+        
+        String responseInString = mapper.writeValueAsString(resultRef.get().getResources());
+        log.info("BILL: " + responseInString);
 
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
 
-        assertEquals("1", resultRef.get().getResources().get(0).getResourceIds().get(0));
-        assertEquals("2", resultRef.get().getResources().get(0).getResourceIds().get(1));
-        assertEquals("4", resultRef.get().getResources().get(1).getResourceIds().get(0));
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("resource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
 
     }
+
+    // @Test
+    public void testResourceManagerGetResourceDetailsNoResponse() throws Exception {
+        
+        String url;
+        String message = "search_resources";
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<ResourceManagerAcquisitionStartResponse>();
+        ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
+        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<ResourceManagerTaskInfoRequest>();
+
+
+        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+        ArrayList<String> observesProperty1 = new ArrayList<String>();
+        request1.setTaskId("1");
+        request1.setCount(2);
+        request1.setLocation("Paris");
+        observesProperty1.add("temperature");
+        observesProperty1.add("humidity");
+        request1.setObservesProperty(observesProperty1);
+        request1.setInterval(60);
+        resources.add(request1);
+
+        query.setResources(resources);
+
+        log.info("Before sending the message");
+
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallback<ResourceManagerAcquisitionStartResponse>() {
+
+            @Override
+            public void onSuccess(ResourceManagerAcquisitionStartResponse result) {
+                try {
+                    log.info("Successfully received response: " + mapper.writeValueAsString(result));
+                } catch (JsonProcessingException e) {
+                    log.info(e.toString());
+                }
+                resultRef.set(result);
+
+            }
+
+            @Override
+            public void onFailure(Throwable ex) {
+                fail("Accessed the element which does not exist");
+            }
+
+        });
+
+        while(!future.isDone()) {
+            log.info("Sleeping!!!!!!");
+            TimeUnit.SECONDS.sleep(1);
+        }
+      
+    }
+
+    @Test
+    public void testResourceManagerGetResourceDetailsBadRequest() throws Exception {
+        
+        String url;
+        String message = "search_resources";
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<ResourceManagerAcquisitionStartResponse>();
+        ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
+        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<ResourceManagerTaskInfoRequest>();
+
+
+        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+        ArrayList<String> observesProperty1 = new ArrayList<String>();
+        request1.setTaskId("1");
+        request1.setCount(2);
+        request1.setLocation("Zurich");
+        observesProperty1.add("temperature");
+        observesProperty1.add("humidity");
+        request1.setObservesProperty(observesProperty1);
+        request1.setInterval(60);
+        resources.add(request1);
+
+        query.setResources(resources);
+
+        url = "http://www.example.com/v1/query?location=Zurich&observed_property=temperature,humidity";
+        mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
+                .andRespond(request -> {
+                    try {
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
+                    } catch (InterruptedException ignored) {}
+
+                    log.info(message + "_test: Server received " + request.getBody().toString());
+                    log.info(message + "_test: Server woke up and will answer with BAD_REQUEST");
+
+                    return withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).createResponse(request);
+        });
+
+        log.info("Before sending the message");
+
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallback<ResourceManagerAcquisitionStartResponse>() {
+
+            @Override
+            public void onSuccess(ResourceManagerAcquisitionStartResponse result) {
+                try {
+                    log.info("Successfully received response: " + mapper.writeValueAsString(result));
+                } catch (JsonProcessingException e) {
+                    log.info(e.toString());
+                }
+                resultRef.set(result);
+
+            }
+
+            @Override
+            public void onFailure(Throwable ex) {
+                fail("Accessed the element which does not exist");
+            }
+
+        });
+
+        while(!future.isDone()) {
+            log.info("Sleeping!!!!!!");
+            TimeUnit.SECONDS.sleep(1);
+        }
+
+        assertEquals(null, resultRef.get().getResources().get(0).getResourceIds());
+
+    }
+
 
     @RabbitListener(bindings = @QueueBinding(
         value = @Queue(value = "symbIoTe-rap-writeResource", durable = "false", autoDelete = "true", exclusive = "true"),

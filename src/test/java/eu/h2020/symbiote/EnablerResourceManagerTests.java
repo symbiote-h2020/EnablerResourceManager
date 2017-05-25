@@ -1,7 +1,7 @@
-package eu.h2020.symbiote;
+package eu.h2020.symbiote.enabler.resourcemanager;
 
-import eu.h2020.symbiote.messaging.RabbitManager;
-import eu.h2020.symbiote.controllers.EnablerResourceManagerController;
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.RabbitManager;
+import eu.h2020.symbiote.enabler.resourcemanager.controllers.EnablerResourceManagerController;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
