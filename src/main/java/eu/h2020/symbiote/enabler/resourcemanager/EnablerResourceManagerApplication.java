@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -28,7 +29,7 @@ import org.springframework.web.client.RestTemplate;
 /**
  * Created by tipech on 06.03.2017.
  */
-@EnableDiscoveryClient
+@ComponentScan
 @EnableRabbit
 @SpringBootApplication
 public class EnablerResourceManagerApplication {
@@ -44,7 +45,7 @@ public class EnablerResourceManagerApplication {
     @Value("${rabbit.password}") 
     private String rabbitPassword;
 
-    @Value("${symbIoTe.core.url}")
+    @Value("${symbiote.core.url}")
     private String symbIoTeCoreUrl; 
 
     public static void main(String[] args) {
@@ -112,7 +113,7 @@ public class EnablerResourceManagerApplication {
         * The following AsyncRabbitTemplate constructor uses "Direct replyTo" for replies.
         */
         AsyncRabbitTemplate asyncRabbitTemplate = new AsyncRabbitTemplate(rabbitTemplate);
-        asyncRabbitTemplate.setReceiveTimeout(5000);
+        asyncRabbitTemplate.setReceiveTimeout(10000);
 
         return asyncRabbitTemplate;
     }

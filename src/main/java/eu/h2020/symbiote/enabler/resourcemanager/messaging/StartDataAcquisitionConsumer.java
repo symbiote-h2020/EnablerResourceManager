@@ -21,6 +21,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.io.IOException;
 import java.util.Queue;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -37,6 +39,11 @@ import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.core.model.resources.Resource;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
+import eu.h2020.symbiote.security.token.Token;
+import eu.h2020.symbiote.security.constants.AAMConstants;
+
+import eu.h2020.symbiote.enabler.resourcemanager.utils.SecurityManager;
+
 
 /**
  * RabbitMQ Consumer implementation used for getting the resource details from Enabler Logic
@@ -56,6 +63,9 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private SecurityManager securityManager;
 
     @Value("${rabbit.exchange.enablerPlatformProxy.name}") 
     private String platformProxyExchange; 
@@ -150,17 +160,47 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                     List<QueryResourceResult> queryResult = queryResponse.getResources();
                     Integer count = 0;
 
-                    for (Iterator<QueryResourceResult> it = queryResult.iterator(); it.hasNext() && count < taskInfoResponse.getCount(); count++) {
+                    for (Iterator<QueryResourceResult> it = queryResult.iterator(); it.hasNext() && count < taskInfoResponse.getCount();) {
                         QueryResourceResult resource = (QueryResourceResult) it.next();
                         
                         // Save the id for returning it to the EnablerLogic
                         resourceIds.add(resource.getId());
                         
-                        // Building the request to PlatformProxy
-                        PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
-                        platformProxyResourceInfo.setResourceId(resource.getId());
-                        platformProxyResourceInfo.setAccessURL(resource.getPlatformId());
-                        platformProxyResources.add(platformProxyResourceInfo);
+                        try {
+                            Token token = securityManager.requestPlatformToken(resource.getPlatformId());
+                            log.info("Platform Token from platform " + resource.getPlatformId() + " acquired: " + token);
+                            
+                            // Request resourceUrl from CRAM
+                            String cramRequestUrl = symbIoTeCoreUrl + "/resourceUrls?id=" + resource.getId();
+                            HttpHeaders cramHttpHeaders = new HttpHeaders();
+                            cramHttpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+                            cramHttpHeaders.set(AAMConstants.TOKEN_HEADER_NAME, token.getToken());
+                            cramHttpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                            HttpEntity<String> cramEntity = new HttpEntity<>(cramHttpHeaders); 
+                            ParameterizedTypeReference<Map<String, String>> typeRef = new ParameterizedTypeReference<Map<String, String>>() {};
+                            ResponseEntity<Map<String, String>> cramResponseEntity = restTemplate.exchange(
+                                                    cramRequestUrl, HttpMethod.GET, cramEntity, typeRef);
+                            Map<String, String> cramResponse = cramResponseEntity.getBody();
+
+                            log.info("CRAM Response: " + cramResponse);
+
+                            if (cramResponse != null) {
+                                String resourceUrl = cramResponse.get(resource.getId());
+                                if (resourceUrl != null) {
+                                    // Building the request to PlatformProxy
+                                    PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+                                    platformProxyResourceInfo.setResourceId(resource.getId());
+                                    platformProxyResourceInfo.setAccessURL(resourceUrl);
+                                    platformProxyResources.add(platformProxyResourceInfo);
+                                    count++;
+                                }
+                            }
+                        } catch (SecurityException e) {
+                            log.info(e.toString());
+                        } catch (HttpClientErrorException e) {
+                            log.info(e.getStatusCode());
+                            log.info(e.getResponseBodyAsString());             
+                        } 
                     }
            
                     // Finalizing task response to EnablerLogic
@@ -177,7 +217,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 catch (HttpClientErrorException e) {
                     log.info(e.getStatusCode());
                     log.info(e.getResponseBodyAsString());             
-                }
+                } 
 
                 responseList.add(taskInfoResponse);
 

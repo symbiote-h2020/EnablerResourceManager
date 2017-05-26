@@ -7,9 +7,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.Before;
 
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,11 +27,11 @@ import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture
 
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.test.web.client.MockRestServiceServer;
-import static org.springframework.test.web.client.ExpectedCount.*;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+// import org.springframework.test.web.client.MockRestServiceServer;
+// import static org.springframework.test.web.client.ExpectedCount.*;
+// import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+// import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+// import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,8 +45,6 @@ import org.springframework.amqp.core.ExchangeTypes;
 
 import eu.h2020.symbiote.enabler.resourcemanager.messaging.RabbitManager;
 import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.core.ci.QueryResponse;
-import eu.h2020.symbiote.core.ci.QueryResourceResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -54,8 +56,16 @@ import static org.junit.Assert.fail;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes={EnablerResourceManagerApplication.class})
-@SpringBootTest({"eureka.client.enabled=false", "spring.sleuth.enabled=false"})
+@SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT, 
+                properties = {"eureka.client.enabled=false", 
+                              "spring.sleuth.enabled=false",
+                              "symbiote.core.url=http://localhost:8080",
+                              "symbiote.coreaam.url=http://localhost:8080"}
+                              )
+@ContextConfiguration
+@Configuration
+@ComponentScan
+@EnableAutoConfiguration
 public class RabbitManagerTests {
 
     private static Logger log = LoggerFactory
@@ -68,10 +78,10 @@ public class RabbitManagerTests {
     private AsyncRabbitTemplate asyncRabbitTemplate;
 
     @Autowired    
-    AsyncRestTemplate asyncRestTemplate;
+    private AsyncRestTemplate asyncRestTemplate;
 
     @Autowired    
-    RestTemplate restTemplate;
+    private RestTemplate restTemplate;
 
     @Autowired
     @Qualifier("symbIoTeCoreUrl")
@@ -90,13 +100,13 @@ public class RabbitManagerTests {
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionRoutingKey;
 
-    private MockRestServiceServer mockServer;
+    // private MockRestServiceServer mockServer;
     private ObjectMapper mapper = new ObjectMapper();
 
 	// Execute the Setup method before the test.
 	@Before
 	public void setUp() throws Exception {
-        mockServer = MockRestServiceServer.createServer(restTemplate);
+        // mockServer = MockRestServiceServer.createServer(restTemplate);
         
     }
 
@@ -133,80 +143,80 @@ public class RabbitManagerTests {
 
         query.setResources(resources);
         
-        url = "http://www.example.com/v1/query?location=Paris&observed_property=temperature,humidity";
-        mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
-                .andRespond(request -> {
-                    try {
-                        Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
-                    } catch (InterruptedException ignored) {}
+        // url = symbIoTeCoreUrl + "/query?location=Paris&observed_property=temperature,humidity";
+        // mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
+        //         .andRespond(request -> {
+        //             try {
+        //                 Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
+        //             } catch (InterruptedException ignored) {}
 
-                    QueryResponse response = new QueryResponse();
-                    ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
+        //             QueryResponse response = new QueryResponse();
+        //             ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
 
-                    QueryResourceResult resource1 = new QueryResourceResult();
-                    resource1.setId("resource1");
-                    resource1.setPlatformId("platform1");
-                    responseResources.add(resource1);
+        //             QueryResourceResult resource1 = new QueryResourceResult();
+        //             resource1.setId("resource1");
+        //             resource1.setPlatformId("platform1");
+        //             responseResources.add(resource1);
 
-                    QueryResourceResult resource2 = new QueryResourceResult();
-                    resource2.setId("resource2");
-                    resource2.setPlatformId("platform2");
-                    responseResources.add(resource2);
+        //             QueryResourceResult resource2 = new QueryResourceResult();
+        //             resource2.setId("resource2");
+        //             resource2.setPlatformId("platform2");
+        //             responseResources.add(resource2);
 
-                    QueryResourceResult resource3 = new QueryResourceResult();
-                    resource3.setId("resource3");
-                    resource3.setPlatformId("platform3");
-                    responseResources.add(resource3);
+        //             QueryResourceResult resource3 = new QueryResourceResult();
+        //             resource3.setId("resource3");
+        //             resource3.setPlatformId("platform3");
+        //             responseResources.add(resource3);
 
-                    response.setResources(responseResources);
-                    String responseInString = mapper.writeValueAsString(response);
+        //             response.setResources(responseResources);
+        //             String responseInString = mapper.writeValueAsString(response);
                     
-                    // try {
-                    //     response = (JSONObject) parser.parse(request.getBody().toString());
+        //             // try {
+        //             //     response = (JSONObject) parser.parse(request.getBody().toString());
 
-                    // } catch (Exception ignored) {}
+        //             // } catch (Exception ignored) {}
 
-                    // response.put("status", "ok");
-                    log.info(message + "_test: Server received " + request.getBody().toString());
-                    log.info(message + "_test: Server woke up and will answer with " + responseInString);
+        //             // response.put("status", "ok");
+        //             log.info(message + "_test: Server received " + request.getBody().toString());
+        //             log.info(message + "_test: Server woke up and will answer with " + responseInString);
 
-                    return withStatus(HttpStatus.OK).body(responseInString).contentType(MediaType.APPLICATION_JSON).createResponse(request);
-        });
+        //             return withStatus(HttpStatus.OK).body(responseInString).contentType(MediaType.APPLICATION_JSON).createResponse(request);
+        // });
 
-        url = "http://www.example.com/v1/query?location=Athens&observed_property=air%20quality";
-        mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
-                .andRespond(request -> {
-                    try {
-                        Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
-                    } catch (InterruptedException ignored) {}
+        // url = symbIoTeCoreUrl + "/query?location=Athens&observed_property=air%20quality";
+        // mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
+        //         .andRespond(request -> {
+        //             try {
+        //                 Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
+        //             } catch (InterruptedException ignored) {}
 
-                    QueryResponse response = new QueryResponse();
-                    ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
+        //             QueryResponse response = new QueryResponse();
+        //             ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
 
-                    QueryResourceResult resource4 = new QueryResourceResult();
-                    resource4.setId("resource4");
-                    resource4.setPlatformId("platform4");
-                    responseResources.add(resource4);
+        //             QueryResourceResult resource4 = new QueryResourceResult();
+        //             resource4.setId("resource4");
+        //             resource4.setPlatformId("platform4");
+        //             responseResources.add(resource4);
 
-                    QueryResourceResult resource5 = new QueryResourceResult();
-                    resource5.setId("resource5");
-                    resource5.setPlatformId("platform5");
-                    responseResources.add(resource5);
+        //             QueryResourceResult resource5 = new QueryResourceResult();
+        //             resource5.setId("resource5");
+        //             resource5.setPlatformId("platform5");
+        //             responseResources.add(resource5);
 
-                    response.setResources(responseResources);
-                    String responseInString = mapper.writeValueAsString(response);
+        //             response.setResources(responseResources);
+        //             String responseInString = mapper.writeValueAsString(response);
 
-                    // try {
-                    //     response = (JSONObject) parser.parse(request.getBody().toString());
+        //             // try {
+        //             //     response = (JSONObject) parser.parse(request.getBody().toString());
 
-                    // } catch (Exception ignored) {}
+        //             // } catch (Exception ignored) {}
 
-                    // response.put("status", "ok");
-                    log.info(message + "_test: Server received " + request.getBody().toString());
-                    log.info(message + "_test: Server woke up and will answer with " + responseInString);
+        //             // response.put("status", "ok");
+        //             log.info(message + "_test: Server received " + request.getBody().toString());
+        //             log.info(message + "_test: Server woke up and will answer with " + responseInString);
 
-                    return withStatus(HttpStatus.OK).body(responseInString).contentType(MediaType.APPLICATION_JSON).createResponse(request);
-        });
+        //             return withStatus(HttpStatus.OK).body(responseInString).contentType(MediaType.APPLICATION_JSON).createResponse(request);
+        // });
 
         log.info("Before sending the message");
 
@@ -240,7 +250,7 @@ public class RabbitManagerTests {
         }
         
         String responseInString = mapper.writeValueAsString(resultRef.get().getResources());
-        log.info("BILL: " + responseInString);
+        log.info("Response String: " + responseInString);
 
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
@@ -330,18 +340,18 @@ public class RabbitManagerTests {
 
         query.setResources(resources);
 
-        url = "http://www.example.com/v1/query?location=Zurich&observed_property=temperature,humidity";
-        mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
-                .andRespond(request -> {
-                    try {
-                        Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
-                    } catch (InterruptedException ignored) {}
+        // url = symbIoTeCoreUrl + "/query?location=Zurich&observed_property=temperature,humidity";
+        // mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
+        //         .andRespond(request -> {
+        //             try {
+        //                 Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
+        //             } catch (InterruptedException ignored) {}
 
-                    log.info(message + "_test: Server received " + request.getBody().toString());
-                    log.info(message + "_test: Server woke up and will answer with BAD_REQUEST");
+        //             log.info(message + "_test: Server received " + request.getBody().toString());
+        //             log.info(message + "_test: Server woke up and will answer with BAD_REQUEST");
 
-                    return withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).createResponse(request);
-        });
+        //             return withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).createResponse(request);
+        // });
 
         log.info("Before sending the message");
 
@@ -385,11 +395,12 @@ public class RabbitManagerTests {
         key = "symbIoTe.enablerPlatformProxy.acquisitionStartRequested")
     )
     public void platformProxyListener(PlatformProxyAcquisitionStartRequest request) {
-       
-        log.info("Received message (taskID, ResourceIds.size(), interval): (" + 
-                  request.getTaskId() + ", " + request.getResources().size() + ", " +
-                  request.getInterval() + ")");
-        // return "YES";
+        
+        try {
+            String responseInString = mapper.writeValueAsString(request);
+            log.info("PlatformProxyListener received request: " + responseInString);
+        } catch (JsonProcessingException e) {
+            log.info(e.toString());
+        }
     }
-
 }
