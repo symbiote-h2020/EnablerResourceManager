@@ -123,7 +123,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 // Building the query url for each task
                 String url = symbIoTeCoreUrl + "/query?";
                 if (taskInfoRequest.getLocation() != null)
-                    url += "location=" + taskInfoRequest.getLocation();
+                    url += "location_name=" + taskInfoRequest.getLocation();
                 if (taskInfoRequest.getObservesProperty() != null) {
                     url += "&observed_property=";
        
@@ -140,6 +140,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 // Query the core for each task
                 HttpHeaders httpHeaders = new HttpHeaders();
                 httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+                httpHeaders.set("X-Auth-Token", "Token");
                 httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                 HttpEntity<String> entity = new HttpEntity<>(httpHeaders); 
 
@@ -163,8 +164,6 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                     for (Iterator<QueryResourceResult> it = queryResult.iterator(); it.hasNext() && count < taskInfoResponse.getCount();) {
                         QueryResourceResult resource = (QueryResourceResult) it.next();
                         
-                        // Save the id for returning it to the EnablerLogic
-                        resourceIds.add(resource.getId());
                         
                         try {
                             Token token = securityManager.requestPlatformToken(resource.getPlatformId());
@@ -193,6 +192,9 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                                     platformProxyResourceInfo.setAccessURL(resourceUrl);
                                     platformProxyResources.add(platformProxyResourceInfo);
                                     count++;
+
+                                    // Save the id for returning it to the EnablerLogic
+                                    resourceIds.add(resource.getId());
                                 }
                             }
                         } catch (SecurityException e) {

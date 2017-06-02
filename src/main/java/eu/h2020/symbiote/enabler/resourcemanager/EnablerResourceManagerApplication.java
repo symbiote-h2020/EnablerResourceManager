@@ -9,7 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.sleuth.sampler.AlwaysSampler;
+// import org.springframework.cloud.sleuth.sampler.AlwaysSampler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,10 +52,10 @@ public class EnablerResourceManagerApplication {
         SpringApplication.run(EnablerResourceManagerApplication.class, args);
     }
 
-    @Bean
-    public AlwaysSampler defaultSampler() {
-        return new AlwaysSampler();
-    }
+    // @Bean
+    // public AlwaysSampler defaultSampler() {
+    //     return new AlwaysSampler();
+    // }
 
     @Bean(name="symbIoTeCoreUrl")
     String symbIoTeCoreUrl() {

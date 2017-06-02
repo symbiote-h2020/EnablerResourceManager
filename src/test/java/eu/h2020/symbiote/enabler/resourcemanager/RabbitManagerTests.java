@@ -142,82 +142,6 @@ public class RabbitManagerTests {
         resources.add(request2);
 
         query.setResources(resources);
-        
-        // url = symbIoTeCoreUrl + "/query?location=Paris&observed_property=temperature,humidity";
-        // mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
-        //         .andRespond(request -> {
-        //             try {
-        //                 Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
-        //             } catch (InterruptedException ignored) {}
-
-        //             QueryResponse response = new QueryResponse();
-        //             ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
-
-        //             QueryResourceResult resource1 = new QueryResourceResult();
-        //             resource1.setId("resource1");
-        //             resource1.setPlatformId("platform1");
-        //             responseResources.add(resource1);
-
-        //             QueryResourceResult resource2 = new QueryResourceResult();
-        //             resource2.setId("resource2");
-        //             resource2.setPlatformId("platform2");
-        //             responseResources.add(resource2);
-
-        //             QueryResourceResult resource3 = new QueryResourceResult();
-        //             resource3.setId("resource3");
-        //             resource3.setPlatformId("platform3");
-        //             responseResources.add(resource3);
-
-        //             response.setResources(responseResources);
-        //             String responseInString = mapper.writeValueAsString(response);
-                    
-        //             // try {
-        //             //     response = (JSONObject) parser.parse(request.getBody().toString());
-
-        //             // } catch (Exception ignored) {}
-
-        //             // response.put("status", "ok");
-        //             log.info(message + "_test: Server received " + request.getBody().toString());
-        //             log.info(message + "_test: Server woke up and will answer with " + responseInString);
-
-        //             return withStatus(HttpStatus.OK).body(responseInString).contentType(MediaType.APPLICATION_JSON).createResponse(request);
-        // });
-
-        // url = symbIoTeCoreUrl + "/query?location=Athens&observed_property=air%20quality";
-        // mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
-        //         .andRespond(request -> {
-        //             try {
-        //                 Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
-        //             } catch (InterruptedException ignored) {}
-
-        //             QueryResponse response = new QueryResponse();
-        //             ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
-
-        //             QueryResourceResult resource4 = new QueryResourceResult();
-        //             resource4.setId("resource4");
-        //             resource4.setPlatformId("platform4");
-        //             responseResources.add(resource4);
-
-        //             QueryResourceResult resource5 = new QueryResourceResult();
-        //             resource5.setId("resource5");
-        //             resource5.setPlatformId("platform5");
-        //             responseResources.add(resource5);
-
-        //             response.setResources(responseResources);
-        //             String responseInString = mapper.writeValueAsString(response);
-
-        //             // try {
-        //             //     response = (JSONObject) parser.parse(request.getBody().toString());
-
-        //             // } catch (Exception ignored) {}
-
-        //             // response.put("status", "ok");
-        //             log.info(message + "_test: Server received " + request.getBody().toString());
-        //             log.info(message + "_test: Server woke up and will answer with " + responseInString);
-
-        //             return withStatus(HttpStatus.OK).body(responseInString).contentType(MediaType.APPLICATION_JSON).createResponse(request);
-        // });
-
         log.info("Before sending the message");
 
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
@@ -339,19 +263,6 @@ public class RabbitManagerTests {
         resources.add(request1);
 
         query.setResources(resources);
-
-        // url = symbIoTeCoreUrl + "/query?location=Zurich&observed_property=temperature,humidity";
-        // mockServer.expect(requestTo(url)).andExpect(method(HttpMethod.GET))
-        //         .andRespond(request -> {
-        //             try {
-        //                 Thread.sleep(TimeUnit.SECONDS.toMillis(2)); // Delay
-        //             } catch (InterruptedException ignored) {}
-
-        //             log.info(message + "_test: Server received " + request.getBody().toString());
-        //             log.info(message + "_test: Server woke up and will answer with BAD_REQUEST");
-
-        //             return withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).createResponse(request);
-        // });
 
         log.info("Before sending the message");
 
