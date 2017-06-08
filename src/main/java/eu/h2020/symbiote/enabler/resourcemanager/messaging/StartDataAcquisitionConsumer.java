@@ -240,12 +240,10 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
        // Sending requests to PlatformProxy
        for (Iterator<PlatformProxyAcquisitionStartRequest> it = messagesToPlatformProxy.iterator(); it.hasNext();) {
             PlatformProxyAcquisitionStartRequest req = (PlatformProxyAcquisitionStartRequest) it.next();
+            Object msg =  rabbitTemplate.convertSendAndReceive(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req); 
+            PlatformProxyAcquisitionStartRequestResponse res = mapper.convertValue(msg, PlatformProxyAcquisitionStartRequestResponse.class);
+            log.info("PlatformProxyAcquisitionStartRequestResponse receiveid from Platform Proxy with task id = " + res.getTaskId() + " and status = " + res.getStatus());
 
-            rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req,
-            m -> {
-                    m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
-                    return m;
-                 }); 
         }
 
     }
