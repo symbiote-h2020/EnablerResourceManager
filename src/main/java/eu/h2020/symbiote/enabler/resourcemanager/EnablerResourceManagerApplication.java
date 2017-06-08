@@ -45,7 +45,7 @@ public class EnablerResourceManagerApplication {
     @Value("${rabbit.password}") 
     private String rabbitPassword;
 
-    @Value("${symbiote.core.url}")
+    @Value("${symbiote.enabler.core.interface.url}")
     private String symbIoTeCoreUrl; 
 
     public static void main(String[] args) {

@@ -173,7 +173,8 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                             String cramRequestUrl = symbIoTeCoreUrl + "/resourceUrls?id=" + resource.getId();
                             HttpHeaders cramHttpHeaders = new HttpHeaders();
                             cramHttpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-                            cramHttpHeaders.set(AAMConstants.TOKEN_HEADER_NAME, token.getToken());
+                            // cramHttpHeaders.set(AAMConstants.TOKEN_HEADER_NAME, token.getToken());
+                            cramHttpHeaders.set(AAMConstants.TOKEN_HEADER_NAME, securityManager.requestCoreToken().getToken());
                             cramHttpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             HttpEntity<String> cramEntity = new HttpEntity<>(cramHttpHeaders); 
                             ParameterizedTypeReference<Map<String, String>> typeRef = new ParameterizedTypeReference<Map<String, String>>() {};
