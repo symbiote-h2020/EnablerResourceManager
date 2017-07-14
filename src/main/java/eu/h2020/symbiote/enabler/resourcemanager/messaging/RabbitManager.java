@@ -1,6 +1,5 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
-import com.google.gson.Gson;
 import com.rabbitmq.client.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -173,7 +172,7 @@ public class RabbitManager {
 
             log.info("Receiver waiting for Placeholder messages....");
 
-            Consumer consumer = new StartDataAcquisitionConsumer(channel, this);
+            Consumer consumer = new StartDataAcquisitionConsumer(channel);
             beanFactory.autowireBean(consumer);
             channel.basicConsume(queueName, false, consumer);
         } catch (IOException e) {
