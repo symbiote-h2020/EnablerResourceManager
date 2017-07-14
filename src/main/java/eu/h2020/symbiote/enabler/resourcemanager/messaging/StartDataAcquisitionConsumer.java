@@ -111,7 +111,6 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
             // Sending response to EnablerLogic
             ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponseList();
-
             response.setResources(resourceManagerTaskInfoResponseList);
             rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
                     m -> {
@@ -131,7 +130,6 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
         }
-
 
 
     }

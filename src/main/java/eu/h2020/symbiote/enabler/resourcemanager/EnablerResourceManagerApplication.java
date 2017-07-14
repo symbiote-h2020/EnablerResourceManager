@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.sleuth.sampler.AlwaysSampler;
+// import org.springframework.cloud.sleuth.sampler.AlwaysSampler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,17 +43,17 @@ public class EnablerResourceManagerApplication {
     @Value("${rabbit.password}") 
     private String rabbitPassword;
 
-    @Value("${symbiote.core.url}")
+    @Value("${symbiote.enabler.core.interface.url}")
     private String symbIoTeCoreUrl; 
 
     public static void main(String[] args) {
         SpringApplication.run(EnablerResourceManagerApplication.class, args);
     }
 
-    @Bean
-    public AlwaysSampler defaultSampler() {
-        return new AlwaysSampler();
-    }
+    // @Bean
+    // public AlwaysSampler defaultSampler() {
+    //     return new AlwaysSampler();
+    // }
 
     @Bean(name="symbIoTeCoreUrl")
     String symbIoTeCoreUrl() {

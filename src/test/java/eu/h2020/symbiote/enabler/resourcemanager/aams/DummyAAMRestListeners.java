@@ -216,7 +216,7 @@ public class DummyAAMRestListeners {
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/query")
-    public ResponseEntity search(@RequestParam("location") String location ) {
+    public ResponseEntity search(@RequestParam("location_name") String location ) {
         
         log.info("Search request");
 

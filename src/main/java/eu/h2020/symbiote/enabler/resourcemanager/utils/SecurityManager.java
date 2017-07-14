@@ -38,10 +38,10 @@ public class SecurityManager {
 	@Value("${rabbit.password}")
 	private String rabbitMQPassword;
 
-	@Value("${security.user}")
+	@Value("${symbiote.enabler.core.username}")
 	private String userName;
 
-	@Value("${security.password}")
+	@Value("${symbiote.enabler.core.password}")
 	private String password;
 
 	private InternalSecurityHandler securityHandler;
@@ -72,7 +72,9 @@ public class SecurityManager {
 	public Token requestPlatformToken(String platformId) throws SecurityException{
 
 		requestCoreToken();
-		log.info("Requesting platform token");
+		log.debug("coreToken :" + securityHandler.getCoreToken().getToken());
+		log.debug("coreToken.getClaims() :" + securityHandler.getCoreToken().getClaims());
+		log.info("Requesting platform token from platform with id: " + platformId);
 
         AAM aam = aamsMap.get(platformId);
         
