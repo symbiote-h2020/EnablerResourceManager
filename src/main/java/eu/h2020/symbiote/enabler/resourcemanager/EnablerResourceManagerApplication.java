@@ -21,6 +21,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
 
@@ -34,17 +35,17 @@ public class EnablerResourceManagerApplication {
 
     private static Log log = LogFactory.getLog(EnablerResourceManagerApplication.class);
 
-    @Value("${rabbit.host}") 
+    @Value("${rabbit.host}")
     private String rabbitHost;
 
-    @Value("${rabbit.username}") 
+    @Value("${rabbit.username}")
     private String rabbitUsername;
 
-    @Value("${rabbit.password}") 
+    @Value("${rabbit.password}")
     private String rabbitPassword;
 
     @Value("${symbiote.enabler.core.interface.url}")
-    private String symbIoTeCoreUrl; 
+    private String symbIoTeCoreUrl;
 
     public static void main(String[] args) {
         SpringApplication.run(EnablerResourceManagerApplication.class, args);
@@ -71,7 +72,7 @@ public class EnablerResourceManagerApplication {
         return factory;
     }
 
-    @Bean 
+    @Bean
     Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
 
         Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
@@ -107,9 +108,9 @@ public class EnablerResourceManagerApplication {
     @Bean
     public AsyncRabbitTemplate asyncRabbitTemplate(RabbitTemplate rabbitTemplate) {
 
-       /**
-        * The following AsyncRabbitTemplate constructor uses "Direct replyTo" for replies.
-        */
+        /**
+         * The following AsyncRabbitTemplate constructor uses "Direct replyTo" for replies.
+         */
         AsyncRabbitTemplate asyncRabbitTemplate = new AsyncRabbitTemplate(rabbitTemplate);
         asyncRabbitTemplate.setReceiveTimeout(10000);
 

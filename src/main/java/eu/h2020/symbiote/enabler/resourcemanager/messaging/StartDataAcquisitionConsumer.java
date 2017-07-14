@@ -138,7 +138,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         // Building the query url for each task
         String url = symbIoTeCoreUrl + "/query?";
         if (taskInfoRequest.getLocation() != null)
-            url += "location=" + taskInfoRequest.getLocation();
+            url += "location_name=" + taskInfoRequest.getLocation();
         if (taskInfoRequest.getObservesProperty() != null) {
             url += "&observed_property=";
 
