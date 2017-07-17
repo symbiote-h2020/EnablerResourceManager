@@ -94,36 +94,12 @@ public class EnablerResourceManagerTests {
     }
 
     @Test
-    public void testResourceManagerGetResourceDetails() throws Exception {
+    public void resourceManagerGetResourceDetailsTest() throws Exception {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
-        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         ArrayList<PlatformProxyAcquisitionStartRequest> requestReceivedByListener;
 
-
-        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty1 = new ArrayList<>();
-        request1.setTaskId("1");
-        request1.setCount(2);
-        request1.setLocation("Paris");
-        observesProperty1.add("temperature");
-        observesProperty1.add("humidity");
-        request1.setObservesProperty(observesProperty1);
-        request1.setInterval(60);
-        resources.add(request1);
-
-        ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty2 = new ArrayList<>();
-        request2.setTaskId("2");
-        request2.setCount(1);
-        request2.setLocation("Athens");
-        observesProperty2.add("air quality");
-        request2.setObservesProperty(observesProperty2);
-        request2.setInterval(60);
-        resources.add(request2);
-
-        query.setResources(resources);
         log.info("Before sending the message");
 
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
@@ -167,7 +143,7 @@ public class EnablerResourceManagerTests {
     }
 
     // @Test
-    public void testResourceManagerGetResourceDetailsNoResponse() throws Exception {
+    public void resourceManagerGetResourceDetailsNoResponseTest() throws Exception {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
@@ -203,24 +179,10 @@ public class EnablerResourceManagerTests {
     }
 
     @Test
-    public void testResourceManagerGetResourceDetailsBadRequest() throws Exception {
+    public void resourceManagerGetResourceDetailsBadRequestTest() throws Exception {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
-        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
-
-        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty1 = new ArrayList<>();
-        request1.setTaskId("1");
-        request1.setCount(2);
-        request1.setLocation("Zurich");
-        observesProperty1.add("temperature");
-        observesProperty1.add("humidity");
-        request1.setObservesProperty(observesProperty1);
-        request1.setInterval(60);
-        resources.add(request1);
-
-        query.setResources(resources);
+        ResourceManagerAcquisitionStartRequest query = createBadQueryToResourceManager();
 
         log.info("Before sending the message");
 
@@ -241,6 +203,101 @@ public class EnablerResourceManagerTests {
         TimeUnit.MILLISECONDS.sleep(500);
         assertEquals(0, dummyPlatformProxyListener.messagesReceived());
 
+    }
+
+    @Test
+    public void notSendingToPlatformProxyTest() throws Exception {
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
+        ArrayList<PlatformProxyAcquisitionStartRequest> requestReceivedByListener;
+
+        // Forward to PlatformProxy only the 2nd task
+        query.getResources().get(0).setInformPlatformProxy(false);
+
+        log.info("Before sending the message");
+
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom(resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        // Test what Enabler Logic receives
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
+
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("resource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
+
+        while(dummyPlatformProxyListener.messagesReceived() < 1) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        // Test what Platform Proxy receives
+        requestReceivedByListener = dummyPlatformProxyListener.getRequestReceivedByListener();
+        assertEquals(1, dummyPlatformProxyListener.messagesReceived());
+        assertEquals("resource4", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
+
+    }
+
+    private ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {
+        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
+        ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
+
+        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+        ArrayList<String> observesProperty1 = new ArrayList<>();
+
+        request1.setTaskId("1");
+        request1.setCount(2);
+        request1.setLocation("Paris");
+        observesProperty1.add("temperature");
+        observesProperty1.add("humidity");
+        request1.setObservesProperty(observesProperty1);
+        request1.setInterval(60);
+        request1.setInformPlatformProxy(true);
+        resources.add(request1);
+
+        if (noTasks > 1) {
+            ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest();
+            ArrayList<String> observesProperty2 = new ArrayList<>();
+
+            request2.setTaskId("2");
+            request2.setCount(1);
+            request2.setLocation("Athens");
+            observesProperty2.add("air quality");
+            request2.setObservesProperty(observesProperty2);
+            request2.setInterval(60);
+            request2.setInformPlatformProxy(true);
+            resources.add(request2);
+        }
+
+        request.setResources(resources);
+        return request;
+    }
+
+    private ResourceManagerAcquisitionStartRequest createBadQueryToResourceManager() {
+        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
+        ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
+        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+        ArrayList<String> observesProperty1 = new ArrayList<>();
+
+        request1.setTaskId("1");
+        request1.setCount(2);
+        request1.setLocation("Zurich");
+        observesProperty1.add("temperature");
+        observesProperty1.add("humidity");
+        request1.setObservesProperty(observesProperty1);
+        request1.setInterval(60);
+        resources.add(request1);
+        request.setResources(resources);
+
+        return request;
     }
 
     private class ListenableFutureCallbackCustom implements ListenableFutureCallback<ResourceManagerAcquisitionStartResponse> {

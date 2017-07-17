@@ -174,18 +174,20 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             }
 
             QueryResponse queryResponse = queryResponseEntity.getBody();
-            TaskResponseToComponents taskResponseToComponents  = processSearchResponse(queryResponse, taskInfoResponse);
+            TaskResponseToComponents taskResponseToComponents  = processSearchResponse(queryResponse, taskInfoRequest);
 
             // Finalizing task response to EnablerLogic
             taskInfoResponse.setResourceIds(taskResponseToComponents.getResourceIdsForEnablerLogic());
 
             // Finallizing request to PlatformProxy
-            requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
-            requestToPlatformProxy.setInterval(taskInfoResponse.getInterval());
-            requestToPlatformProxy.setResources(taskResponseToComponents.getPlatformProxyResourceInfoList());
+            if (taskInfoRequest.getInformPlatformProxy()) {
+                requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
+                requestToPlatformProxy.setInterval(taskInfoResponse.getInterval());
+                requestToPlatformProxy.setResources(taskResponseToComponents.getPlatformProxyResourceInfoList());
 
-            // Store all requests to PlatformProxy
-            queryAndProcessSearchResponseResult.addToPlatformProxyAcquisitionStartRequestList(requestToPlatformProxy);
+                // Store all requests that need to be forwarded to PlatformProxy
+                queryAndProcessSearchResponseResult.addToPlatformProxyAcquisitionStartRequestList(requestToPlatformProxy);
+            }
         }
         catch (HttpClientErrorException e) {
             log.info(e.getStatusCode());
@@ -196,7 +198,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         return queryAndProcessSearchResponseResult;
     }
 
-    private TaskResponseToComponents processSearchResponse(QueryResponse queryResponse, ResourceManagerTaskInfoResponse taskInfoResponse) {
+    private TaskResponseToComponents processSearchResponse(QueryResponse queryResponse, ResourceManagerTaskInfoRequest taskInfoRequest) {
 
         List<QueryResourceResult> queryResultLists = queryResponse.getResources();
         TaskResponseToComponents taskResponseToComponents = new TaskResponseToComponents();
@@ -204,7 +206,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         // Process the response for each task
         for (QueryResourceResult queryResourceResult : queryResultLists) {
 
-            if (taskResponseToComponents.getCount() >= taskInfoResponse.getCount())
+            if (taskResponseToComponents.getCount() >= taskInfoRequest.getCount())
                 break;
 
             TaskResponseToComponents newTaskResponseToComponents = getUrlsFromCram(queryResourceResult);
