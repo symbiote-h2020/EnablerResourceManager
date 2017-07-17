@@ -121,11 +121,8 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             // Sending requests to PlatformProxy
             ArrayList<PlatformProxyAcquisitionStartRequest> messagesToPlatformProxy = queryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequestList();
             for (PlatformProxyAcquisitionStartRequest req : messagesToPlatformProxy) {
-                rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req,
-                        m -> {
-                            m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
-                            return m;
-                        });
+                log.info("Sending requests to Platform Proxy");
+                rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
             }
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);

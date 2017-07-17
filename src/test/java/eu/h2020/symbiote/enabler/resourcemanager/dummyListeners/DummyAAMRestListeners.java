@@ -1,4 +1,4 @@
-package eu.h2020.symbiote.enabler.resourcemanager.aams;
+package eu.h2020.symbiote.enabler.resourcemanager.dummyListeners;
 
 
 import eu.h2020.symbiote.security.certificate.Certificate;

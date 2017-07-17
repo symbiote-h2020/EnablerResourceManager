@@ -1,5 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager;
 
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +16,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
@@ -30,12 +30,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.ArrayList;
-
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.annotation.Queue;
-import org.springframework.amqp.rabbit.annotation.Exchange;
-import org.springframework.amqp.rabbit.annotation.QueueBinding;
-import org.springframework.amqp.core.ExchangeTypes;
 
 import eu.h2020.symbiote.enabler.resourcemanager.messaging.RabbitManager;
 import eu.h2020.symbiote.enabler.messaging.model.*;
@@ -76,8 +70,7 @@ public class EnablerResourceManagerTests {
     private RestTemplate restTemplate;
 
     @Autowired
-    @Qualifier("symbIoTeCoreUrl")
-    private String symbIoTeCoreUrl;
+    private DummyPlatformProxyListener dummyPlatformProxyListener;
 
     @Value("${rabbit.exchange.resourceManager.name}")
     private String resourceManagerExchangeName;
@@ -92,28 +85,25 @@ public class EnablerResourceManagerTests {
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionRoutingKey;
 
-    // private MockRestServiceServer mockServer;
     private ObjectMapper mapper = new ObjectMapper();
 
     // Execute the Setup method before the test.
     @Before
     public void setUp() throws Exception {
-        // mockServer = MockRestServiceServer.createServer(restTemplate);
-
+        dummyPlatformProxyListener.clearRequestReceivedByListener();
     }
 
     @Test
     public void testResourceManagerGetResourceDetails() throws Exception {
 
-        String url;
-        String message = "search_resources";
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<ResourceManagerAcquisitionStartResponse>();
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
-        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<ResourceManagerTaskInfoRequest>();
+        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
+        ArrayList<PlatformProxyAcquisitionStartRequest> requestReceivedByListener;
 
 
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty1 = new ArrayList<String>();
+        ArrayList<String> observesProperty1 = new ArrayList<>();
         request1.setTaskId("1");
         request1.setCount(2);
         request1.setLocation("Paris");
@@ -124,7 +114,7 @@ public class EnablerResourceManagerTests {
         resources.add(request1);
 
         ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty2 = new ArrayList<String>();
+        ArrayList<String> observesProperty2 = new ArrayList<>();
         request2.setTaskId("2");
         request2.setCount(1);
         request2.setLocation("Athens");
@@ -140,34 +130,16 @@ public class EnablerResourceManagerTests {
 
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallback<ResourceManagerAcquisitionStartResponse>() {
-
-            @Override
-            public void onSuccess(ResourceManagerAcquisitionStartResponse result) {
-                try {
-                    log.info("Successfully received response: " + mapper.writeValueAsString(result));
-                } catch (JsonProcessingException e) {
-                    log.info(e.toString());
-                }
-                resultRef.set(result);
-
-            }
-
-            @Override
-            public void onFailure(Throwable ex) {
-                fail("Accessed the element which does not exist");
-            }
-
-        });
+        future.addCallback(new ListenableFutureCallbackCustom(resultRef));
 
         while(!future.isDone()) {
-            log.info("Sleeping!!!!!!");
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(100);
         }
 
         String responseInString = mapper.writeValueAsString(resultRef.get().getResources());
         log.info("Response String: " + responseInString);
 
+        // Test what Enabler Logic receives
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
 
@@ -175,20 +147,35 @@ public class EnablerResourceManagerTests {
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
         assertEquals("resource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
 
+        while(dummyPlatformProxyListener.messagesReceived() < 2) {
+            log.info("requestReceivedByListener.size(): " + dummyPlatformProxyListener.messagesReceived());
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        // Test what Platform Proxy receives
+        requestReceivedByListener = dummyPlatformProxyListener.getRequestReceivedByListener();
+
+        if (requestReceivedByListener.get(0).getResources().size() == 2) {
+            assertEquals("resource1", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
+            assertEquals("resource2", requestReceivedByListener.get(0).getResources().get(1).getResourceId());
+            assertEquals("resource4", requestReceivedByListener.get(1).getResources().get(0).getResourceId());
+        } else {
+            assertEquals("resource1", requestReceivedByListener.get(1).getResources().get(0).getResourceId());
+            assertEquals("resource2", requestReceivedByListener.get(1).getResources().get(1).getResourceId());
+            assertEquals("resource4", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
+        }
     }
 
     // @Test
     public void testResourceManagerGetResourceDetailsNoResponse() throws Exception {
 
-        String url;
-        String message = "search_resources";
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<ResourceManagerAcquisitionStartResponse>();
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
-        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<ResourceManagerTaskInfoRequest>();
+        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
 
 
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty1 = new ArrayList<String>();
+        ArrayList<String> observesProperty1 = new ArrayList<>();
         request1.setTaskId("1");
         request1.setCount(2);
         request1.setLocation("Paris");
@@ -206,29 +193,11 @@ public class EnablerResourceManagerTests {
 
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallback<ResourceManagerAcquisitionStartResponse>() {
-
-            @Override
-            public void onSuccess(ResourceManagerAcquisitionStartResponse result) {
-                try {
-                    log.info("Successfully received response: " + mapper.writeValueAsString(result));
-                } catch (JsonProcessingException e) {
-                    log.info(e.toString());
-                }
-                resultRef.set(result);
-
-            }
-
-            @Override
-            public void onFailure(Throwable ex) {
-                fail("Accessed the element which does not exist");
-            }
-
-        });
+        future.addCallback(new ListenableFutureCallbackCustom(resultRef));
 
         while(!future.isDone()) {
             log.info("Sleeping!!!!!!");
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(100);
         }
 
     }
@@ -236,15 +205,12 @@ public class EnablerResourceManagerTests {
     @Test
     public void testResourceManagerGetResourceDetailsBadRequest() throws Exception {
 
-        String url;
-        String message = "search_resources";
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<ResourceManagerAcquisitionStartResponse>();
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
-        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<ResourceManagerTaskInfoRequest>();
-
+        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
 
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty1 = new ArrayList<String>();
+        ArrayList<String> observesProperty1 = new ArrayList<>();
         request1.setTaskId("1");
         request1.setCount(2);
         request1.setLocation("Zurich");
@@ -262,48 +228,42 @@ public class EnablerResourceManagerTests {
 
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallback<ResourceManagerAcquisitionStartResponse>() {
-
-            @Override
-            public void onSuccess(ResourceManagerAcquisitionStartResponse result) {
-                try {
-                    log.info("Successfully received response: " + mapper.writeValueAsString(result));
-                } catch (JsonProcessingException e) {
-                    log.info(e.toString());
-                }
-                resultRef.set(result);
-
-            }
-
-            @Override
-            public void onFailure(Throwable ex) {
-                fail("Accessed the element which does not exist");
-            }
-
-        });
+        future.addCallback(new ListenableFutureCallbackCustom(resultRef));
 
         while(!future.isDone()) {
-            log.info("Sleeping!!!!!!");
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(100);
         }
 
+        // Test what Enabler Logic receives
         assertEquals(null, resultRef.get().getResources().get(0).getResourceIds());
 
+        // Test what Platform Proxy receives
+        TimeUnit.MILLISECONDS.sleep(500);
+        assertEquals(0, dummyPlatformProxyListener.messagesReceived());
+
     }
 
+    private class ListenableFutureCallbackCustom implements ListenableFutureCallback<ResourceManagerAcquisitionStartResponse> {
+        AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef;
 
-    @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "symbIoTe-rap-writeResource", durable = "false", autoDelete = "true", exclusive = "true"),
-            exchange = @Exchange(value = "symbIoTe.enablerPlatformProxy", ignoreDeclarationExceptions = "true", type = ExchangeTypes.TOPIC),
-            key = "symbIoTe.enablerPlatformProxy.acquisitionStartRequested")
-    )
-    public void platformProxyListener(PlatformProxyAcquisitionStartRequest request) {
-
-        try {
-            String responseInString = mapper.writeValueAsString(request);
-            log.info("PlatformProxyListener received request: " + responseInString);
-        } catch (JsonProcessingException e) {
-            log.info(e.toString());
+        ListenableFutureCallbackCustom(AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef) {
+            this.resultRef = resultRef;
         }
+
+        public void onSuccess(ResourceManagerAcquisitionStartResponse result) {
+            try {
+                log.info("Successfully received response: " + mapper.writeValueAsString(result));
+            } catch (JsonProcessingException e) {
+                log.info(e.toString());
+            }
+            resultRef.set(result);
+
+        }
+
+        public void onFailure(Throwable ex) {
+            fail("Accessed the element which does not exist");
+        }
+
     }
+
 }

@@ -66,8 +66,8 @@ public class EnablerResourceManagerApplication {
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setConcurrentConsumers(3);
-        factory.setMaxConcurrentConsumers(10);
+//        factory.setConcurrentConsumers(3);
+//        factory.setMaxConcurrentConsumers(10);
         factory.setMessageConverter(jackson2JsonMessageConverter());
         return factory;
     }
