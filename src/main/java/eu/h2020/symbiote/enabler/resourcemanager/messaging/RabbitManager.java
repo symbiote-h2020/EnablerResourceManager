@@ -42,6 +42,8 @@ public class RabbitManager {
     private boolean resourceManagerExchangeInternal;
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionRoutingKey;
+    @Value("${rabbit.routingKey.resourceManager.cancelTask}")
+    private String cancelTaskRoutingKey;
 
     private Connection connection;
 
@@ -118,6 +120,8 @@ public class RabbitManager {
                 channel = connection.createChannel();
                 channel.queueUnbind("resourceManagerStartDataAcquisition", this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
                 channel.queueDelete("resourceManagerStartDataAcquisition");
+                channel.queueUnbind("resourceManagerCancelTaskRequest", this.resourceManagerExchangeName, this.cancelTaskRoutingKey);
+                channel.queueDelete("resourceManagerStartDatresourceManagerCancelTaskRequestaAcquisition");
                 closeChannel(channel);
                 this.connection.close();
             }
@@ -132,6 +136,7 @@ public class RabbitManager {
     public void startConsumers() {
         try {
             startConsumerOfStartDataAcquisition();
+            startConsumerOfCancelTaskRequest();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -153,7 +158,7 @@ public class RabbitManager {
 
     /**
      * Method creates queue and binds it globally available exchange and adequate Routing Key.
-     * It also creates a consumer for messages incoming to this queue, regarding to -placeholder- requests.
+     * It also creates a consumer for messages incoming to this queue, regarding to StartDataAcquisition requests.
      *
      * @throws InterruptedException
      * @throws IOException
@@ -170,9 +175,38 @@ public class RabbitManager {
             channel.queueBind(queueName, this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
 //            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
-            log.info("Receiver waiting for Placeholder messages....");
+            log.info("Receiver waiting for StartDataAcquisition messages....");
 
             Consumer consumer = new StartDataAcquisitionConsumer(channel);
+            beanFactory.autowireBean(consumer);
+            channel.basicConsume(queueName, false, consumer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Method creates queue and binds it globally available exchange and adequate Routing Key.
+     * It also creates a consumer for messages incoming to this queue, regarding to CancelTaskRequests.
+     *
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    private void startConsumerOfCancelTaskRequest() throws InterruptedException, IOException {
+
+        String queueName = "resourceManagerCancelTaskRequest";
+        Channel channel;
+
+
+        try {
+            channel = this.connection.createChannel();
+            channel.queueDeclare(queueName, true, false, false, null);
+            channel.queueBind(queueName, this.resourceManagerExchangeName, this.cancelTaskRoutingKey);
+//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
+
+            log.info("Receiver waiting for CancelTaskRequests....");
+
+            Consumer consumer = new CancelTaskConsumer(channel);
             beanFactory.autowireBean(consumer);
             channel.basicConsume(queueName, false, consumer);
         } catch (IOException e) {

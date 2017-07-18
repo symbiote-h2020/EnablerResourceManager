@@ -77,12 +77,12 @@ dependencies {
     */
     compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT') { changing = true }
     // compile('com.github.symbiote-h2020:SymbIoTeLibraries:0.2.0')
+    // compile('com.github.symbiote-h2020:SymbIoTeLibraries:4fd0b4aa6def33e2848110096edafedd51ab4e0f')
 
     // for Certificates conversion
     compile('org.bouncycastle:bcpkix-jdk15on:1.56')
 
     // Spring
-    compile('org.springframework.cloud:spring-cloud-starter')
     compile('org.springframework.cloud:spring-cloud-starter-config')
     compile('org.springframework.cloud:spring-cloud-starter-eureka')
     //compile('org.springframework.cloud:spring-cloud-starter-zipkin')

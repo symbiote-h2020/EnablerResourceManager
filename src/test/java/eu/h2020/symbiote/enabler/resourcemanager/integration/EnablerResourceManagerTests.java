@@ -1,5 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.RabbitManager;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import org.junit.After;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.Before;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -55,8 +57,11 @@ public class EnablerResourceManagerTests {
     private static Logger log = LoggerFactory
             .getLogger(EnablerResourceManagerTests.class);
 
-     @Autowired
+    @Autowired
     private AsyncRabbitTemplate asyncRabbitTemplate;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Autowired
     private TaskInfoRepository taskInfoRepository;
@@ -76,6 +81,8 @@ public class EnablerResourceManagerTests {
     private boolean resourceManagerExchangeInternal;
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionRoutingKey;
+    @Value("${rabbit.routingKey.resourceManager.cancelTask}")
+    private String cancelTaskRoutingKey;
 
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -140,7 +147,7 @@ public class EnablerResourceManagerTests {
 
     }
 
-    // @Test
+//    @Test
     public void resourceManagerGetResourceDetailsNoResponseTest() throws Exception {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
@@ -274,7 +281,7 @@ public class EnablerResourceManagerTests {
             TimeUnit.MILLISECONDS.sleep(100);
         }
 
-        // Test is stored in the database
+        // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
@@ -287,6 +294,49 @@ public class EnablerResourceManagerTests {
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
 
+    }
+
+    @Test
+    public void cancelTask() throws Exception {
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
+
+        log.info("Before sending the message");
+
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom(resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(2, taskInfo.getResourceIds().size());
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(1, taskInfo.getResourceIds().size());
+
+        CancelTaskRequest cancelTaskRequest = new CancelTaskRequest();
+        cancelTaskRequest.setTaskIdList(Arrays.asList("1", "2"));
+
+        log.info("Before sending the message");
+
+        rabbitTemplate.convertAndSend(resourceManagerExchangeName, cancelTaskRoutingKey, cancelTaskRequest);
+
+        log.info("After sending the message");
+
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(null, taskInfo);
     }
 
     private ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {
