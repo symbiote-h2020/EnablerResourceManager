@@ -44,6 +44,8 @@ public class RabbitManager {
     private String startDataAcquisitionRoutingKey;
     @Value("${rabbit.routingKey.resourceManager.cancelTask}")
     private String cancelTaskRoutingKey;
+    @Value("${rabbit.routingKey.resourceManager.unavailableResources}")
+    private String unavailableResourcesRoutingKey;
 
     private Connection connection;
 
@@ -121,7 +123,10 @@ public class RabbitManager {
                 channel.queueUnbind("resourceManagerStartDataAcquisition", this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
                 channel.queueDelete("resourceManagerStartDataAcquisition");
                 channel.queueUnbind("resourceManagerCancelTaskRequest", this.resourceManagerExchangeName, this.cancelTaskRoutingKey);
-                channel.queueDelete("resourceManagerStartDatresourceManagerCancelTaskRequestaAcquisition");
+                channel.queueDelete("resourceManagerCancelTaskRequest");
+                channel.queueUnbind("resourceManagerUnavailableResources", this.resourceManagerExchangeName, this.unavailableResourcesRoutingKey);
+                channel.queueDelete("resourceManagerUnavailableResources");
+
                 closeChannel(channel);
                 this.connection.close();
             }
@@ -137,6 +142,7 @@ public class RabbitManager {
         try {
             startConsumerOfStartDataAcquisition();
             startConsumerOfCancelTaskRequest();
+            startConsumerOfPlatformProxyConnectionProblem();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -207,6 +213,35 @@ public class RabbitManager {
             log.info("Receiver waiting for CancelTaskRequests....");
 
             Consumer consumer = new CancelTaskConsumer(channel);
+            beanFactory.autowireBean(consumer);
+            channel.basicConsume(queueName, false, consumer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Method creates queue and binds it globally available exchange and adequate Routing Key.
+     * It also creates a consumer for messages incoming to this queue, regarding to CancelTaskRequests.
+     *
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    private void startConsumerOfPlatformProxyConnectionProblem() throws InterruptedException, IOException {
+
+        String queueName = "resourceManagerUnavailableResources";
+        Channel channel;
+
+
+        try {
+            channel = this.connection.createChannel();
+            channel.queueDeclare(queueName, true, false, false, null);
+            channel.queueBind(queueName, this.resourceManagerExchangeName, this.unavailableResourcesRoutingKey);
+//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
+
+            log.info("Receiver waiting for UnavailableResources....");
+
+            Consumer consumer = new PlatformProxyConnectionProblemConsumer(channel);
             beanFactory.autowireBean(consumer);
             channel.basicConsume(queueName, false, consumer);
         } catch (IOException e) {

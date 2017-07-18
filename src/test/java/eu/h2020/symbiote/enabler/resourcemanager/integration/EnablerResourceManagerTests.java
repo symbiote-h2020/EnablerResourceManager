@@ -83,6 +83,8 @@ public class EnablerResourceManagerTests {
     private String startDataAcquisitionRoutingKey;
     @Value("${rabbit.routingKey.resourceManager.cancelTask}")
     private String cancelTaskRoutingKey;
+    @Value("${rabbit.routingKey.resourceManager.unavailableResources}")
+    private String unavailableResourcesRoutingKey;
 
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -105,9 +107,7 @@ public class EnablerResourceManagerTests {
         ArrayList<PlatformProxyAcquisitionStartRequest> requestReceivedByListener;
 
         log.info("Before sending the message");
-
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
-
         log.info("After sending the message");
 
         future.addCallback(new ListenableFutureCallbackCustom(resultRef));
@@ -166,9 +166,7 @@ public class EnablerResourceManagerTests {
         query.setResources(resources);
 
         log.info("Before sending the message");
-
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
-
         log.info("After sending the message");
 
         future.addCallback(new ListenableFutureCallbackCustom(resultRef));
@@ -187,9 +185,7 @@ public class EnablerResourceManagerTests {
         ResourceManagerAcquisitionStartRequest query = createBadQueryToResourceManager();
 
         log.info("Before sending the message");
-
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
-
         log.info("After sending the message");
 
         future.addCallback(new ListenableFutureCallbackCustom(resultRef));
@@ -218,9 +214,7 @@ public class EnablerResourceManagerTests {
         query.getResources().get(0).setInformPlatformProxy(false);
 
         log.info("Before sending the message");
-
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
-
         log.info("After sending the message");
 
         future.addCallback(new ListenableFutureCallbackCustom(resultRef));
@@ -258,9 +252,7 @@ public class EnablerResourceManagerTests {
         query.getResources().get(0).setAllowCaching(true);
 
         log.info("Before sending the message");
-
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
-
         log.info("After sending the message");
 
         future.addCallback(new ListenableFutureCallbackCustom(resultRef));
@@ -303,9 +295,7 @@ public class EnablerResourceManagerTests {
         ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
 
         log.info("Before sending the message");
-
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
-
         log.info("After sending the message");
 
         future.addCallback(new ListenableFutureCallbackCustom(resultRef));
@@ -325,9 +315,7 @@ public class EnablerResourceManagerTests {
         cancelTaskRequest.setTaskIdList(Arrays.asList("1", "2"));
 
         log.info("Before sending the message");
-
         rabbitTemplate.convertAndSend(resourceManagerExchangeName, cancelTaskRoutingKey, cancelTaskRequest);
-
         log.info("After sending the message");
 
         TimeUnit.MILLISECONDS.sleep(500);
@@ -338,6 +326,27 @@ public class EnablerResourceManagerTests {
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(null, taskInfo);
     }
+
+    @Test
+    public void unavailableResourcesTest() {
+        UnavailableResourcesInfo unavailableResourcesInfo1 = new UnavailableResourcesInfo();
+        unavailableResourcesInfo1.setTaskId("1");
+        unavailableResourcesInfo1.setUnavailableResourceId(Arrays.asList("resource1", "resource2"));
+
+        UnavailableResourcesInfo unavailableResourcesInfo2 = new UnavailableResourcesInfo();
+        unavailableResourcesInfo2.setTaskId("2");
+        unavailableResourcesInfo2.setUnavailableResourceId(Arrays.asList("resource4"));
+
+        UnavailableResourcesMessage unavailableResourcesMessage = new UnavailableResourcesMessage();
+        unavailableResourcesMessage.setUnavailableResourcesInfoList(Arrays.asList(unavailableResourcesInfo1, unavailableResourcesInfo2));
+
+        log.info("Before sending the message");
+        rabbitTemplate.convertAndSend(resourceManagerExchangeName, unavailableResourcesRoutingKey, unavailableResourcesMessage);
+        log.info("After sending the message");
+
+
+    }
+
 
     private ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();

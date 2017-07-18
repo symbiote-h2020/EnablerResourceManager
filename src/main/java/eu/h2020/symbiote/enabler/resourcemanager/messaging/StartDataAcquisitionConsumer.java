@@ -1,8 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +36,8 @@ import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.security.token.Token;
 import eu.h2020.symbiote.security.constants.AAMConstants;
-
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SecurityManager;
 
 
