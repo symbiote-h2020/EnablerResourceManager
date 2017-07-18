@@ -1,6 +1,8 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,6 +59,9 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
     @Autowired
     private SecurityManager securityManager;
+
+    @Autowired
+    private TaskInfoRepository taskInfoRepository;
 
     @Value("${rabbit.exchange.enablerPlatformProxy.name}") 
     private String platformProxyExchange; 
@@ -187,6 +192,13 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
                 // Store all requests that need to be forwarded to PlatformProxy
                 queryAndProcessSearchResponseResult.addToPlatformProxyAcquisitionStartRequestList(requestToPlatformProxy);
+
+                // Store the taskInfo
+                TaskInfo taskInfo = new TaskInfo(taskInfoResponse);
+                if (taskInfoRequest.getAllowCaching())
+                    taskInfo.calculateStoredResourceIds(queryResponse);
+                taskInfoRepository.save(taskInfo);
+
             }
         }
         catch (HttpClientErrorException e) {
@@ -195,6 +207,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         }
 
         queryAndProcessSearchResponseResult.addToResourceManagerTaskInfoResponseList(taskInfoResponse);
+
         return queryAndProcessSearchResponseResult;
     }
 

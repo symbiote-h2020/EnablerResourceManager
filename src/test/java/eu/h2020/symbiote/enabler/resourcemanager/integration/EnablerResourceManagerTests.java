@@ -1,6 +1,7 @@
-package eu.h2020.symbiote.enabler.resourcemanager;
+package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,19 +20,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
-
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 
-import org.springframework.web.client.AsyncRestTemplate;
-import org.springframework.web.client.RestTemplate;
-
-
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.ArrayList;
 
-import eu.h2020.symbiote.enabler.resourcemanager.messaging.RabbitManager;
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,17 +55,11 @@ public class EnablerResourceManagerTests {
     private static Logger log = LoggerFactory
             .getLogger(EnablerResourceManagerTests.class);
 
-    @Autowired
-    private RabbitManager rabbitManager;
-
-    @Autowired
+     @Autowired
     private AsyncRabbitTemplate asyncRabbitTemplate;
 
     @Autowired
-    private AsyncRestTemplate asyncRestTemplate;
-
-    @Autowired
-    private RestTemplate restTemplate;
+    private TaskInfoRepository taskInfoRepository;
 
     @Autowired
     private DummyPlatformProxyListener dummyPlatformProxyListener;
@@ -91,6 +83,11 @@ public class EnablerResourceManagerTests {
     @Before
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestReceivedByListener();
+    }
+
+    @After
+    public void clearSetup() throws Exception {
+        taskInfoRepository.deleteAll();
     }
 
     @Test
@@ -140,6 +137,7 @@ public class EnablerResourceManagerTests {
             assertEquals("resource2", requestReceivedByListener.get(1).getResources().get(1).getResourceId());
             assertEquals("resource4", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
         }
+
     }
 
     // @Test
@@ -151,13 +149,10 @@ public class EnablerResourceManagerTests {
 
 
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty1 = new ArrayList<>();
         request1.setTaskId("1");
         request1.setCount(2);
         request1.setLocation("Paris");
-        observesProperty1.add("temperature");
-        observesProperty1.add("humidity");
-        request1.setObservesProperty(observesProperty1);
+        request1.setObservesProperty(Arrays.asList("temperature", "humidity"));
         request1.setInterval(60);
         resources.add(request1);
 
@@ -246,34 +241,81 @@ public class EnablerResourceManagerTests {
 
     }
 
+    @Test
+    public void allowCachingTest() throws Exception {
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
+
+        // Forward to PlatformProxy only the 2nd task
+        query.getResources().get(0).setAllowCaching(true);
+
+        log.info("Before sending the message");
+
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom(resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        // Test what Enabler Logic receives
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
+
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("resource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
+
+        while(dummyPlatformProxyListener.messagesReceived() < 2) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        // Test is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(1, taskInfo.getStoredResourceIds().size());
+        assertEquals("resource1", taskInfo.getResourceIds().get(0));
+        assertEquals("resource2", taskInfo.getResourceIds().get(1));
+        assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals("resource4", taskInfo.getResourceIds().get(0));
+
+    }
+
     private ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
         ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
 
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty1 = new ArrayList<>();
 
         request1.setTaskId("1");
         request1.setCount(2);
         request1.setLocation("Paris");
-        observesProperty1.add("temperature");
-        observesProperty1.add("humidity");
-        request1.setObservesProperty(observesProperty1);
+        request1.setObservesProperty(Arrays.asList("temperature", "humidity"));
         request1.setInterval(60);
         request1.setInformPlatformProxy(true);
+        request1.setAllowCaching(false);
+        request1.setCachingInterval(new Long(1000));
         resources.add(request1);
 
         if (noTasks > 1) {
             ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest();
-            ArrayList<String> observesProperty2 = new ArrayList<>();
 
             request2.setTaskId("2");
             request2.setCount(1);
             request2.setLocation("Athens");
-            observesProperty2.add("air quality");
-            request2.setObservesProperty(observesProperty2);
+            request2.setObservesProperty(Arrays.asList("air quality"));
             request2.setInterval(60);
             request2.setInformPlatformProxy(true);
+            request2.setAllowCaching(false);
+            request2.setCachingInterval(new Long(1000));
             resources.add(request2);
         }
 
@@ -285,15 +327,15 @@ public class EnablerResourceManagerTests {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
         ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        ArrayList<String> observesProperty1 = new ArrayList<>();
 
         request1.setTaskId("1");
         request1.setCount(2);
         request1.setLocation("Zurich");
-        observesProperty1.add("temperature");
-        observesProperty1.add("humidity");
-        request1.setObservesProperty(observesProperty1);
+        request1.setObservesProperty(Arrays.asList("temperature", "humidity"));
         request1.setInterval(60);
+        request1.setInformPlatformProxy(true);
+        request1.setAllowCaching(false);
+        request1.setCachingInterval(new Long(1000));
         resources.add(request1);
         request.setResources(resources);
 
