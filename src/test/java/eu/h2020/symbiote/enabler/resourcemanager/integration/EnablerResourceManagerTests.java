@@ -329,16 +329,16 @@ public class EnablerResourceManagerTests {
 
     @Test
     public void unavailableResourcesTest() {
-        UnavailableResourcesInfo unavailableResourcesInfo1 = new UnavailableResourcesInfo();
+        ProblematicResourcesInfo unavailableResourcesInfo1 = new ProblematicResourcesInfo();
         unavailableResourcesInfo1.setTaskId("1");
-        unavailableResourcesInfo1.setUnavailableResourceId(Arrays.asList("resource1", "resource2"));
+        unavailableResourcesInfo1.setProblematicResourceIds(Arrays.asList("resource1", "resource2"));
 
-        UnavailableResourcesInfo unavailableResourcesInfo2 = new UnavailableResourcesInfo();
+        ProblematicResourcesInfo unavailableResourcesInfo2 = new ProblematicResourcesInfo();
         unavailableResourcesInfo2.setTaskId("2");
-        unavailableResourcesInfo2.setUnavailableResourceId(Arrays.asList("resource4"));
+        unavailableResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
 
-        UnavailableResourcesMessage unavailableResourcesMessage = new UnavailableResourcesMessage();
-        unavailableResourcesMessage.setUnavailableResourcesInfoList(Arrays.asList(unavailableResourcesInfo1, unavailableResourcesInfo2));
+        ProblematicResourcesMessage unavailableResourcesMessage = new ProblematicResourcesMessage();
+        unavailableResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(unavailableResourcesInfo1, unavailableResourcesInfo2));
 
         log.info("Before sending the message");
         rabbitTemplate.convertAndSend(resourceManagerExchangeName, unavailableResourcesRoutingKey, unavailableResourcesMessage);

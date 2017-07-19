@@ -8,7 +8,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
-import eu.h2020.symbiote.enabler.messaging.model.UnavailableResourcesMessage;
+import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesMessage;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 
 import org.apache.commons.logging.Log;
@@ -56,12 +56,12 @@ public class PlatformProxyConnectionProblemConsumer extends DefaultConsumer {
         ObjectMapper mapper = new ObjectMapper();
         String requestInString = new String(body, "UTF-8");
 
-        log.info("Received UnavailableResourcesMessage: " + requestInString);
+        log.info("Received ProblematicResourcesMessage: " + requestInString);
 
         try {
-            UnavailableResourcesMessage unavailableResourcesMessage =  mapper.readValue(requestInString, UnavailableResourcesMessage.class);
+            ProblematicResourcesMessage problematiceResourcesMessage =  mapper.readValue(requestInString, ProblematicResourcesMessage.class);
         } catch (JsonParseException | JsonMappingException e) {
-            log.error("Error occurred during deserializing UnavailableResourcesMessage", e);
+            log.error("Error occurred during deserializing ProblematicResourcesMessage", e);
         }
     }
 
