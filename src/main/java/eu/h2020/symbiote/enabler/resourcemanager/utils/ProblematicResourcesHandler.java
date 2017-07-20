@@ -1,6 +1,11 @@
 package eu.h2020.symbiote.enabler.resourcemanager.utils;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesInfo;
+import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesMessage;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
@@ -9,6 +14,7 @@ import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,24 +28,36 @@ public final class ProblematicResourcesHandler {
         // empty constructor
     }
 
-    public static void replaceProblematicResources(ProblematicResourcesInfo problematicResourcesInfo,
-                                                   TaskInfo taskInfo, TaskInfoRepository taskInfoRepository) {
-        if (taskInfo == null) {
-            log.info("The task with id = " + problematicResourcesInfo.getTaskId() + " does not exist!");
-        } else {
-            ProblematicResourcesHandlerResult problematicResourcesHandlerResult = ProblematicResourcesHandler.
-                    replaceProblematicResourcesIfTaskExists(problematicResourcesInfo, taskInfo);
-            taskInfoRepository.save(problematicResourcesHandlerResult.getTaskInfo());
+    public static void replaceProblematicResources(String requestInString,
+                                                   TaskInfoRepository taskInfoRepository) throws IOException {
 
-            // ToDo: reply to PlatformProxy and EnablerLogic
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            ProblematicResourcesMessage problematicResourcesMessage =  mapper.readValue(requestInString, ProblematicResourcesMessage.class);
+
+            for(ProblematicResourcesInfo problematicResourcesInfo : problematicResourcesMessage.getProblematicResourcesInfoList()) {
+                TaskInfo taskInfo = taskInfoRepository.findByTaskId(problematicResourcesInfo.getTaskId());
+                if (taskInfo == null) {
+                    log.info("The task with id = " + problematicResourcesInfo.getTaskId() + " does not exist!");
+                } else {
+                    ProblematicResourcesHandlerResult problematicResourcesHandlerResult = ProblematicResourcesHandler.
+                            replaceProblematicResourcesIfTaskExists(problematicResourcesInfo, taskInfo);
+                    taskInfoRepository.save(problematicResourcesHandlerResult.getTaskInfo());
+
+                    // ToDo: reply to PlatformProxy and EnablerLogic
+                }
+            }
+        } catch (JsonParseException | JsonMappingException e) {
+            log.error("Error occurred during deserializing ProblematicResourcesMessage", e);
         }
+
     }
 
     public static ProblematicResourcesHandlerResult replaceProblematicResourcesIfTaskExists(ProblematicResourcesInfo problematicResourcesInfo,
                                                TaskInfo taskInfo) {
 
-        // ToDo: Implement behavior when resourcesIds are cached enough resources are available
-        // ToDo: Implement behavior when resourcesIds are cached not enough resources are available
+        // ToDo: Implement behavior when resourcesIds are cached and not enough resources are available
         // ToDo: Implement behavior when resourcesIds are not cached
         // ToDo: Distinguish between unavailable and wrong data resources
 

@@ -2,6 +2,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
 import com.rabbitmq.client.*;
 import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.CancelTaskConsumer;
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.EnablerLogicWrongDataConsumer;
 import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.PlatformProxyConnectionProblemConsumer;
 import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.StartDataAcquisitionConsumer;
 import org.apache.commons.logging.Log;
@@ -49,6 +50,8 @@ public class RabbitManager {
     private String cancelTaskRoutingKey;
     @Value("${rabbit.routingKey.resourceManager.unavailableResources}")
     private String unavailableResourcesRoutingKey;
+    @Value("${rabbit.routingKey.resourceManager.wrongData}")
+    private String wrongDataRoutingKey;
 
     private Connection connection;
 
@@ -129,7 +132,8 @@ public class RabbitManager {
                 channel.queueDelete("resourceManagerCancelTaskRequest");
                 channel.queueUnbind("resourceManagerUnavailableResources", this.resourceManagerExchangeName, this.unavailableResourcesRoutingKey);
                 channel.queueDelete("resourceManagerUnavailableResources");
-
+                channel.queueUnbind("resourceManagerWrongData", this.resourceManagerExchangeName, this.wrongDataRoutingKey);
+                channel.queueDelete("resourceManagerWrongData");
                 closeChannel(channel);
                 this.connection.close();
             }
@@ -146,6 +150,7 @@ public class RabbitManager {
             startConsumerOfStartDataAcquisition();
             startConsumerOfCancelTaskRequest();
             startConsumerOfPlatformProxyConnectionProblem();
+            startConsumerOfEnablerLogicWrongData();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -177,7 +182,6 @@ public class RabbitManager {
         String queueName = "resourceManagerStartDataAcquisition";
         Channel channel;
 
-
         try {
             channel = this.connection.createChannel();
             channel.queueDeclare(queueName, true, false, false, null);
@@ -206,7 +210,6 @@ public class RabbitManager {
         String queueName = "resourceManagerCancelTaskRequest";
         Channel channel;
 
-
         try {
             channel = this.connection.createChannel();
             channel.queueDeclare(queueName, true, false, false, null);
@@ -225,7 +228,7 @@ public class RabbitManager {
 
     /**
      * Method creates queue and binds it globally available exchange and adequate Routing Key.
-     * It also creates a consumer for messages incoming to this queue, regarding to CancelTaskRequests.
+     * It also creates a consumer for messages incoming to this queue, regarding to Platform Proxy Connections problems.
      *
      * @throws InterruptedException
      * @throws IOException
@@ -234,7 +237,6 @@ public class RabbitManager {
 
         String queueName = "resourceManagerUnavailableResources";
         Channel channel;
-
 
         try {
             channel = this.connection.createChannel();
@@ -245,6 +247,34 @@ public class RabbitManager {
             log.info("Receiver waiting for UnavailableResources....");
 
             Consumer consumer = new PlatformProxyConnectionProblemConsumer(channel);
+            beanFactory.autowireBean(consumer);
+            channel.basicConsume(queueName, false, consumer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Method creates queue and binds it globally available exchange and adequate Routing Key.
+     * It also creates a consumer for messages incoming to this queue, regarding to Enabler Logic Wrong Data messages.
+     *
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    private void startConsumerOfEnablerLogicWrongData() throws InterruptedException, IOException {
+
+        String queueName = "resourceManagerWrongData";
+        Channel channel;
+
+        try {
+            channel = this.connection.createChannel();
+            channel.queueDeclare(queueName, true, false, false, null);
+            channel.queueBind(queueName, this.resourceManagerExchangeName, this.wrongDataRoutingKey);
+//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
+
+            log.info("Receiver waiting for WrongData messages....");
+
+            Consumer consumer = new EnablerLogicWrongDataConsumer(channel);
             beanFactory.autowireBean(consumer);
             channel.basicConsume(queueName, false, consumer);
         } catch (IOException e) {
