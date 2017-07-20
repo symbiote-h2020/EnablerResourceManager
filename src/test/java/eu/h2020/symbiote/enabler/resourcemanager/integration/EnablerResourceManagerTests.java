@@ -328,25 +328,47 @@ public class EnablerResourceManagerTests {
     }
 
     @Test
-    public void unavailableResourcesTest() {
+    public void unavailableResourcesWithEnoughResourcesTest() throws Exception {
         ProblematicResourcesInfo unavailableResourcesInfo1 = new ProblematicResourcesInfo();
-        unavailableResourcesInfo1.setTaskId("1");
-        unavailableResourcesInfo1.setProblematicResourceIds(Arrays.asList("resource1", "resource2"));
+        unavailableResourcesInfo1.setTaskId("task1");
+        unavailableResourcesInfo1.setProblematicResourceIds(Arrays.asList("1", "3"));
 
         ProblematicResourcesInfo unavailableResourcesInfo2 = new ProblematicResourcesInfo();
-        unavailableResourcesInfo2.setTaskId("2");
+        unavailableResourcesInfo2.setTaskId("task2");
         unavailableResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
 
         ProblematicResourcesMessage unavailableResourcesMessage = new ProblematicResourcesMessage();
         unavailableResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(unavailableResourcesInfo1, unavailableResourcesInfo2));
 
+        TaskInfo taskInfo = new TaskInfo();
+        taskInfo.setTaskId("task1");
+        taskInfo.setCount(5);
+        taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
+        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "7", "8", "9")));
+        taskInfoRepository.save(taskInfo);
+
         log.info("Before sending the message");
         rabbitTemplate.convertAndSend(resourceManagerExchangeName, unavailableResourcesRoutingKey, unavailableResourcesMessage);
         log.info("After sending the message");
 
+        TimeUnit.MILLISECONDS.sleep(500);
 
+        taskInfo = taskInfoRepository.findByTaskId("task2");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("task1");
+        assertEquals(5, taskInfo.getResourceIds().size());
+        assertEquals(2, taskInfo.getStoredResourceIds().size());
+
+        assertEquals("2", taskInfo.getResourceIds().get(0));
+        assertEquals("4", taskInfo.getResourceIds().get(1));
+        assertEquals("5", taskInfo.getResourceIds().get(2));
+        assertEquals("6", taskInfo.getResourceIds().get(3));
+        assertEquals("7", taskInfo.getResourceIds().get(4));
+
+        assertEquals("8", taskInfo.getStoredResourceIds().get(0));
+        assertEquals("9", taskInfo.getStoredResourceIds().get(1));
     }
-
 
     private ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();

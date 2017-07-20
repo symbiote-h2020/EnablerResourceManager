@@ -1,4 +1,4 @@
-package eu.h2020.symbiote.enabler.resourcemanager.messaging;
+package eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +78,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
      *
      * @param channel           the channel to which this consumer is attached
      */
-    StartDataAcquisitionConsumer(Channel channel) {
+    public StartDataAcquisitionConsumer(Channel channel) {
         super(channel);
     }
 

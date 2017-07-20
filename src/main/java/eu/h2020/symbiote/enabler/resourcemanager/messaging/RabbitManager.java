@@ -1,6 +1,9 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
 import com.rabbitmq.client.*;
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.CancelTaskConsumer;
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.PlatformProxyConnectionProblemConsumer;
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.StartDataAcquisitionConsumer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package eu.h2020.symbiote.enabler.resourcemanager.messaging;
+package eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -8,21 +8,24 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
-import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesMessage;
-import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
+
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 
 import java.io.IOException;
 
 /**
  * Created by vasgl on 7/18/2017.
  */
-public class PlatformProxyConnectionProblemConsumer extends DefaultConsumer {
+public class CancelTaskConsumer extends DefaultConsumer {
 
-    private static Log log = LogFactory.getLog(PlatformProxyConnectionProblemConsumer.class);
+    private static Log log = LogFactory.getLog(CancelTaskConsumer.class);
+
 
     @Autowired
     private TaskInfoRepository taskInfoRepository;
@@ -34,7 +37,7 @@ public class PlatformProxyConnectionProblemConsumer extends DefaultConsumer {
      *
      * @param channel           the channel to which this consumer is attached
      */
-    PlatformProxyConnectionProblemConsumer(Channel channel) {
+    public CancelTaskConsumer(Channel channel) {
         super(channel);
     }
 
@@ -52,17 +55,24 @@ public class PlatformProxyConnectionProblemConsumer extends DefaultConsumer {
     public void handleDelivery(String consumerTag, Envelope envelope,
                                AMQP.BasicProperties properties, byte[] body) throws IOException {
 
-
         ObjectMapper mapper = new ObjectMapper();
         String requestInString = new String(body, "UTF-8");
 
-        log.info("Received ProblematicResourcesMessage: " + requestInString);
+        log.info("Received CancelTaskRequest: " + requestInString);
 
         try {
-            ProblematicResourcesMessage problematiceResourcesMessage =  mapper.readValue(requestInString, ProblematicResourcesMessage.class);
+            CancelTaskRequest cancelTaskRequest = mapper.readValue(requestInString, CancelTaskRequest.class);
+
+            for (String id : cancelTaskRequest.getTaskIdList()) {
+                TaskInfo taskInfo = taskInfoRepository.findByTaskId(id);
+
+                if (taskInfo != null) {
+                    log.info("Task with id = " + id + " was deleted.");
+                    taskInfoRepository.delete(taskInfo);
+                }
+            }
         } catch (JsonParseException | JsonMappingException e) {
-            log.error("Error occurred during deserializing ProblematicResourcesMessage", e);
+            log.error("Error occurred during deserializing CancelTaskRequest", e);
         }
     }
-
 }
