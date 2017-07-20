@@ -44,12 +44,20 @@ public class RabbitManager {
     private boolean resourceManagerExchangeAutodelete;
     @Value("${rabbit.exchange.resourceManager.internal}")
     private boolean resourceManagerExchangeInternal;
+    @Value("${rabbit.queueName.resourceManager.startDataAcquisition}")
+    private String startDataAcquisitionQueueName;
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionRoutingKey;
+    @Value("${rabbit.queueName.resourceManager.cancelTask}")
+    private String cancelTaskQueueName;
     @Value("${rabbit.routingKey.resourceManager.cancelTask}")
     private String cancelTaskRoutingKey;
+    @Value("${rabbit.queueName.resourceManager.unavailableResources}")
+    private String unavailableResourcesQueueName;
     @Value("${rabbit.routingKey.resourceManager.unavailableResources}")
     private String unavailableResourcesRoutingKey;
+    @Value("${rabbit.queueName.resourceManager.wrongData}")
+    private String wrongDataQueueName;
     @Value("${rabbit.routingKey.resourceManager.wrongData}")
     private String wrongDataRoutingKey;
 
@@ -126,14 +134,14 @@ public class RabbitManager {
             Channel channel;
             if (this.connection != null && this.connection.isOpen()) {
                 channel = connection.createChannel();
-                channel.queueUnbind("resourceManagerStartDataAcquisition", this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
-                channel.queueDelete("resourceManagerStartDataAcquisition");
-                channel.queueUnbind("resourceManagerCancelTaskRequest", this.resourceManagerExchangeName, this.cancelTaskRoutingKey);
-                channel.queueDelete("resourceManagerCancelTaskRequest");
-                channel.queueUnbind("resourceManagerUnavailableResources", this.resourceManagerExchangeName, this.unavailableResourcesRoutingKey);
-                channel.queueDelete("resourceManagerUnavailableResources");
-                channel.queueUnbind("resourceManagerWrongData", this.resourceManagerExchangeName, this.wrongDataRoutingKey);
-                channel.queueDelete("resourceManagerWrongData");
+                channel.queueUnbind(this.startDataAcquisitionQueueName, this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
+                channel.queueDelete(this.startDataAcquisitionQueueName);
+                channel.queueUnbind(this.cancelTaskQueueName, this.resourceManagerExchangeName, this.cancelTaskRoutingKey);
+                channel.queueDelete(this.cancelTaskQueueName);
+                channel.queueUnbind(this.unavailableResourcesQueueName, this.resourceManagerExchangeName, this.unavailableResourcesRoutingKey);
+                channel.queueDelete(this.unavailableResourcesQueueName);
+                channel.queueUnbind(this.wrongDataQueueName, this.resourceManagerExchangeName, this.wrongDataRoutingKey);
+                channel.queueDelete(this.wrongDataQueueName);
                 closeChannel(channel);
                 this.connection.close();
             }
@@ -179,7 +187,7 @@ public class RabbitManager {
      */
     private void startConsumerOfStartDataAcquisition() throws InterruptedException, IOException {
        
-        String queueName = "resourceManagerStartDataAcquisition";
+        String queueName = startDataAcquisitionQueueName;
         Channel channel;
 
         try {
@@ -207,7 +215,7 @@ public class RabbitManager {
      */
     private void startConsumerOfCancelTaskRequest() throws InterruptedException, IOException {
 
-        String queueName = "resourceManagerCancelTaskRequest";
+        String queueName = cancelTaskQueueName;
         Channel channel;
 
         try {
@@ -235,7 +243,7 @@ public class RabbitManager {
      */
     private void startConsumerOfPlatformProxyConnectionProblem() throws InterruptedException, IOException {
 
-        String queueName = "resourceManagerUnavailableResources";
+        String queueName = unavailableResourcesQueueName;
         Channel channel;
 
         try {
@@ -263,7 +271,7 @@ public class RabbitManager {
      */
     private void startConsumerOfEnablerLogicWrongData() throws InterruptedException, IOException {
 
-        String queueName = "resourceManagerWrongData";
+        String queueName = wrongDataQueueName;
         Channel channel;
 
         try {
