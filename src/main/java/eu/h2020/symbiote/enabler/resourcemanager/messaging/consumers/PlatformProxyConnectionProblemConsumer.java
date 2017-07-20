@@ -67,17 +67,7 @@ public class PlatformProxyConnectionProblemConsumer extends DefaultConsumer {
 
             for(ProblematicResourcesInfo problematicResourcesInfo : problematicResourcesMessage.getProblematicResourcesInfoList()) {
                 TaskInfo taskInfo = taskInfoRepository.findByTaskId(problematicResourcesInfo.getTaskId());
-
-                if (taskInfo == null) {
-                    log.info("The task with id = " + problematicResourcesInfo.getTaskId() + " does not exist!");
-                } else {
-                    ProblematicResourcesHandlerResult problematicResourcesHandlerResult = ProblematicResourcesHandler.
-                            replaceProblematicResources(problematicResourcesInfo, taskInfo);
-                    taskInfoRepository.save(problematicResourcesHandlerResult.getTaskInfo());
-
-                    // ToDo: reply to PlatformProxy
-                }
-
+                ProblematicResourcesHandler.replaceProblematicResources(problematicResourcesInfo, taskInfo, taskInfoRepository);
             }
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ProblematicResourcesMessage", e);

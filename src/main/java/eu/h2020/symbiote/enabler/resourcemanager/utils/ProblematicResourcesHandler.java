@@ -4,6 +4,7 @@ import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -21,7 +22,20 @@ public final class ProblematicResourcesHandler {
         // empty constructor
     }
 
-    public static ProblematicResourcesHandlerResult replaceProblematicResources(ProblematicResourcesInfo problematicResourcesInfo,
+    public static void replaceProblematicResources(ProblematicResourcesInfo problematicResourcesInfo,
+                                                   TaskInfo taskInfo, TaskInfoRepository taskInfoRepository) {
+        if (taskInfo == null) {
+            log.info("The task with id = " + problematicResourcesInfo.getTaskId() + " does not exist!");
+        } else {
+            ProblematicResourcesHandlerResult problematicResourcesHandlerResult = ProblematicResourcesHandler.
+                    replaceProblematicResourcesIfTaskExists(problematicResourcesInfo, taskInfo);
+            taskInfoRepository.save(problematicResourcesHandlerResult.getTaskInfo());
+
+            // ToDo: reply to PlatformProxy and EnablerLogic
+        }
+    }
+
+    public static ProblematicResourcesHandlerResult replaceProblematicResourcesIfTaskExists(ProblematicResourcesInfo problematicResourcesInfo,
                                                TaskInfo taskInfo) {
 
         // ToDo: Implement behavior when resourcesIds are cached enough resources are available
@@ -33,6 +47,9 @@ public final class ProblematicResourcesHandler {
         Integer noNewResourcesNeeded = taskInfo.getCount() - taskInfo.getResourceIds().size() +
                 problematicResourcesInfo.getProblematicResourceIds().size();
 
+        if (taskInfo.getAllowCaching()) {
+
+        }
         if (noNewResourcesNeeded <= taskInfo.getStoredResourceIds().size()) {
             log.info("Task with id = " + taskId + " has enough resources to replace the problematic ones.");
 

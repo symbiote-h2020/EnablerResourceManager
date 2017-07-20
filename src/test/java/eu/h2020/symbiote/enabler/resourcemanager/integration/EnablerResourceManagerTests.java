@@ -343,6 +343,7 @@ public class EnablerResourceManagerTests {
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
         taskInfo.setCount(5);
+        taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "7", "8", "9")));
         taskInfoRepository.save(taskInfo);

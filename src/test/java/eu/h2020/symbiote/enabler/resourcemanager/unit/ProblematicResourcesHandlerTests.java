@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by vasgl on 7/20/2017.
@@ -33,6 +34,7 @@ public class ProblematicResourcesHandlerTests {
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
         taskInfo.setCount(5);
+        taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "7", "8", "9")));
 
@@ -41,7 +43,7 @@ public class ProblematicResourcesHandlerTests {
         problematicResourcesInfo.setProblematicResourceIds(Arrays.asList("1", "3"));
 
         ProblematicResourcesHandlerResult result = ProblematicResourcesHandler.
-                replaceProblematicResources(problematicResourcesInfo, taskInfo);
+                replaceProblematicResourcesIfTaskExists(problematicResourcesInfo, taskInfo);
 
         assertEquals(ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY, result.getStatus());
         assertEquals(5, result.getTaskInfo().getResourceIds().size());
