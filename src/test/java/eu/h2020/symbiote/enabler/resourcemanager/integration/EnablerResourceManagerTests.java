@@ -1,7 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
-import eu.h2020.symbiote.enabler.resourcemanager.messaging.RabbitManager;
-import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+
 import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +32,8 @@ import java.util.ArrayList;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.messaging.model.*;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -158,11 +159,15 @@ public class EnablerResourceManagerTests {
 
 
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+        CoreQueryRequest coreQueryRequest1 = new CoreQueryRequest.Builder()
+                .locationName("Paris")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .build();
+
         request1.setTaskId("1");
-        request1.setCount(2);
-        request1.setLocation("Paris");
-        request1.setObservesProperty(Arrays.asList("temperature", "humidity"));
-        request1.setInterval(60);
+        request1.setMinNoResources(2);
+        request1.setCoreQueryRequest(coreQueryRequest1);
+        request1.setQueryInterval_ms(60);
         resources.add(request1);
 
         query.setResources(resources);
@@ -347,28 +352,34 @@ public class EnablerResourceManagerTests {
         ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
 
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+        CoreQueryRequest coreQueryRequest1 = new CoreQueryRequest.Builder()
+                .locationName("Paris")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .build();
 
         request1.setTaskId("1");
-        request1.setCount(2);
-        request1.setLocation("Paris");
-        request1.setObservesProperty(Arrays.asList("temperature", "humidity"));
-        request1.setInterval(60);
+        request1.setMinNoResources(2);
+        request1.setCoreQueryRequest(coreQueryRequest1);
+        request1.setQueryInterval_ms(60);
         request1.setInformPlatformProxy(true);
         request1.setAllowCaching(false);
-        request1.setCachingInterval(new Long(1000));
+        request1.setCachingInterval_ms(new Long(1000));
         resources.add(request1);
 
         if (noTasks > 1) {
             ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest();
+            CoreQueryRequest coreQueryRequest2 = new CoreQueryRequest.Builder()
+                    .locationName("Athens")
+                    .observedProperty(Arrays.asList("air quality"))
+                    .build();
 
             request2.setTaskId("2");
-            request2.setCount(1);
-            request2.setLocation("Athens");
-            request2.setObservesProperty(Arrays.asList("air quality"));
-            request2.setInterval(60);
+            request2.setMinNoResources(1);
+            request2.setCoreQueryRequest(coreQueryRequest2);
+            request2.setQueryInterval_ms(60);
             request2.setInformPlatformProxy(true);
             request2.setAllowCaching(false);
-            request2.setCachingInterval(new Long(1000));
+            request2.setCachingInterval_ms(new Long(1000));
             resources.add(request2);
         }
 
@@ -380,15 +391,18 @@ public class EnablerResourceManagerTests {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
         ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+        CoreQueryRequest coreQueryRequest1 = new CoreQueryRequest.Builder()
+                .locationName("Zurich")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .build();
 
         request1.setTaskId("1");
-        request1.setCount(2);
-        request1.setLocation("Zurich");
-        request1.setObservesProperty(Arrays.asList("temperature", "humidity"));
-        request1.setInterval(60);
+        request1.setMinNoResources(2);
+        request1.setCoreQueryRequest(coreQueryRequest1);
+        request1.setQueryInterval_ms(60);
         request1.setInformPlatformProxy(true);
         request1.setAllowCaching(false);
-        request1.setCachingInterval(new Long(1000));
+        request1.setCachingInterval_ms(new Long(1000));
         resources.add(request1);
         request.setResources(resources);
 
@@ -399,7 +413,7 @@ public class EnablerResourceManagerTests {
 
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
-        taskInfo.setCount(5);
+        taskInfo.setMinNoResources(5);
         taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "7", "8", "9")));

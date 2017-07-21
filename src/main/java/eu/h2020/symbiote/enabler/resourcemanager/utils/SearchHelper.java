@@ -3,6 +3,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,18 +63,7 @@ public class SearchHelper {
 
     public String buildRequestUrl(ResourceManagerTaskInfoRequest taskInfoRequest) {
         // Building the query url for each task
-        String url = symbIoTeCoreUrl + "/query?";
-        if (taskInfoRequest.getLocation() != null)
-            url += "location_name=" + taskInfoRequest.getLocation();
-        if (taskInfoRequest.getObservesProperty() != null) {
-            url += "&observed_property=";
-
-            for (String property : taskInfoRequest.getObservesProperty()) {
-                url += property + ',';
-                log.info("property = " + property + ", url = " + url);
-            }
-            url = url.substring(0, url.length() - 1);
-        }
+        String url = taskInfoRequest.getCoreQueryRequest().buildQuery(symbIoTeCoreUrl);
         log.info("url= " + url);
 
         return url;
@@ -114,7 +104,7 @@ public class SearchHelper {
             // Finallizing request to PlatformProxy
             if (taskInfoRequest.getInformPlatformProxy()) {
                 requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
-                requestToPlatformProxy.setInterval(taskInfoResponse.getInterval());
+                requestToPlatformProxy.setInterval(taskInfoResponse.getQueryInterval_ms());
                 requestToPlatformProxy.setResources(taskResponseToComponents.getPlatformProxyResourceInfoList());
 
                 // Store all requests that need to be forwarded to PlatformProxy
@@ -146,7 +136,7 @@ public class SearchHelper {
         // Process the response for each task
         for (QueryResourceResult queryResourceResult : queryResultLists) {
 
-            if (taskResponseToComponents.getCount() >= taskInfoRequest.getCount())
+            if (taskResponseToComponents.getCount() >= taskInfoRequest.getMinNoResources())
                 break;
 
             TaskResponseToComponents newTaskResponseToComponents = getUrlsFromCram(queryResourceResult);

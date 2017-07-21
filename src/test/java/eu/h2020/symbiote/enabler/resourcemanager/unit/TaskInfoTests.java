@@ -2,6 +2,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.unit;
 
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 
@@ -30,26 +31,29 @@ public class TaskInfoTests {
     @Test
     public void taskInfoConstructorTest() {
         ResourceManagerTaskInfoResponse response = new ResourceManagerTaskInfoResponse();
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .locationName("Zurich")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .build();
 
         response.setTaskId("1");
-        response.setCount(2);
-        response.setLocation("Zurich");
-        response.setObservesProperty(Arrays.asList("temperature", "humidity"));
+        response.setMinNoResources(2);
+        response.setCoreQueryRequest(coreQueryRequest);
         response.setResourceIds(Arrays.asList("1", "2"));
-        response.setInterval(60);
+        response.setQueryInterval_ms(60);
         response.setAllowCaching(true);
-        response.setCachingInterval(new Long(1000));
+        response.setCachingInterval_ms(new Long(1000));
         response.setInformPlatformProxy(true);
 
         TaskInfo taskInfo = new TaskInfo(response);
         assertEquals(response.getTaskId(), taskInfo.getTaskId());
-        assertEquals(response.getCount(), taskInfo.getCount());
-        assertEquals(response.getLocation(), taskInfo.getLocation());
-        assertEquals(response.getObservesProperty(), taskInfo.getObservesProperty());
+        assertEquals(response.getMinNoResources(), taskInfo.getMinNoResources());
+        assertEquals(response.getCoreQueryRequest().getLocation_name(), taskInfo.getCoreQueryRequest().getLocation_name());
+        assertEquals(response.getCoreQueryRequest().getObserved_property(), taskInfo.getCoreQueryRequest().getObserved_property());
         assertEquals(response.getResourceIds(), taskInfo.getResourceIds());
-        assertEquals(response.getInterval(), taskInfo.getInterval());
+        assertEquals(response.getQueryInterval_ms(), taskInfo.getQueryInterval_ms());
         assertEquals(response.getAllowCaching(), taskInfo.getAllowCaching());
-        assertEquals(response.getCachingInterval(), taskInfo.getCachingInterval());
+        assertEquals(response.getCachingInterval_ms(), taskInfo.getCachingInterval_ms());
         assertEquals(response.getInformPlatformProxy(), taskInfo.getInformPlatformProxy());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
     }

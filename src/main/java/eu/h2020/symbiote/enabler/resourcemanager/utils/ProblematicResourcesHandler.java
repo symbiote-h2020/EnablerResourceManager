@@ -61,27 +61,32 @@ public final class ProblematicResourcesHandler {
         // ToDo: Implement behavior when resourcesIds are not cached
         // ToDo: Distinguish between unavailable and wrong data resources
 
+        log.info("problematicResourcesInfo = " + problematicResourcesInfo);
         String taskId = problematicResourcesInfo.getTaskId();
-        Integer noNewResourcesNeeded = taskInfo.getCount() - taskInfo.getResourceIds().size() +
+
+        log.info("taskInfo = " + taskInfo);
+        log.info("taskInfo.getMinNoResources() = " + taskInfo.getMinNoResources());
+        log.info("taskInfo.getResourceIds().size() = " + taskInfo.getResourceIds().size());
+        log.info("problematicResourcesInfo.getProblematicResourceIds().size() = " + problematicResourcesInfo.getProblematicResourceIds().size());
+        Integer noNewResourcesNeeded = taskInfo.getMinNoResources() - taskInfo.getResourceIds().size() +
                 problematicResourcesInfo.getProblematicResourceIds().size();
 
         if (taskInfo.getAllowCaching()) {
+            if (noNewResourcesNeeded <= taskInfo.getStoredResourceIds().size()) {
+                log.info("Task with id = " + taskId + " has enough resources to replace the problematic ones.");
 
-        }
-        if (noNewResourcesNeeded <= taskInfo.getStoredResourceIds().size()) {
-            log.info("Task with id = " + taskId + " has enough resources to replace the problematic ones.");
+                List<String> newResourceIds = new ArrayList<>();
 
-            List<String> newResourceIds = new ArrayList<>();
+                for (Integer i = 0; i < noNewResourcesNeeded ; i++) {
+                    newResourceIds.add(taskInfo.getStoredResourceIds().get(0));
+                    taskInfo.getStoredResourceIds().remove(0);
+                }
 
-            for (Integer i = 0; i < noNewResourcesNeeded ; i++) {
-                newResourceIds.add(taskInfo.getStoredResourceIds().get(0));
-                taskInfo.getStoredResourceIds().remove(0);
+                taskInfo.getResourceIds().removeAll(problematicResourcesInfo.getProblematicResourceIds());
+                taskInfo.getResourceIds().addAll(newResourceIds);
+
+                return resourcesReplacedSuccessfully(taskInfo);
             }
-
-            taskInfo.getResourceIds().removeAll(problematicResourcesInfo.getProblematicResourceIds());
-            taskInfo.getResourceIds().addAll(newResourceIds);
-
-            return resourcesReplacedSuccessfully(taskInfo);
         }
 
         return unknownMessage();
