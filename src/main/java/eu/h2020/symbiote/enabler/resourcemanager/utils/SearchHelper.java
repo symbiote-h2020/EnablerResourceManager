@@ -104,7 +104,8 @@ public class SearchHelper {
             // Finallizing request to PlatformProxy
             if (taskInfoRequest.getInformPlatformProxy()) {
                 requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
-                requestToPlatformProxy.setInterval(taskInfoResponse.getQueryInterval_ms());
+                requestToPlatformProxy.setQueryInterval_ms(taskInfoResponse.getQueryInterval_ms());
+                requestToPlatformProxy.setEnablerLogicName(taskInfoResponse.getEnablerLogicName());
                 requestToPlatformProxy.setResources(taskResponseToComponents.getPlatformProxyResourceInfoList());
 
                 // Store all requests that need to be forwarded to PlatformProxy

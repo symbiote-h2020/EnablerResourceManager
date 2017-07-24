@@ -142,10 +142,15 @@ public class EnablerResourceManagerTests {
             assertEquals("resource1", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
             assertEquals("resource2", requestReceivedByListener.get(0).getResources().get(1).getResourceId());
             assertEquals("resource4", requestReceivedByListener.get(1).getResources().get(0).getResourceId());
+            assertEquals("enablerLogicName", requestReceivedByListener.get(0).getEnablerLogicName());
+            assertEquals("enablerLogicName2", requestReceivedByListener.get(1).getEnablerLogicName());
+
         } else {
             assertEquals("resource1", requestReceivedByListener.get(1).getResources().get(0).getResourceId());
             assertEquals("resource2", requestReceivedByListener.get(1).getResources().get(1).getResourceId());
             assertEquals("resource4", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
+            assertEquals("enablerLogicName", requestReceivedByListener.get(1).getEnablerLogicName());
+            assertEquals("enablerLogicName2", requestReceivedByListener.get(0).getEnablerLogicName());
         }
 
     }
@@ -246,7 +251,7 @@ public class EnablerResourceManagerTests {
         requestReceivedByListener = dummyPlatformProxyListener.getRequestReceivedByListener();
         assertEquals(1, dummyPlatformProxyListener.messagesReceived());
         assertEquals("resource4", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
-
+        assertEquals("enablerLogicName2", requestReceivedByListener.get(0).getEnablerLogicName());
     }
 
     @Test
@@ -364,6 +369,7 @@ public class EnablerResourceManagerTests {
         request1.setInformPlatformProxy(true);
         request1.setAllowCaching(false);
         request1.setCachingInterval_ms(new Long(1000));
+        request1.setEnablerLogicName("enablerLogicName");
         resources.add(request1);
 
         if (noTasks > 1) {
@@ -380,6 +386,7 @@ public class EnablerResourceManagerTests {
             request2.setInformPlatformProxy(true);
             request2.setAllowCaching(false);
             request2.setCachingInterval_ms(new Long(1000));
+            request2.setEnablerLogicName("enablerLogicName2");
             resources.add(request2);
         }
 
@@ -403,6 +410,7 @@ public class EnablerResourceManagerTests {
         request1.setInformPlatformProxy(true);
         request1.setAllowCaching(false);
         request1.setCachingInterval_ms(new Long(1000));
+        request1.setEnablerLogicName("enablerLogicName");
         resources.add(request1);
         request.setResources(resources);
 
