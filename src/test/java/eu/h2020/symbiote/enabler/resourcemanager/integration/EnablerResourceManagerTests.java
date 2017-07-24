@@ -118,6 +118,8 @@ public class EnablerResourceManagerTests {
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
 
         String responseInString = mapper.writeValueAsString(resultRef.get().getResources());
         log.info("Response String: " + responseInString);
@@ -205,6 +207,8 @@ public class EnablerResourceManagerTests {
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
         assertEquals(null, resultRef.get().getResources().get(0).getResourceIds());
@@ -234,6 +238,8 @@ public class EnablerResourceManagerTests {
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
@@ -272,6 +278,8 @@ public class EnablerResourceManagerTests {
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
@@ -315,6 +323,8 @@ public class EnablerResourceManagerTests {
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
