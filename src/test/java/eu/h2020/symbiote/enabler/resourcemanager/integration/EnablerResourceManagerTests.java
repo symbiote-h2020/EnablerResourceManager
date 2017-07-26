@@ -1,6 +1,7 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
 
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
 import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.ArrayList;
@@ -70,6 +72,9 @@ public class EnablerResourceManagerTests {
     @Autowired
     private DummyPlatformProxyListener dummyPlatformProxyListener;
 
+    @Autowired
+    private DummyEnablerLogicListener dummyEnablerLogicListener;
+
     @Value("${rabbit.exchange.resourceManager.name}")
     private String resourceManagerExchangeName;
     @Value("${rabbit.exchange.resourceManager.type}")
@@ -94,7 +99,8 @@ public class EnablerResourceManagerTests {
     // Execute the Setup method before the test.
     @Before
     public void setUp() throws Exception {
-        dummyPlatformProxyListener.clearRequestReceivedByListener();
+        dummyPlatformProxyListener.clearRequestsReceivedByListener();
+        dummyEnablerLogicListener.clearRequestsReceivedByListener();
     }
 
     @After
@@ -107,7 +113,7 @@ public class EnablerResourceManagerTests {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
-        ArrayList<PlatformProxyAcquisitionStartRequest> requestReceivedByListener;
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
         log.info("Before sending the message");
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate.convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
@@ -132,32 +138,32 @@ public class EnablerResourceManagerTests {
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
         assertEquals("resource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
 
-        while(dummyPlatformProxyListener.messagesReceived() < 2) {
-            log.info("requestReceivedByListener.size(): " + dummyPlatformProxyListener.messagesReceived());
+        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 2) {
+            log.info("startAcquisitionRequestsReceivedByListener.size(): " + dummyPlatformProxyListener.startAcquisitionRequestsReceived());
             TimeUnit.MILLISECONDS.sleep(100);
         }
 
         // Test what Platform Proxy receives
-        requestReceivedByListener = dummyPlatformProxyListener.getRequestReceivedByListener();
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
 
-        if (requestReceivedByListener.get(0).getResources().size() == 2) {
-            assertEquals("resource1", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
-            assertEquals("resource2", requestReceivedByListener.get(0).getResources().get(1).getResourceId());
-            assertEquals("resource4", requestReceivedByListener.get(1).getResources().get(0).getResourceId());
-            assertEquals("enablerLogicName", requestReceivedByListener.get(0).getEnablerLogicName());
-            assertEquals("enablerLogicName2", requestReceivedByListener.get(1).getEnablerLogicName());
+        if (startAcquisitionRequestsReceivedByListener.get(0).getResources().size() == 2) {
+            assertEquals("resource1", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+            assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(1).getResourceId());
+            assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(0).getResourceId());
+            assertEquals("enablerLogicName", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
+            assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(1).getEnablerLogicName());
 
         } else {
-            assertEquals("resource1", requestReceivedByListener.get(1).getResources().get(0).getResourceId());
-            assertEquals("resource2", requestReceivedByListener.get(1).getResources().get(1).getResourceId());
-            assertEquals("resource4", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
-            assertEquals("enablerLogicName", requestReceivedByListener.get(1).getEnablerLogicName());
-            assertEquals("enablerLogicName2", requestReceivedByListener.get(0).getEnablerLogicName());
+            assertEquals("resource1", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(0).getResourceId());
+            assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(1).getResourceId());
+            assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+            assertEquals("enablerLogicName", startAcquisitionRequestsReceivedByListener.get(1).getEnablerLogicName());
+            assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
         }
 
     }
 
-//    @Test
+    // @Test
     public void resourceManagerGetResourceDetailsNoResponseTest() throws Exception {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
@@ -215,7 +221,7 @@ public class EnablerResourceManagerTests {
 
         // Test what Platform Proxy receives
         TimeUnit.MILLISECONDS.sleep(500);
-        assertEquals(0, dummyPlatformProxyListener.messagesReceived());
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
 
     }
 
@@ -224,7 +230,7 @@ public class EnablerResourceManagerTests {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
-        ArrayList<PlatformProxyAcquisitionStartRequest> requestReceivedByListener;
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
         // Forward to PlatformProxy only the 2nd task
         query.getResources().get(0).setInformPlatformProxy(false);
@@ -249,15 +255,15 @@ public class EnablerResourceManagerTests {
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
         assertEquals("resource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
 
-        while(dummyPlatformProxyListener.messagesReceived() < 1) {
+        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 1) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
 
         // Test what Platform Proxy receives
-        requestReceivedByListener = dummyPlatformProxyListener.getRequestReceivedByListener();
-        assertEquals(1, dummyPlatformProxyListener.messagesReceived());
-        assertEquals("resource4", requestReceivedByListener.get(0).getResources().get(0).getResourceId());
-        assertEquals("enablerLogicName2", requestReceivedByListener.get(0).getEnablerLogicName());
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+        assertEquals(1, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+        assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
     }
 
     @Test
@@ -289,7 +295,7 @@ public class EnablerResourceManagerTests {
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
         assertEquals("resource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
 
-        while(dummyPlatformProxyListener.messagesReceived() < 2) {
+        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 2) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
 
@@ -429,12 +435,17 @@ public class EnablerResourceManagerTests {
 
     private void problematicResourceMessageWithEnoughResourcesTest(String routingKey) throws Exception {
 
+        List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
+        List<ResourcesUpdated> updateRequestsReceivedByEnablerLogic;
+
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
         taskInfo.setMinNoResources(5);
         taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
-        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "7", "8", "9")));
+        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
+        taskInfo.setInformPlatformProxy(true);
+        taskInfo.setEnablerLogicName("testEnablerLogic");
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -452,14 +463,14 @@ public class EnablerResourceManagerTests {
         rabbitTemplate.convertAndSend(resourceManagerExchangeName, routingKey, problematicResourcesMessage);
         log.info("After sending the message");
 
-        TimeUnit.MILLISECONDS.sleep(500);
+        TimeUnit.MILLISECONDS.sleep(2000);
 
         taskInfo = taskInfoRepository.findByTaskId("task2");
         assertEquals(null, taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(5, taskInfo.getResourceIds().size());
-        assertEquals(2, taskInfo.getStoredResourceIds().size());
+        assertEquals(1, taskInfo.getStoredResourceIds().size());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
         assertEquals("4", taskInfo.getResourceIds().get(1));
@@ -468,7 +479,24 @@ public class EnablerResourceManagerTests {
         assertEquals("7", taskInfo.getResourceIds().get(4));
 
         assertEquals("8", taskInfo.getStoredResourceIds().get(0));
-        assertEquals("9", taskInfo.getStoredResourceIds().get(1));
+
+        // Test what Platform Proxy receives
+        updateRequestsReceivedByPlatformProxy = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
+        assertEquals(1, updateRequestsReceivedByPlatformProxy.size());
+        assertEquals(4, updateRequestsReceivedByPlatformProxy.get(0).getNewResources().size());
+        assertEquals("4", updateRequestsReceivedByPlatformProxy.get(0).getNewResources().get(0).getResourceId());
+        assertEquals("5", updateRequestsReceivedByPlatformProxy.get(0).getNewResources().get(1).getResourceId());
+        assertEquals("6", updateRequestsReceivedByPlatformProxy.get(0).getNewResources().get(2).getResourceId());
+        assertEquals("7", updateRequestsReceivedByPlatformProxy.get(0).getNewResources().get(3).getResourceId());
+
+        // Test what Enabler Logic receives
+        updateRequestsReceivedByEnablerLogic = dummyEnablerLogicListener.getUpdateResourcesReceivedByListener();
+        assertEquals(1, updateRequestsReceivedByEnablerLogic.size());
+        assertEquals(4, updateRequestsReceivedByEnablerLogic.get(0).getNewResources().size());
+        assertEquals("4", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(0));
+        assertEquals("5", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(1));
+        assertEquals("6", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(2));
+        assertEquals("7", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(3));
     }
 
     private class ListenableFutureCallbackCustom implements ListenableFutureCallback<ResourceManagerAcquisitionStartResponse> {

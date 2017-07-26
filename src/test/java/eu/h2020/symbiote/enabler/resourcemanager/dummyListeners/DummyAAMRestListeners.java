@@ -207,6 +207,7 @@ public class DummyAAMRestListeners {
             availableAAMs.add(new AAM("http://localhost:8080", "Test Platform 3", "platform3", coreCertificate));
             availableAAMs.add(new AAM("http://localhost:8080", "Test Platform 4", "platform4", coreCertificate));
             availableAAMs.add(new AAM("http://localhost:8080", "Test Platform 5", "platform5", coreCertificate));
+            availableAAMs.add(new AAM("http://localhost:8080", "TestPlatform", "TestPlatform", coreCertificate));
 
             return new ResponseEntity<>(availableAAMs, HttpStatus.OK);
         } catch (Exception e) {
@@ -216,7 +217,8 @@ public class DummyAAMRestListeners {
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/query")
-    public ResponseEntity search(@RequestParam("location_name") String location ) {
+    public ResponseEntity search(@RequestParam(value = "location_name", required = false) String location,
+                                 @RequestParam(value = "id", required = false) String id ) {
         
         log.info("Search request");
 
@@ -225,71 +227,82 @@ public class DummyAAMRestListeners {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        switch (location) {
-            case "Paris": {
-                ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
+        if (id == null) {
+            switch (location) {
+                case "Paris": {
+                    ArrayList<QueryResourceResult> responseResources = new ArrayList<>();
 
-                QueryResourceResult resource1 = new QueryResourceResult();
-                resource1.setId("resource1");
-                resource1.setPlatformId("platform1");
-                responseResources.add(resource1);
+                    QueryResourceResult resource1 = new QueryResourceResult();
+                    resource1.setId("resource1");
+                    resource1.setPlatformId("platform1");
+                    responseResources.add(resource1);
 
-                QueryResourceResult resource2 = new QueryResourceResult();
-                resource2.setId("resource2");
-                resource2.setPlatformId("platform2");
-                responseResources.add(resource2);
+                    QueryResourceResult resource2 = new QueryResourceResult();
+                    resource2.setId("resource2");
+                    resource2.setPlatformId("platform2");
+                    responseResources.add(resource2);
 
-                QueryResourceResult resource3 = new QueryResourceResult();
-                resource3.setId("resource3");
-                resource3.setPlatformId("platform3");
-                responseResources.add(resource3);
+                    QueryResourceResult resource3 = new QueryResourceResult();
+                    resource3.setId("resource3");
+                    resource3.setPlatformId("platform3");
+                    responseResources.add(resource3);
 
-                response.setResources(responseResources);
+                    response.setResources(responseResources);
 
-                try {
-                    String responseInString = mapper.writeValueAsString(response);
-                 
-                    log.info("Server received request for sensors in Paris");
-                    log.info("Server woke up and will answer with " + responseInString);
-                } catch (JsonProcessingException e) {
-                    log.info(e.toString());
+                    try {
+                        String responseInString = mapper.writeValueAsString(response);
+
+                        log.info("Server received request for sensors in Paris");
+                        log.info("Server woke up and will answer with " + responseInString);
+                    } catch (JsonProcessingException e) {
+                        log.info(e.toString());
+                        return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);
+                    }
+
+                    break;
+                }
+                case "Athens": {
+
+                    ArrayList<QueryResourceResult> responseResources = new ArrayList<>();
+
+                    QueryResourceResult resource4 = new QueryResourceResult();
+                    resource4.setId("resource4");
+                    resource4.setPlatformId("platform4");
+                    responseResources.add(resource4);
+
+                    QueryResourceResult resource5 = new QueryResourceResult();
+                    resource5.setId("resource5");
+                    resource5.setPlatformId("platform5");
+                    responseResources.add(resource5);
+
+                    response.setResources(responseResources);
+
+                    try {
+                        String responseInString = mapper.writeValueAsString(response);
+
+                        log.info("Server received request for sensors in Athens");
+                        log.info("Server woke up and will answer with " + responseInString);
+                    } catch (JsonProcessingException e) {
+                        log.info(e.toString());
+                        return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);
+                    }
+
+                    break;
+                }
+                case "Zurich": {
                     return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);
                 }
-
-                break;
             }
-            case "Athens": {
+        } else {
+            ArrayList<QueryResourceResult> responseResources = new ArrayList<>();
+            QueryResourceResult resource = new QueryResourceResult();
+            resource.setId(id);
+            resource.setPlatformId("TestPlatform");
+            responseResources.add(resource);
 
-                ArrayList<QueryResourceResult> responseResources = new ArrayList<QueryResourceResult>();
-
-                QueryResourceResult resource4 = new QueryResourceResult();
-                resource4.setId("resource4");
-                resource4.setPlatformId("platform4");
-                responseResources.add(resource4);
-
-                QueryResourceResult resource5 = new QueryResourceResult();
-                resource5.setId("resource5");
-                resource5.setPlatformId("platform5");
-                responseResources.add(resource5);
-
-                response.setResources(responseResources);
-
-                try {
-                    String responseInString = mapper.writeValueAsString(response);
-                 
-                    log.info("Server received request for sensors in Athens");
-                    log.info("Server woke up and will answer with " + responseInString);
-                } catch (JsonProcessingException e) {
-                    log.info(e.toString());
-                    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);
-                }
-
-                break;
-            }
-            case "Zurich": {
-                return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);
-            }
+            response.setResources(responseResources);
         }
+
 
         return new ResponseEntity<>(response, headers, HttpStatus.OK);
     }
@@ -303,8 +316,9 @@ public class DummyAAMRestListeners {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        if (token != null) {
-            response.put(resourceId, symbIoTeCoreUrl + "/Sensors('" + resourceId + "')");
+        if (token != null && !resourceId.equals("badCRAMrespose")) {
+            if (!resourceId.equals("noCRAMurl"))
+                response.put(resourceId, symbIoTeCoreUrl + "/Sensors('" + resourceId + "')");
         } else {
             return new ResponseEntity<>("", headers, HttpStatus.INTERNAL_SERVER_ERROR);
         }

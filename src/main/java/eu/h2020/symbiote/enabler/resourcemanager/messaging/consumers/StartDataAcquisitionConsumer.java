@@ -1,7 +1,8 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -53,6 +54,9 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
     @Qualifier("symbIoTeCoreUrl")
     private String symbIoTeCoreUrl;
 
+    @Autowired
+    private TaskInfoRepository taskInfoRepository;
+
     /**
      * Constructs a new instance and records its association to the passed-in channel.
      * Managers beans passed as parameters because of lack of possibility to inject it to consumer.
@@ -80,7 +84,8 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         ObjectMapper mapper = new ObjectMapper();
         String requestInString = new String(body, "UTF-8");
         ResourceManagerAcquisitionStartResponse response  = new ResourceManagerAcquisitionStartResponse();
-        QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = new QueryAndProcessSearchResponseResult();
+        ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = new ArrayList<>();
+        ArrayList<PlatformProxyAcquisitionStartRequest> platformProxyAcquisitionStartRequestList = new ArrayList<>();
 
         log.info("Received StartDataAcquisition request : " + requestInString);
 
@@ -91,11 +96,19 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getResources()) {
                 String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
                 QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
-                queryAndProcessSearchResponseResult.add(newQueryAndProcessSearchResponseResult);
+
+                if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
+                    resourceManagerTaskInfoResponseList.add(newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse());
+                if (newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest() != null)
+                    platformProxyAcquisitionStartRequestList.add(newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest());
+
+                // Store the taskInfo
+                TaskInfo taskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
+                taskInfoRepository.save(taskInfo);
             }
 
+
             // Sending response to EnablerLogic
-            ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponseList();
             response.setResources(resourceManagerTaskInfoResponseList);
             rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
                     m -> {
@@ -104,8 +117,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                     });
 
             // Sending requests to PlatformProxy
-            ArrayList<PlatformProxyAcquisitionStartRequest> messagesToPlatformProxy = queryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequestList();
-            for (PlatformProxyAcquisitionStartRequest req : messagesToPlatformProxy) {
+            for (PlatformProxyAcquisitionStartRequest req : platformProxyAcquisitionStartRequestList) {
                 log.info("Sending requests to Platform Proxy");
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
             }

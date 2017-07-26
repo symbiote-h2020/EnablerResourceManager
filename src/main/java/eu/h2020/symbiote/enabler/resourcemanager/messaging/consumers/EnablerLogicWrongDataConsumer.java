@@ -23,6 +23,8 @@ public class EnablerLogicWrongDataConsumer extends DefaultConsumer {
     @Autowired
     private TaskInfoRepository taskInfoRepository;
 
+    @Autowired
+    private ProblematicResourcesHandler problematicResourcesHandler;
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
@@ -50,7 +52,7 @@ public class EnablerLogicWrongDataConsumer extends DefaultConsumer {
 
         String requestInString = new String(body, "UTF-8");
         log.info("Received ProblematicResourcesMessage: " + requestInString);
-        ProblematicResourcesHandler.replaceProblematicResources(requestInString, taskInfoRepository);
+        problematicResourcesHandler.replaceProblematicResources(requestInString, taskInfoRepository);
 
     }
 }

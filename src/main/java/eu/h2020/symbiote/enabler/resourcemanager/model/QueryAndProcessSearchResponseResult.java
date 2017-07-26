@@ -9,27 +9,25 @@ import java.util.ArrayList;
  * Created by vasgl on 7/20/2017.
  */
 public class QueryAndProcessSearchResponseResult {
-    private ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList;
-    private ArrayList<PlatformProxyAcquisitionStartRequest> platformProxyAcquisitionStartRequestList;
+    private ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse;
+    private PlatformProxyAcquisitionStartRequest platformProxyAcquisitionStartRequest;
+    private TaskInfo taskInfo;
 
     public QueryAndProcessSearchResponseResult() {
-        resourceManagerTaskInfoResponseList = new ArrayList<>();
-        platformProxyAcquisitionStartRequestList = new ArrayList<>();
+        // Empty constructor
     }
 
-    public ArrayList<ResourceManagerTaskInfoResponse> getResourceManagerTaskInfoResponseList() { return this.resourceManagerTaskInfoResponseList; }
-    public ArrayList<PlatformProxyAcquisitionStartRequest> getPlatformProxyAcquisitionStartRequestList() { return this.platformProxyAcquisitionStartRequestList; }
-
-    public void addToResourceManagerTaskInfoResponseList(ResourceManagerTaskInfoResponse item) {
-        resourceManagerTaskInfoResponseList.add(item);
+    public ResourceManagerTaskInfoResponse getResourceManagerTaskInfoResponse() { return this.resourceManagerTaskInfoResponse; }
+    public void setResourceManagerTaskInfoResponse(ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse) {
+        this.resourceManagerTaskInfoResponse = resourceManagerTaskInfoResponse;
     }
 
-    public void addToPlatformProxyAcquisitionStartRequestList(PlatformProxyAcquisitionStartRequest item) {
-        platformProxyAcquisitionStartRequestList.add(item);
+    public PlatformProxyAcquisitionStartRequest getPlatformProxyAcquisitionStartRequest() { return this.platformProxyAcquisitionStartRequest; }
+    public void setPlatformProxyAcquisitionStartRequest(PlatformProxyAcquisitionStartRequest platformProxyAcquisitionStartRequest) {
+        this.platformProxyAcquisitionStartRequest = platformProxyAcquisitionStartRequest;
     }
 
-    public void add(QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult) {
-        this.resourceManagerTaskInfoResponseList.addAll(queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponseList());
-        this.platformProxyAcquisitionStartRequestList.addAll(queryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequestList());
-    }
+    public TaskInfo getTaskInfo() { return taskInfo; }
+    public void setTaskInfo(TaskInfo taskInfo) { this.taskInfo = taskInfo; }
+
 }

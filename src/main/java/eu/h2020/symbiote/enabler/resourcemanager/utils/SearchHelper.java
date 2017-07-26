@@ -16,7 +16,6 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
-import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
@@ -26,6 +25,7 @@ import eu.h2020.symbiote.enabler.resourcemanager.model.TaskResponseToComponents;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.security.constants.AAMConstants;
 import eu.h2020.symbiote.security.token.Token;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -41,21 +41,17 @@ public class SearchHelper {
 
     private String symbIoTeCoreUrl;
     private RestTemplate restTemplate;
-    private TaskInfoRepository taskInfoRepository;
     private SecurityManager securityManager;
 
     @Autowired
     private SearchHelper(@Qualifier("symbIoTeCoreUrl") String symbIoTeCoreUrl, RestTemplate restTemplate,
-                         TaskInfoRepository taskInfoRepository, SecurityManager securityManager) {
+                         SecurityManager securityManager) {
 
         Assert.notNull(symbIoTeCoreUrl,"symbIoTeCoreUrl can not be null!");
         this.symbIoTeCoreUrl = symbIoTeCoreUrl;
 
         Assert.notNull(restTemplate,"RestTemplate can not be null!");
         this.restTemplate = restTemplate;
-
-        Assert.notNull(taskInfoRepository,"TaskInfoRepository can not be null!");
-        this.taskInfoRepository = taskInfoRepository;
 
         Assert.notNull(securityManager,"SecurityManager can not be null!");
         this.securityManager = securityManager;
@@ -64,6 +60,16 @@ public class SearchHelper {
     public String buildRequestUrl(ResourceManagerTaskInfoRequest taskInfoRequest) {
         // Building the query url for each task
         String url = taskInfoRequest.getCoreQueryRequest().buildQuery(symbIoTeCoreUrl);
+        log.info("url= " + url);
+
+        return url;
+    }
+
+    public String buildRequestUrl(String resourceId){
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .id(resourceId)
+                .build();
+        String url = coreQueryRequest.buildQuery(symbIoTeCoreUrl);
         log.info("url= " + url);
 
         return url;
@@ -83,6 +89,7 @@ public class SearchHelper {
 
         ResourceManagerTaskInfoResponse taskInfoResponse = new ResourceManagerTaskInfoResponse(taskInfoRequest);
         PlatformProxyAcquisitionStartRequest requestToPlatformProxy = new PlatformProxyAcquisitionStartRequest();
+        QueryResponse queryResponse = null;
 
         // FIX ME: Consider Connection timeouts or errors
         try {
@@ -95,7 +102,7 @@ public class SearchHelper {
                 log.info(e);
             }
 
-            QueryResponse queryResponse = queryResponseEntity.getBody();
+            queryResponse = queryResponseEntity.getBody();
             TaskResponseToComponents taskResponseToComponents  = processSearchResponse(queryResponse, taskInfoRequest);
 
             // Finalizing task response to EnablerLogic
@@ -109,22 +116,21 @@ public class SearchHelper {
                 requestToPlatformProxy.setResources(taskResponseToComponents.getPlatformProxyResourceInfoList());
 
                 // Store all requests that need to be forwarded to PlatformProxy
-                queryAndProcessSearchResponseResult.addToPlatformProxyAcquisitionStartRequestList(requestToPlatformProxy);
-
-                // Store the taskInfo
-                TaskInfo taskInfo = new TaskInfo(taskInfoResponse);
-                if (taskInfoRequest.getAllowCaching())
-                    taskInfo.calculateStoredResourceIds(queryResponse);
-                taskInfoRepository.save(taskInfo);
+                queryAndProcessSearchResponseResult.setPlatformProxyAcquisitionStartRequest(requestToPlatformProxy);
 
             }
-        }
-        catch (HttpClientErrorException e) {
-            log.info(e.getStatusCode());
-            log.info(e.getResponseBodyAsString());
+        } catch (HttpClientErrorException e) {
+            log.info(e.toString());
+        } catch (HttpServerErrorException e) {
+            log.info(e.toString());
         }
 
-        queryAndProcessSearchResponseResult.addToResourceManagerTaskInfoResponseList(taskInfoResponse);
+        TaskInfo taskInfo = new TaskInfo(taskInfoResponse);
+        if (taskInfoRequest.getAllowCaching())
+            taskInfo.calculateStoredResourceIds(queryResponse);
+
+        queryAndProcessSearchResponseResult.setResourceManagerTaskInfoResponse(taskInfoResponse);
+        queryAndProcessSearchResponseResult.setTaskInfo(taskInfo);
 
         return queryAndProcessSearchResponseResult;
     }
@@ -186,8 +192,9 @@ public class SearchHelper {
         } catch (SecurityException e) {
             log.info(e.toString());
         } catch (HttpClientErrorException e) {
-            log.info(e.getStatusCode());
-            log.info(e.getResponseBodyAsString());
+            log.info(e.toString());
+        } catch (HttpServerErrorException e) {
+            log.info(e.toString());
         }
 
         return taskResponseToComponents;
