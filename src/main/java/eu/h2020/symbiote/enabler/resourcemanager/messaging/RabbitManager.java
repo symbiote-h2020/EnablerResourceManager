@@ -1,10 +1,7 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
 import com.rabbitmq.client.*;
-import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.CancelTaskConsumer;
-import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.EnablerLogicWrongDataConsumer;
-import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.PlatformProxyConnectionProblemConsumer;
-import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.StartDataAcquisitionConsumer;
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,6 +83,11 @@ public class RabbitManager {
     private String wrongDataQueueName;
     @Value("${rabbit.routingKey.resourceManager.wrongData}")
     private String wrongDataRoutingKey;
+
+    @Value("${rabbit.queueName.resourceManager.updateTask}")
+    private String updateTaskQueueName;
+    @Value("${rabbit.routingKey.resourceManager.updateTask}")
+    private String updateTaskRoutingKey;
 
     private Connection connection;
 
@@ -174,14 +176,22 @@ public class RabbitManager {
             Channel channel;
             if (this.connection != null && this.connection.isOpen()) {
                 channel = connection.createChannel();
+
                 channel.queueUnbind(this.startDataAcquisitionQueueName, this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
                 channel.queueDelete(this.startDataAcquisitionQueueName);
+
                 channel.queueUnbind(this.cancelTaskQueueName, this.resourceManagerExchangeName, this.cancelTaskRoutingKey);
                 channel.queueDelete(this.cancelTaskQueueName);
+
                 channel.queueUnbind(this.unavailableResourcesQueueName, this.resourceManagerExchangeName, this.unavailableResourcesRoutingKey);
                 channel.queueDelete(this.unavailableResourcesQueueName);
-                channel.queueUnbind(this.wrongDataQueueName, this.resourceManagerExchangeName, this.wrongDataRoutingKey);
+
+                channel.queueUnbind(this.wrongDataQueueName, this.resourceManagerExchangeName, this.updateTaskRoutingKey);
                 channel.queueDelete(this.wrongDataQueueName);
+
+                channel.queueUnbind(this.updateTaskQueueName, this.resourceManagerExchangeName, this.updateTaskRoutingKey);
+                channel.queueDelete(this.updateTaskQueueName);
+
                 closeChannel(channel);
                 this.connection.close();
             }
@@ -199,6 +209,7 @@ public class RabbitManager {
             startConsumerOfCancelTaskRequest();
             startConsumerOfPlatformProxyConnectionProblem();
             startConsumerOfEnablerLogicWrongData();
+            startConsumerOfUpdateTask();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -323,6 +334,34 @@ public class RabbitManager {
             log.info("Receiver waiting for WrongData messages....");
 
             Consumer consumer = new EnablerLogicWrongDataConsumer(channel);
+            beanFactory.autowireBean(consumer);
+            channel.basicConsume(queueName, false, consumer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Method creates queue and binds it globally available exchange and adequate Routing Key.
+     * It also creates a consumer for messages incoming to this queue, regarding to Enabler Logic Wrong Data messages.
+     *
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    private void startConsumerOfUpdateTask() throws InterruptedException, IOException {
+
+        String queueName = updateTaskQueueName;
+        Channel channel;
+
+        try {
+            channel = this.connection.createChannel();
+            channel.queueDeclare(queueName, true, false, false, null);
+            channel.queueBind(queueName, this.resourceManagerExchangeName, this.updateTaskRoutingKey);
+//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
+
+            log.info("Receiver waiting for UpdateTask messages....");
+
+            Consumer consumer = new UpdateTaskConsumer(channel);
             beanFactory.autowireBean(consumer);
             channel.basicConsume(queueName, false, consumer);
         } catch (IOException e) {
