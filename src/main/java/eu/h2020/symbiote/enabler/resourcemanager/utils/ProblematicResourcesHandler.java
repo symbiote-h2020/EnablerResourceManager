@@ -43,7 +43,8 @@ public final class ProblematicResourcesHandler {
     private String platformProxyResourcesUpdatedKey;
     @Value("${rabbit.routingKey.enablerLogic.resourcesUpdated}")
     private String genericEnablerLogicResourcesUpdatedKey;
-
+    @Value("${rabbit.routingKey.enablerLogic.notEnoughResources}")
+    private String genericEnablerLogicNotEnoughResourcesKey;
 
     @Autowired
     private ProblematicResourcesHandler(RabbitTemplate rabbitTemplate, SearchHelper searchHelper) {
@@ -73,25 +74,34 @@ public final class ProblematicResourcesHandler {
                     TaskInfo newTaskInfo = problematicResourcesHandlerResult.getTaskInfo();
                     taskInfoRepository.save(newTaskInfo);
 
-                    // ToDo: reply to PlatformProxy and EnablerLogic
-                    // Inform Platform Proxy
-                    if (taskInfo.getInformPlatformProxy()) {
+                    if (problematicResourcesHandlerResult.getStatus() == ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY) {
+                        // Inform Platform Proxy
+                        if (taskInfo.getInformPlatformProxy()) {
 
-                        PlatformProxyUpdateRequest platformProxyUpdateRequest = new PlatformProxyUpdateRequest(newTaskInfo.getTaskId(),
-                                problematicResourcesHandlerResult.getPlatformProxyResourceInfoList());
+                            PlatformProxyUpdateRequest platformProxyUpdateRequest = new PlatformProxyUpdateRequest(newTaskInfo.getTaskId(),
+                                    problematicResourcesHandlerResult.getPlatformProxyResourceInfoList());
 
-                        // Sending requests to PlatformProxy
-                        rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyResourcesUpdatedKey,
-                                platformProxyUpdateRequest);
+                            // Sending requests to PlatformProxy about the new resource ids of the task
+                            rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyResourcesUpdatedKey,
+                                    platformProxyUpdateRequest);
+                        }
+
+                        // Inform Enabler Logic about the new resource ids of the task
+                        ResourcesUpdated resourcesUpdated = new ResourcesUpdated(newTaskInfo.getTaskId(),
+                                problematicResourcesHandlerResult.getNewResources());
+                        String specificEnablerLogicResourcesUpdatedKey = genericEnablerLogicResourcesUpdatedKey + "." +
+                                newTaskInfo.getEnablerLogicName();
+                        rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicResourcesUpdatedKey,
+                                resourcesUpdated);
+                    } else if (problematicResourcesHandlerResult.getStatus() == ProblematicResourcesHandlerStatus.NOT_ENOUGH_RESOURCES) {
+
+                        // Inform Enabler Logic that not enough resources are available
+                        String specificEnablerLogicNotEnoughResourcesKey = genericEnablerLogicNotEnoughResourcesKey +
+                                "." + taskInfo.getEnablerLogicName();
+
+                        rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicNotEnoughResourcesKey,
+                                problematicResourcesHandlerResult.getNotEnoughResourcesAvailable());
                     }
-
-                    // Inform Enabler Logic
-                    ResourcesUpdated resourcesUpdated = new ResourcesUpdated(newTaskInfo.getTaskId(),
-                            problematicResourcesHandlerResult.getNewResources());
-                    String specificEnablerLogicResourcesUpdatedKey = genericEnablerLogicResourcesUpdatedKey + "." + newTaskInfo.getEnablerLogicName();
-                    rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicResourcesUpdatedKey,
-                            resourcesUpdated);
-
                 }
             }
         } catch (JsonParseException | JsonMappingException e) {
@@ -103,17 +113,17 @@ public final class ProblematicResourcesHandler {
     public ProblematicResourcesHandlerResult replaceProblematicResourcesIfTaskExists(ProblematicResourcesInfo problematicResourcesInfo,
                                                TaskInfo taskInfo) {
 
-        // ToDo: Implement behavior when resourcesIds are cached and not enough resources are available
         // ToDo: Implement behavior when resourcesIds are not cached
         // ToDo: Distinguish between unavailable and wrong data resources
 
-        log.info("problematicResourcesInfo = " + problematicResourcesInfo);
+        log.debug("problematicResourcesInfo = " + problematicResourcesInfo);
         String taskId = problematicResourcesInfo.getTaskId();
 
         log.debug("taskInfo = " + taskInfo);
         log.debug("taskInfo.getMinNoResources() = " + taskInfo.getMinNoResources());
         log.debug("taskInfo.getResourceIds().size() = " + taskInfo.getResourceIds().size());
-        log.debug("problematicResourcesInfo.getProblematicResourceIds().size() = " + problematicResourcesInfo.getProblematicResourceIds().size());
+        log.debug("problematicResourcesInfo.getProblematicResourceIds().size() = " +
+                problematicResourcesInfo.getProblematicResourceIds().size());
 
         Integer noNewResourcesNeeded = taskInfo.getMinNoResources() - taskInfo.getResourceIds().size() +
                 problematicResourcesInfo.getProblematicResourceIds().size();
@@ -126,7 +136,8 @@ public final class ProblematicResourcesHandler {
                 QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
                 List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
 
-                while (newResourceIds.size() != noNewResourcesNeeded) {
+                while (newResourceIds.size() != noNewResourcesNeeded &&
+                        taskInfo.getStoredResourceIds().size() != 0) {
                     String candidateResourceId = taskInfo.getStoredResourceIds().get(0);
                     String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
 
@@ -146,24 +157,35 @@ public final class ProblematicResourcesHandler {
                     taskInfo.getStoredResourceIds().remove(0);
                 }
 
+                // ToDo: add it to another list, not just remove it
                 taskInfo.getResourceIds().removeAll(problematicResourcesInfo.getProblematicResourceIds());
                 taskInfo.getResourceIds().addAll(newResourceIds);
 
-                return resourcesReplacedSuccessfully(taskInfo, platformProxyResourceInfoList, newResourceIds);
+                if (newResourceIds.size() == noNewResourcesNeeded) {
+                    return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(taskInfo, platformProxyResourceInfoList, newResourceIds);
+                } else {
+                    log.info("Not enough resources are available.");
+
+                    NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
+                            taskInfo.getMinNoResources(), taskInfo.getResourceIds().size(), taskInfo.getStoredResourceIds().size());
+
+                    return ProblematicResourcesHandlerResult.notEnoughResources(taskInfo,notEnoughResourcesAvailable);
+                }
+
+            } else {
+                log.info("Not even the maximum number of resources are enough");
+
+                // ToDo: add it to another list, not just remove it
+                taskInfo.getResourceIds().removeAll(problematicResourcesInfo.getProblematicResourceIds());
+
+                NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
+                        taskInfo.getMinNoResources(), taskInfo.getResourceIds().size(), taskInfo.getStoredResourceIds().size());
+                return ProblematicResourcesHandlerResult.notEnoughResources(taskInfo,notEnoughResourcesAvailable);
             }
         }
 
-        return unknownMessage();
+        return ProblematicResourcesHandlerResult.unknownMessage();
     }
 
-    private ProblematicResourcesHandlerResult resourcesReplacedSuccessfully(TaskInfo taskInfo,
-                                                                            List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
-                                                                            List<String> newResourceIds) {
-        return new ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY,
-                taskInfo, platformProxyResourceInfoList, newResourceIds);
-    }
 
-    private ProblematicResourcesHandlerResult unknownMessage() {
-        return new ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus.UNKNOWN, null, null, null);
-    }
 }

@@ -357,15 +357,32 @@ public class EnablerResourceManagerTests {
 
     @Test
     public void unavailableResourcesWithEnoughResourcesTest() throws Exception {
-
         problematicResourceMessageWithEnoughResourcesTest(unavailableResourcesRoutingKey);
-
     }
 
     @Test
     public void wrongDataWithEnoughResourcesTest() throws Exception {
-
         problematicResourceMessageWithEnoughResourcesTest(wrongDataRoutingKey);
+    }
+
+    @Test
+    public void unavailableResourcesWithNotEnoughResourcesTest() throws Exception {
+        problematicResourceMessageWithNotEnoughResourcesTest(unavailableResourcesRoutingKey);
+    }
+
+    @Test
+    public void wrongDataWithNotEnoughResourcesTest() throws Exception {
+        problematicResourceMessageWithNotEnoughResourcesTest(wrongDataRoutingKey);
+    }
+
+    @Test
+    public void unavailableResourcesWithEnoughStoredOnlyResourcesTest() throws Exception {
+        problematicResourceMessageWithEnoughStoredOnlyResourcesTest(unavailableResourcesRoutingKey);
+    }
+
+    @Test
+    public void wrongDataWithEnoughStoredOnlyResourcesTest() throws Exception {
+        problematicResourceMessageWithEnoughStoredOnlyResourcesTest(wrongDataRoutingKey);
     }
 
     private ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {
@@ -502,6 +519,120 @@ public class EnablerResourceManagerTests {
         assertEquals("5", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(1));
         assertEquals("6", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(2));
         assertEquals("7", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(3));
+    }
+
+    private void problematicResourceMessageWithNotEnoughResourcesTest(String routingKey) throws Exception {
+
+        List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
+
+        TaskInfo taskInfo = new TaskInfo();
+        taskInfo.setTaskId("task1");
+        taskInfo.setMinNoResources(5);
+        taskInfo.setAllowCaching(true);
+        taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
+        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6")));
+        taskInfo.setInformPlatformProxy(true);
+        taskInfo.setEnablerLogicName("testEnablerLogic");
+        taskInfoRepository.save(taskInfo);
+
+        ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
+        problematicResourcesInfo.setTaskId("task1");
+        problematicResourcesInfo.setProblematicResourceIds(Arrays.asList("1", "3"));
+
+        ProblematicResourcesInfo problematicResourcesInfo2 = new ProblematicResourcesInfo();
+        problematicResourcesInfo2.setTaskId("task2");
+        problematicResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
+
+        ProblematicResourcesMessage problematicResourcesMessage = new ProblematicResourcesMessage();
+        problematicResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(problematicResourcesInfo, problematicResourcesInfo2));
+
+        log.info("Before sending the message");
+        rabbitTemplate.convertAndSend(resourceManagerExchangeName, routingKey, problematicResourcesMessage);
+        log.info("After sending the message");
+
+        while(dummyEnablerLogicListener.notEnoughResourcesMessagesReceived()!= 1) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        taskInfo = taskInfoRepository.findByTaskId("task2");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("task1");
+        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(3, taskInfo.getStoredResourceIds().size());
+
+        assertEquals("2", taskInfo.getResourceIds().get(0));
+        assertEquals("4", taskInfo.getStoredResourceIds().get(0));
+        assertEquals("5", taskInfo.getStoredResourceIds().get(1));
+        assertEquals("6", taskInfo.getStoredResourceIds().get(2));
+
+
+        // Test what Enabler Logic receives
+        notEnoughResourcesMessagesReceived = dummyEnablerLogicListener.getNotEnoughResourcesMessagesReceivedByListener();
+        assertEquals(1, notEnoughResourcesMessagesReceived.size());
+        assertEquals("task1", notEnoughResourcesMessagesReceived.get(0).getTaskId());
+        assertEquals(5, (int) notEnoughResourcesMessagesReceived.get(0).getMinNoResources());
+        assertEquals(1, (int) notEnoughResourcesMessagesReceived.get(0).getNoResourcesAcquired());
+        assertEquals(3, (int) notEnoughResourcesMessagesReceived.get(0).getMaxNoResourcesThatCanBeAcquired());
+    }
+
+    private void problematicResourceMessageWithEnoughStoredOnlyResourcesTest(String routingKey) throws Exception {
+
+        List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
+
+        TaskInfo taskInfo = new TaskInfo();
+        taskInfo.setTaskId("task1");
+        taskInfo.setMinNoResources(5);
+        taskInfo.setAllowCaching(true);
+        taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
+        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl")));
+        taskInfo.setInformPlatformProxy(true);
+        taskInfo.setEnablerLogicName("testEnablerLogic");
+        taskInfoRepository.save(taskInfo);
+
+        ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
+        problematicResourcesInfo.setTaskId("task1");
+        problematicResourcesInfo.setProblematicResourceIds(Arrays.asList("1", "3"));
+
+        ProblematicResourcesInfo problematicResourcesInfo2 = new ProblematicResourcesInfo();
+        problematicResourcesInfo2.setTaskId("task2");
+        problematicResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
+
+        ProblematicResourcesMessage problematicResourcesMessage = new ProblematicResourcesMessage();
+        problematicResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(problematicResourcesInfo, problematicResourcesInfo2));
+
+        log.info("Before sending the message");
+        rabbitTemplate.convertAndSend(resourceManagerExchangeName, routingKey, problematicResourcesMessage);
+        log.info("After sending the message");
+
+        while(dummyEnablerLogicListener.notEnoughResourcesMessagesReceived()!= 1) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        taskInfo = taskInfoRepository.findByTaskId("task2");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("task1");
+        assertEquals(4, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+
+        assertEquals("2", taskInfo.getResourceIds().get(0));
+        assertEquals("4", taskInfo.getResourceIds().get(1));
+        assertEquals("5", taskInfo.getResourceIds().get(2));
+        assertEquals("6", taskInfo.getResourceIds().get(3));
+
+
+        // Test what Enabler Logic receives
+        notEnoughResourcesMessagesReceived = dummyEnablerLogicListener.getNotEnoughResourcesMessagesReceivedByListener();
+        assertEquals(1, notEnoughResourcesMessagesReceived.size());
+        assertEquals("task1", notEnoughResourcesMessagesReceived.get(0).getTaskId());
+        assertEquals(5, (int) notEnoughResourcesMessagesReceived.get(0).getMinNoResources());
+        assertEquals(4, (int) notEnoughResourcesMessagesReceived.get(0).getNoResourcesAcquired());
+        assertEquals(0, (int) notEnoughResourcesMessagesReceived.get(0).getMaxNoResourcesThatCanBeAcquired());
     }
 
     private class ListenableFutureCallbackCustom implements ListenableFutureCallback<ResourceManagerAcquisitionStartResponse> {

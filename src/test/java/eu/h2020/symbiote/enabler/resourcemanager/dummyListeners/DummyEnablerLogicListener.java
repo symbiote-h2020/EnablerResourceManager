@@ -2,6 +2,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.dummyListeners;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.h2020.symbiote.enabler.messaging.model.NotEnoughResourcesAvailable;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourcesUpdated;
 import org.slf4j.Logger;
@@ -16,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by lebro_000 on 7/17/2017.
+ * Created by vasgl on 7/17/2017.
  */
 @Component
 public class DummyEnablerLogicListener {
@@ -24,20 +25,24 @@ public class DummyEnablerLogicListener {
             .getLogger(DummyEnablerLogicListener.class);
 
     private List<ResourcesUpdated> updateResourcesReceivedByListener = new ArrayList<>();
+    private List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceivedByListener = new ArrayList<>();
     private ObjectMapper mapper = new ObjectMapper();
 
 
     public List<ResourcesUpdated> getUpdateResourcesReceivedByListener() {
         return updateResourcesReceivedByListener;
     }
-    public void setUpdateResourcesReceivedByListener(List<ResourcesUpdated> list) {
-        this.updateResourcesReceivedByListener = list;
+
+    public List<NotEnoughResourcesAvailable> getNotEnoughResourcesMessagesReceivedByListener() {
+        return notEnoughResourcesMessagesReceivedByListener;
     }
 
     public int updateResourcesReceived() { return updateResourcesReceivedByListener.size(); }
+    public int notEnoughResourcesMessagesReceived() { return  notEnoughResourcesMessagesReceivedByListener.size(); }
 
     public void clearRequestsReceivedByListener() {
         updateResourcesReceivedByListener.clear();
+        notEnoughResourcesMessagesReceivedByListener.clear();
     }
 
     @RabbitListener(bindings = @QueueBinding(
@@ -58,6 +63,26 @@ public class DummyEnablerLogicListener {
             for(String resource : resourcesUpdated.getNewResources()) {
                 log.info("resourcesUpdated = " + resource);
             }
+        } catch (JsonProcessingException e) {
+            log.info(e.toString());
+        }
+    }
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(value = "symbIoTe-el-notEnoughResources", durable = "true", autoDelete = "true", exclusive = "true"),
+            exchange = @Exchange(value = "${rabbit.exchange.enablerLogic.name}", ignoreDeclarationExceptions = "true",
+                    durable = "${rabbit.exchange.enablerLogic.durable}", autoDelete  = "${rabbit.exchange.enablerLogic.autodelete}",
+                    internal = "${rabbit.exchange.enablerLogic.internal}", type = "${rabbit.exchange.enablerLogic.type}"),
+            key = "${rabbit.routingKey.enablerLogic.notEnoughResources}.testEnablerLogic")
+    )
+    public void enablerLogicNotEnoughResourcesListener(NotEnoughResourcesAvailable notEnoughResourcesAvailable) {
+        notEnoughResourcesMessagesReceivedByListener.add(notEnoughResourcesAvailable);
+
+        try {
+            String responseInString = mapper.writeValueAsString(notEnoughResourcesAvailable);
+            log.info("EnablerLogicListener NotEnoughResources notification: " + responseInString);
+            log.info("notEnoughResourcesMessagesReceivedByListener.size() = " + notEnoughResourcesMessagesReceivedByListener.size());
+
         } catch (JsonProcessingException e) {
             log.info(e.toString());
         }
