@@ -463,7 +463,12 @@ public class EnablerResourceManagerTests {
         rabbitTemplate.convertAndSend(resourceManagerExchangeName, routingKey, problematicResourcesMessage);
         log.info("After sending the message");
 
-        TimeUnit.MILLISECONDS.sleep(2000);
+        while(dummyPlatformProxyListener.updateAcquisitionRequestsReceived() != 1 &&
+                dummyEnablerLogicListener.updateResourcesReceived()!= 1) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
 
         taskInfo = taskInfoRepository.findByTaskId("task2");
         assertEquals(null, taskInfo);

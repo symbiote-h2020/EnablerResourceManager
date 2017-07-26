@@ -44,18 +44,44 @@ public class RabbitManager {
     private boolean resourceManagerExchangeAutodelete;
     @Value("${rabbit.exchange.resourceManager.internal}")
     private boolean resourceManagerExchangeInternal;
+
+    @Value("${rabbit.exchange.enablerLogic.name}")
+    private String enablerLogicExchangeName;
+    @Value("${rabbit.exchange.enablerLogic.type}")
+    private String enablerLogicExchangeType;
+    @Value("${rabbit.exchange.enablerLogic.durable}")
+    private boolean enablerLogicExchangeDurable;
+    @Value("${rabbit.exchange.enablerLogic.autodelete}")
+    private boolean enablerLogicExchangeAutodelete;
+    @Value("${rabbit.exchange.enablerLogic.internal}")
+    private boolean enablerLogicExchangeInternal;
+
+    @Value("${rabbit.exchange.enablerPlatformProxy.name}")
+    private String platformProxyExchangeName;
+    @Value("${rabbit.exchange.enablerPlatformProxy.type}")
+    private String platformProxyExchangeType;
+    @Value("${rabbit.exchange.enablerPlatformProxy.durable}")
+    private boolean platformProxyExchangeDurable;
+    @Value("${rabbit.exchange.enablerPlatformProxy.autodelete}")
+    private boolean platformProxyExchangeAutodelete;
+    @Value("${rabbit.exchange.enablerPlatformProxy.internal}")
+    private boolean platformProxyExchangeInternal;
+    
     @Value("${rabbit.queueName.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionQueueName;
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionRoutingKey;
+    
     @Value("${rabbit.queueName.resourceManager.cancelTask}")
     private String cancelTaskQueueName;
     @Value("${rabbit.routingKey.resourceManager.cancelTask}")
     private String cancelTaskRoutingKey;
+    
     @Value("${rabbit.queueName.resourceManager.unavailableResources}")
     private String unavailableResourcesQueueName;
     @Value("${rabbit.routingKey.resourceManager.unavailableResources}")
     private String unavailableResourcesRoutingKey;
+    
     @Value("${rabbit.queueName.resourceManager.wrongData}")
     private String wrongDataQueueName;
     @Value("${rabbit.routingKey.resourceManager.wrongData}")
@@ -111,6 +137,20 @@ public class RabbitManager {
                         this.resourceManagerExchangeDurable,
                         this.resourceManagerExchangeAutodelete,
                         this.resourceManagerExchangeInternal,
+                        null);
+
+                channel.exchangeDeclare(this.enablerLogicExchangeName,
+                        this.enablerLogicExchangeType,
+                        this.enablerLogicExchangeDurable,
+                        this.enablerLogicExchangeAutodelete,
+                        this.enablerLogicExchangeInternal,
+                        null);
+
+                channel.exchangeDeclare(this.platformProxyExchangeName,
+                        this.platformProxyExchangeType,
+                        this.platformProxyExchangeDurable,
+                        this.platformProxyExchangeAutodelete,
+                        this.platformProxyExchangeInternal,
                         null);
 
                 startConsumers();
