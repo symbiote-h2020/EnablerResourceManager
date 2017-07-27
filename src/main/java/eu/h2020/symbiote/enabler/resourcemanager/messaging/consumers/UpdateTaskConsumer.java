@@ -86,41 +86,52 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         try {
             ResourceManagerAcquisitionStartRequest request  = mapper.readValue(requestInString, ResourceManagerAcquisitionStartRequest.class);
 
-//            // Process each task request
-//            for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getResources()) {
-//                String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
-//                QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
-//
-//                if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
-//                    resourceManagerTaskInfoResponseList.add(newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse());
-//                if (newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest() != null)
-//                    platformProxyAcquisitionStartRequestList.add(newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest());
-//
-//                // Store the taskInfo
-//                TaskInfo taskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
-//                taskInfoRepository.save(taskInfo);
-//            }
-//
-//
-//            // Sending response to EnablerLogic
-//            response.setResources(resourceManagerTaskInfoResponseList);
-//            rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
-//                    m -> {
-//                        m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
-//                        return m;
-//                    });
-//
-//            // Sending requests to PlatformProxy
-//            for (PlatformProxyAcquisitionStartRequest req : platformProxyAcquisitionStartRequestList) {
-//                log.info("Sending requests to Platform Proxy");
-//                rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
-//            }
+            // Process each task request
+            for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getResources()) {
+                TaskInfo storedTaskInfo = taskInfoRepository.findByTaskId(taskInfoRequest.getTaskId());
 
+                // ToDO: Check if Task exists
+
+                if (taskInfoRequest.getCoreQueryRequest() == null ||
+                        taskInfoRequest.getCoreQueryRequest().equals(storedTaskInfo.getCoreQueryRequest())){
+
+                    log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " did not change.");
+
+                    TaskInfo updatedTaskInfo = new TaskInfo(taskInfoRequest);
+                    updatedTaskInfo.setResourceIds(new ArrayList<>(storedTaskInfo.getResourceIds()));
+                    updatedTaskInfo.setStoredResourceIds(new ArrayList<>(storedTaskInfo.getStoredResourceIds()));
+                    taskInfoRepository.save(updatedTaskInfo);
+                    resourceManagerTaskInfoResponseList.add(new ResourceManagerTaskInfoResponse(updatedTaskInfo));
+                } else {
+                    String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
+                    QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
+
+                    if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
+                        resourceManagerTaskInfoResponseList.add(newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse());
+                    if (newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest() != null)
+                        platformProxyAcquisitionStartRequestList.add(newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest());
+
+                    // Store the taskInfo
+                    TaskInfo taskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
+                    taskInfoRepository.save(taskInfo);
+                }
+            }
+
+
+            // Sending response to EnablerLogic
+            response.setResources(resourceManagerTaskInfoResponseList);
             rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
                     m -> {
                         m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
                         return m;
                     });
+
+            // Sending requests to PlatformProxy
+            for (PlatformProxyAcquisitionStartRequest req : platformProxyAcquisitionStartRequestList) {
+                log.info("Sending requests to Platform Proxy");
+                rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
+            }
+
 
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);

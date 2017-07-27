@@ -77,7 +77,7 @@ dependencies {
     */
     compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT') { changing = true }
     // compile('com.github.symbiote-h2020:SymbIoTeLibraries:0.2.0')
-    // compile('com.github.symbiote-h2020:SymbIoTeLibraries:dc37e61e968320c0b859db06b33cb914b9c10020')
+    // compile('com.github.symbiote-h2020:SymbIoTeLibraries:8e5818fef0c3aeb888894628fda33c81f1e37671')
 
     // for Certificates conversion
     compile('org.bouncycastle:bcpkix-jdk15on:1.56')

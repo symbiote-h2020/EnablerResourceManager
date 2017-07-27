@@ -1,5 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager.utils;
 
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
@@ -39,6 +40,8 @@ public class ProblematicResourcesTestHelper {
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
         taskInfo.setMinNoResources(5);
+        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
+        taskInfo.setQueryInterval_ms(100);
         taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
@@ -110,7 +113,9 @@ public class ProblematicResourcesTestHelper {
 
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
+        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
         taskInfo.setMinNoResources(5);
+        taskInfo.setQueryInterval_ms(100);
         taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6")));
@@ -170,6 +175,8 @@ public class ProblematicResourcesTestHelper {
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
         taskInfo.setMinNoResources(5);
+        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
+        taskInfo.setQueryInterval_ms(100);
         taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl")));

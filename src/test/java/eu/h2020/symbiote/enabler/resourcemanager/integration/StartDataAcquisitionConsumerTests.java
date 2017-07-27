@@ -90,6 +90,7 @@ public class StartDataAcquisitionConsumerTests {
 
     @Test
     public void resourceManagerGetResourceDetailsTest() throws Exception {
+        log.info("resourceManagerGetResourceDetailsTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
@@ -123,6 +124,8 @@ public class StartDataAcquisitionConsumerTests {
             log.info("startAcquisitionRequestsReceivedByListener.size(): " + dummyPlatformProxyListener.startAcquisitionRequestsReceived());
             TimeUnit.MILLISECONDS.sleep(100);
         }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Platform Proxy receives
         startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
@@ -142,10 +145,12 @@ public class StartDataAcquisitionConsumerTests {
             assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
         }
 
+        log.info("resourceManagerGetResourceDetailsTest FINISHED!");
     }
 
     // @Test
     public void resourceManagerGetResourceDetailsNoResponseTest() throws Exception {
+        log.info("resourceManagerGetResourceDetailsNoResponseTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
@@ -178,10 +183,12 @@ public class StartDataAcquisitionConsumerTests {
             TimeUnit.MILLISECONDS.sleep(100);
         }
 
+        log.info("resourceManagerGetResourceDetailsNoResponseTest FINISHED!");
     }
 
     @Test
     public void resourceManagerGetResourceDetailsBadRequestTest() throws Exception {
+        log.info("resourceManagerGetResourceDetailsBadRequestTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = TestHelper.createBadQueryToResourceManager();
@@ -200,16 +207,18 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(null, resultRef.get().getResources().get(0).getResourceIds());
+        assertEquals(0, resultRef.get().getResources().get(0).getResourceIds().size());
 
         // Test what Platform Proxy receives
         TimeUnit.MILLISECONDS.sleep(500);
         assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
 
+        log.info("resourceManagerGetResourceDetailsBadRequestTest FINISHED!");
     }
 
     @Test
     public void notSendingToPlatformProxyTest() throws Exception {
+        log.info("notSendingToPlatformProxyTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
@@ -248,10 +257,13 @@ public class StartDataAcquisitionConsumerTests {
         assertEquals(1, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
         assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
+
+        log.info("notSendingToPlatformProxyTest FINISHED!");
     }
 
     @Test
     public void allowCachingTest() throws Exception {
+        log.info("allowCachingTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
@@ -296,6 +308,8 @@ public class StartDataAcquisitionConsumerTests {
         assertEquals(1, taskInfo.getResourceIds().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
+
+        log.info("allowCachingTest FINISHED!");
 
     }
 

@@ -1,11 +1,13 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ProblematicResourcesHandler;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,13 +51,19 @@ public class ProblematicResourcesHandlerTests {
 
     @Test
     public void replaceProblematicResourcesEnoughResourcesAvailableTest() {
+        log.info("replaceProblematicResourcesEnoughResourcesAvailableTest STARTED!");
+
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
         taskInfo.setMinNoResources(5);
+        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
+        taskInfo.setQueryInterval_ms(1000);
         taskInfo.setAllowCaching(true);
+        taskInfo.setInformPlatformProxy(false);
+        taskInfo.setCachingInterval_ms(new Long(1000));
+        taskInfo.setEnablerLogicName("TestEnablerLogic");
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
-        taskInfo.setInformPlatformProxy(false);
 
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -77,5 +85,6 @@ public class ProblematicResourcesHandlerTests {
 
         assertEquals("8", result.getTaskInfo().getStoredResourceIds().get(0));
 
+        log.info("replaceProblematicResourcesEnoughResourcesAvailableTest FINISHED!");
     }
 }

@@ -94,6 +94,7 @@ public class CancelTaskConsumerTests {
 
     @Test
     public void cancelTask() throws Exception {
+        log.info("cancelTask FINISHED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
@@ -132,5 +133,7 @@ public class CancelTaskConsumerTests {
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(null, taskInfo);
+
+        log.info("cancelTask FINISHED!");
     }
 }

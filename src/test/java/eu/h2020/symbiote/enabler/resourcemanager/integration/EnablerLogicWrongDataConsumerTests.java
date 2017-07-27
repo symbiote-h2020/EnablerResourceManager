@@ -5,12 +5,12 @@ import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogi
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ProblematicResourcesTestHelper;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +34,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
-public class EnablerLogicWrongDataConsumer {
+public class EnablerLogicWrongDataConsumerTests {
+
+    private static Logger log = LoggerFactory
+            .getLogger(EnablerLogicWrongDataConsumerTests.class);
 
     @Autowired
     private TaskInfoRepository taskInfoRepository;
@@ -68,20 +71,32 @@ public class EnablerLogicWrongDataConsumer {
 
     @Test
     public void wrongDataResourcesWithEnoughResourcesTest() throws Exception {
+        log.info("wrongDataResourcesWithEnoughResourcesTest STARTED!");
+
         ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+
+        log.info("wrongDataResourcesWithEnoughResourcesTest FINISHED!");
     }
 
     @Test
     public void wrongDataResourcesWithNotEnoughResourcesTest() throws Exception {
+        log.info("wrongDataResourcesWithNotEnoughResourcesTest STARTED!");
+
         ProblematicResourcesTestHelper.problematicResourceMessageWithNotEnoughResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+
+        log.info("wrongDataResourcesWithNotEnoughResourcesTest FINISHED!");
     }
 
     @Test
     public void wrongDataResourcesWithEnoughStoredOnlyResourcesTest() throws Exception {
+        log.info("wrongDataResourcesWithEnoughStoredOnlyResourcesTest STARTED!");
+
         ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughStoredOnlyResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+
+        log.info("wrongDataResourcesWithEnoughStoredOnlyResourcesTest FINISHED!");
     }
 
 }

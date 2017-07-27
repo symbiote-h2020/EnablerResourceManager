@@ -11,6 +11,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +37,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ComponentScan
 @EnableAutoConfiguration
 public class PlatformProxyConnectionProblemConsumerTests {
+
+    private static Logger log = LoggerFactory
+            .getLogger(PlatformProxyConnectionProblemConsumerTests.class);
 
     @Autowired
     private TaskInfoRepository taskInfoRepository;
@@ -68,20 +73,32 @@ public class PlatformProxyConnectionProblemConsumerTests {
 
     @Test
     public void unavailableResourcesWithEnoughResourcesTest() throws Exception {
+        log.info("unavailableResourcesWithEnoughResourcesTest STARTED!");
+
         ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughResourcesTest(unavailableResourcesRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+
+        log.info("unavailableResourcesWithEnoughResourcesTest FINISHED!");
     }
 
     @Test
     public void unavailableResourcesWithNotEnoughResourcesTest() throws Exception {
+        log.info("unavailableResourcesWithNotEnoughResourcesTest STARTED!");
+
         ProblematicResourcesTestHelper.problematicResourceMessageWithNotEnoughResourcesTest(unavailableResourcesRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+
+        log.info("unavailableResourcesWithNotEnoughResourcesTest FINISHED!");
     }
 
     @Test
     public void unavailableResourcesWithEnoughStoredOnlyResourcesTest() throws Exception {
+        log.info("unavailableResourcesWithEnoughStoredOnlyResourcesTest STARTED!");
+
         ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughStoredOnlyResourcesTest(unavailableResourcesRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+
+        log.info("unavailableResourcesWithEnoughStoredOnlyResourcesTest FINISHED!");
     }
 
 }

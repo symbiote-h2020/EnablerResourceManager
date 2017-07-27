@@ -2,11 +2,14 @@ package eu.h2020.symbiote.enabler.resourcemanager.model;
 
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
+import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
 import org.springframework.data.annotation.Id;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by vasgl on 7/17/2017.
@@ -19,10 +22,20 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
         storedResourceIds = new ArrayList<>();
     }
 
+    public TaskInfo (ResourceManagerTaskInfoRequest resourceManagerTaskInfoRequest) {
+        super(resourceManagerTaskInfoRequest);
+        setResourceIds(new ArrayList<>());
+        storedResourceIds = new ArrayList<>();
+    }
+
     public TaskInfo (ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse) {
         super(resourceManagerTaskInfoResponse);
-        setResourceIds(resourceManagerTaskInfoResponse.getResourceIds());
         storedResourceIds = new ArrayList<>();
+    }
+
+    public TaskInfo (TaskInfo taskInfo) {
+        this((ResourceManagerTaskInfoResponse) taskInfo);
+        storedResourceIds = new ArrayList<>(taskInfo.getStoredResourceIds());
     }
 
     public List<String> getStoredResourceIds() { return storedResourceIds; }
@@ -36,5 +49,45 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
         }
     }
 
-//    Todo: Implement update in storedResourceIds
+    public void updateTaskInfo(ResourceManagerTaskInfoRequest request) {
+        this.setTaskId(request.getTaskId());
+        this.setMinNoResources(request.getMinNoResources());
+        this.setCoreQueryRequest(request.getCoreQueryRequest());
+        this.setQueryInterval_ms(request.getQueryInterval_ms());
+        this.setAllowCaching(request.getAllowCaching());
+        this.setCachingInterval_ms(request.getCachingInterval_ms());
+        this.setInformPlatformProxy(request.getInformPlatformProxy());
+        this.setEnablerLogicName(request.getEnablerLogicName());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        // self check
+        if (this == o)
+            return true;
+
+        // null check
+        if (o == null)
+            return false;
+
+        // type check and cast
+        if (!(o instanceof TaskInfo))
+            return false;
+
+        TaskInfo taskInfo = (TaskInfo) o;
+        // field comparison
+        return Objects.equals(this.getTaskId(), taskInfo.getTaskId())
+                && Objects.equals(this.getMinNoResources(), taskInfo.getMinNoResources())
+                && Objects.equals(this.getCoreQueryRequest(), taskInfo.getCoreQueryRequest())
+                && Objects.equals(this.getQueryInterval_ms(), taskInfo.getQueryInterval_ms())
+                && Objects.equals(this.getAllowCaching(), taskInfo.getAllowCaching())
+                && Objects.equals(this.getCachingInterval_ms(), taskInfo.getCachingInterval_ms())
+                && Objects.equals(this.getInformPlatformProxy(), taskInfo.getInformPlatformProxy())
+                && Objects.equals(this.getEnablerLogicName(), taskInfo.getEnablerLogicName())
+                && Objects.equals(this.getResourceIds(), taskInfo.getResourceIds())
+                && Objects.equals(this.getStoredResourceIds(), taskInfo.getStoredResourceIds());
+    }
+
+    //    Todo: Implement update in storedResourceIds
+
 }
