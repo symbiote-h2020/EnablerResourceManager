@@ -11,11 +11,13 @@ import com.rabbitmq.client.Envelope;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 
@@ -30,6 +32,14 @@ public class CancelTaskConsumer extends DefaultConsumer {
     @Autowired
     private TaskInfoRepository taskInfoRepository;
 
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Value("${rabbit.exchange.enablerPlatformProxy.name}")
+    private String platformProxyExchange;
+
+    @Value("${rabbit.routingKey.enablerPlatformProxy.cancelTasks}")
+    private String platformProxyCancelTasksRoutingKey;
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
@@ -57,6 +67,7 @@ public class CancelTaskConsumer extends DefaultConsumer {
 
         ObjectMapper mapper = new ObjectMapper();
         String requestInString = new String(body, "UTF-8");
+        CancelTaskRequest cancelTaskRequestToPlatformProxy = new CancelTaskRequest();
 
         log.info("Received CancelTaskRequest: " + requestInString);
 
@@ -69,10 +80,18 @@ public class CancelTaskConsumer extends DefaultConsumer {
                 if (taskInfo != null) {
                     log.info("Task with id = " + id + " was deleted.");
                     taskInfoRepository.delete(taskInfo);
+
+                    if (taskInfo.getInformPlatformProxy())
+                        cancelTaskRequestToPlatformProxy.getTaskIdList().add(taskInfo.getTaskId());
                 }
             }
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing CancelTaskRequest", e);
+        }
+
+        // Inform Platform Proxy
+        if (cancelTaskRequestToPlatformProxy.getTaskIdList().size() > 0) {
+            rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyCancelTasksRoutingKey, cancelTaskRequestToPlatformProxy);
         }
     }
 }

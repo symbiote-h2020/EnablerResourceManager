@@ -3,6 +3,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.dummyListeners;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyUpdateRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
@@ -29,6 +30,7 @@ public class DummyPlatformProxyListener {
 
     private List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener = new ArrayList<>();
     private List<PlatformProxyUpdateRequest> updateAcquisitionRequestsReceivedByListener = new ArrayList<>();
+    private List<CancelTaskRequest> cancelTaskRequestsReceivedByListener = new ArrayList<>();
     private ObjectMapper mapper = new ObjectMapper();
 
     public List<PlatformProxyAcquisitionStartRequest> getStartAcquisitionRequestsReceivedByListener() {
@@ -45,12 +47,21 @@ public class DummyPlatformProxyListener {
         this.updateAcquisitionRequestsReceivedByListener = list;
     }
 
+    public List<CancelTaskRequest> getCancelTaskRequestsReceivedByListener() {
+        return cancelTaskRequestsReceivedByListener;
+    }
+    public void setCancelTaskRequestsReceivedByListener(List<CancelTaskRequest> list) {
+        this.cancelTaskRequestsReceivedByListener = list;
+    }
+
     public int startAcquisitionRequestsReceived() { return startAcquisitionRequestsReceivedByListener.size(); }
     public int updateAcquisitionRequestsReceived() { return updateAcquisitionRequestsReceivedByListener.size(); }
+    public int cancelTaskRequestsReceived() { return cancelTaskRequestsReceivedByListener.size(); }
 
     public void clearRequestsReceivedByListener() {
         startAcquisitionRequestsReceivedByListener.clear();
         updateAcquisitionRequestsReceivedByListener.clear();
+        cancelTaskRequestsReceivedByListener.clear();
     }
 
     @RabbitListener(bindings = @QueueBinding(
@@ -78,7 +89,7 @@ public class DummyPlatformProxyListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "symbIoTe-pl-acquisitionUpdateRequested", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
+            value = @Queue(value = "symbIoTe-pl-cancelTasks", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
                     autoDelete = "${rabbit.exchange.enablerPlatformProxy.autodelete}", exclusive = "true"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
@@ -95,6 +106,30 @@ public class DummyPlatformProxyListener {
 
             for(PlatformProxyResourceInfo req : request.getNewResources()) {
                 log.info("request = " + req.getResourceId());
+            }
+        } catch (JsonProcessingException e) {
+            log.info(e.toString());
+        }
+    }
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(value = "symbIoTe-pl-acquisitionUpdateRequested", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
+                    autoDelete = "${rabbit.exchange.enablerPlatformProxy.autodelete}", exclusive = "true"),
+            exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
+                    durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
+                    internal = "${rabbit.exchange.enablerPlatformProxy.internal}", type = "${rabbit.exchange.enablerPlatformProxy.type}"),
+            key = "${rabbit.routingKey.enablerPlatformProxy.cancelTasks}")
+    )
+    public void platformProxyCancelTasksListener(CancelTaskRequest request) {
+        cancelTaskRequestsReceivedByListener.add(request);
+
+        try {
+            String responseInString = mapper.writeValueAsString(request);
+            log.info("PlatformProxyListener received cancel request: " + responseInString);
+            log.info("cancelTaskRequestsReceivedByListener.size() = " + cancelTaskRequestsReceivedByListener.size());
+
+            for(String id : request.getTaskIdList()) {
+                log.info("id = " + id);
             }
         } catch (JsonProcessingException e) {
             log.info(e.toString());
