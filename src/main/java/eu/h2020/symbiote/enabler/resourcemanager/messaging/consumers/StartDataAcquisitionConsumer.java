@@ -118,7 +118,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
             // Sending requests to PlatformProxy
             for (PlatformProxyAcquisitionStartRequest req : platformProxyAcquisitionStartRequestList) {
-                log.info("Sending requests to Platform Proxy");
+                log.info("Sending request to Platform Proxy for task " + req.getTaskId());
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
             }
         } catch (JsonParseException | JsonMappingException e) {

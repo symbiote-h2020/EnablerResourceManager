@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT,
@@ -96,7 +97,7 @@ public class UpdateTaskConsumerTests {
         log.info("updateTaskNoChangeInCoreQueryRequest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
+        List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
         TaskInfo task1 = new TaskInfo();
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -113,6 +114,7 @@ public class UpdateTaskConsumerTests {
         task1.setCachingInterval_ms(new Long(1000));
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
+        task1.setEnablerLogicName("enablerLogic");
         taskInfoRepository.save(task1);
 
         TaskInfo task2 = new TaskInfo(task1);
@@ -125,19 +127,68 @@ public class UpdateTaskConsumerTests {
         task3.setResourceIds(Arrays.asList("31", "32"));
         taskInfoRepository.save(task3);
 
+        TaskInfo task4 = new TaskInfo(task1);
+        task4.setTaskId("4");
+        task4.setResourceIds(Arrays.asList("41", "42"));
+        taskInfoRepository.save(task4);
+
+        TaskInfo task5 = new TaskInfo(task1);
+        task5.setTaskId("5");
+        task5.setResourceIds(Arrays.asList("51", "52"));
+        taskInfoRepository.save(task5);
+
+        TaskInfo task6 = new TaskInfo(task1);
+        task6.setTaskId("6");
+        task6.setResourceIds(Arrays.asList("61", "62"));
+        taskInfoRepository.save(task6);
+
+        TaskInfo task7 = new TaskInfo(task1);
+        task7.setTaskId("7");
+        task7.setResourceIds(Arrays.asList("71", "72"));
+        taskInfoRepository.save(task7);
+
+        // This task should reach Platform Proxy and inform it for new resources
         TaskInfo updatedTask1 = new TaskInfo(task1);
         updatedTask1.getCoreQueryRequest().setLocation_name("Paris");
 
+        // This task should not reach Platform Proxy, because InformPlatformProxy == false
         TaskInfo updatedTask2 = new TaskInfo(task2);
         updatedTask2.setInformPlatformProxy(false);
 
-        TaskInfo updatedTask3 = new TaskInfo(task3);
-        task3.setCoreQueryRequest(null);
+        // This task should not reach Platform Proxy, because there is nothing new to report
+        TaskInfo updatedTask3 = new TaskInfo();
+        updatedTask3.setTaskId("3");
+        updatedTask3.setMinNoResources(null);
+        updatedTask3.setCoreQueryRequest(null);
+        updatedTask3.setAllowCaching(null);
+        updatedTask3.setCachingInterval_ms(null);
+        updatedTask3.setInformPlatformProxy(null);
+        updatedTask3.setQueryInterval_ms(null);
+        updatedTask3.setEnablerLogicName(null);
+        updatedTask3.setResourceIds(Arrays.asList("31", "32"));
+        updatedTask3.setStoredResourceIds(Arrays.asList("3", "4"));
+
+        // This task should not reach Platform Proxy, because InformPlatformProxy == false
+        TaskInfo updatedTask4 = new TaskInfo(task4);
+        updatedTask4.setInformPlatformProxy(false);
+        updatedTask4.setEnablerLogicName("updatedTask4");
+        updatedTask4.setQueryInterval_ms(100);
+
+        // This task should reach Platform Proxy, because InformPlatformProxy == true and the enablerLogic changed
+        TaskInfo updatedTask5 = new TaskInfo(task5);
+        updatedTask5.setEnablerLogicName("updatedTask5");
+
+        // This task should reach Platform Proxy, because InformPlatformProxy == true and the query interval changed
+        TaskInfo updatedTask6 = new TaskInfo(task6);
+        updatedTask6.setQueryInterval_ms(100);
 
         ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
-                new ResourceManagerTaskInfoRequest(updatedTask3)));
+                new ResourceManagerTaskInfoRequest(updatedTask3),
+                new ResourceManagerTaskInfoRequest(updatedTask4),
+                new ResourceManagerTaskInfoRequest(updatedTask5),
+                new ResourceManagerTaskInfoRequest(updatedTask6)));
 
 
         log.info("Before sending the message");
@@ -156,21 +207,38 @@ public class UpdateTaskConsumerTests {
         TaskInfo storedTaskInfo1 = taskInfoRepository.findByTaskId("1");
         TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
         TaskInfo storedTaskInfo3 = taskInfoRepository.findByTaskId("3");
+        TaskInfo storedTaskInfo4 = taskInfoRepository.findByTaskId("4");
+        TaskInfo storedTaskInfo5 = taskInfoRepository.findByTaskId("5");
+        TaskInfo storedTaskInfo6 = taskInfoRepository.findByTaskId("6");
 
+
+        // Only task3.equals(storedTaskInfo3) should be true, because updateTask3 is the only one where nothing changes
         assertEquals(false, task1.equals(storedTaskInfo1));
         assertEquals(false, task2.equals(storedTaskInfo2));
+        assertEquals(true, task3.equals(storedTaskInfo3));
+        assertEquals(false, task4.equals(storedTaskInfo4));
+        assertEquals(false, task5.equals(storedTaskInfo5));
+        assertEquals(false, task6.equals(storedTaskInfo6));
+
+
+        // Only updatedTask1.equals(storedTaskInfo1) and updatedTask3.equals(storedTaskInfo3) should be false, because
+        // storedTaskInfo1 has modified resources and storedTaskInfo3 has the initial fields, not null fields
         assertEquals(false, updatedTask1.equals(storedTaskInfo1));
         assertEquals(true, updatedTask2.equals(storedTaskInfo2));
-        assertEquals(true, updatedTask3.equals(storedTaskInfo3));
+        assertEquals(false, updatedTask3.equals(storedTaskInfo3));
+        assertEquals(true, updatedTask4.equals(storedTaskInfo4));
+        assertEquals(true, updatedTask5.equals(storedTaskInfo5));
+        assertEquals(true, updatedTask6.equals(storedTaskInfo6));
 
-        String responseInString = mapper.writeValueAsString(resultRef.get().getResources());
-        log.info("Response String: " + responseInString);
 
         // Test what Enabler Logic receives
-        assertEquals(3, resultRef.get().getResources().size());
+        assertEquals(6, resultRef.get().getResources().size());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(2).getResourceIds().size());
+        assertEquals(2, resultRef.get().getResources().get(3).getResourceIds().size());
+        assertEquals(2, resultRef.get().getResources().get(4).getResourceIds().size());
+        assertEquals(2, resultRef.get().getResources().get(5).getResourceIds().size());
 
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
@@ -178,20 +246,53 @@ public class UpdateTaskConsumerTests {
         assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
         assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
         assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
+        assertEquals("41", resultRef.get().getResources().get(3).getResourceIds().get(0));
+        assertEquals("42", resultRef.get().getResources().get(3).getResourceIds().get(1));
+        assertEquals("51", resultRef.get().getResources().get(4).getResourceIds().get(0));
+        assertEquals("52", resultRef.get().getResources().get(4).getResourceIds().get(1));
+        assertEquals("61", resultRef.get().getResources().get(5).getResourceIds().get(0));
+        assertEquals("62", resultRef.get().getResources().get(5).getResourceIds().get(1));
 
-        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 1) {
-            log.info("startAcquisitionRequestsReceivedByListener.size(): " + dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        while(dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 3) {
+            log.info("updateAcquisitionRequestsReceived.size(): " + dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
             TimeUnit.MILLISECONDS.sleep(100);
         }
         // Added extra delay to make sure that the message is handled
         TimeUnit.MILLISECONDS.sleep(300);
 
         // Test what Platform Proxy receives
-        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+        taskUpdateRequestsReceivedByListener = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
 
-        assertEquals(1, startAcquisitionRequestsReceivedByListener.size());
-        assertEquals("resource1", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
-        assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(1).getResourceId());
+        assertEquals(3, taskUpdateRequestsReceivedByListener.size());
+
+        for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
+
+            log.info("id = " + request.getTaskId());
+
+            if (request.getTaskId().equals("1")) {
+                assertEquals("resource1", request.getResources().get(0).getResourceId());
+                assertEquals("resource2", request.getResources().get(1).getResourceId());
+                assertEquals("enablerLogic", request.getEnablerLogicName());
+                assertEquals(60, (int) request.getQueryInterval_ms());
+                continue;
+            }
+
+            if (request.getTaskId().equals("5")) {
+                assertEquals(null, request.getResources());
+                assertEquals("updatedTask5", request.getEnablerLogicName());
+                assertEquals(60, (int) request.getQueryInterval_ms());
+                continue;
+            }
+
+            if (request.getTaskId().equals("6")) {
+                assertEquals(null, request.getResources());
+                assertEquals("enablerLogic", request.getEnablerLogicName());
+                assertEquals(100, (int) request.getQueryInterval_ms());
+                continue;
+            }
+
+            fail("The code should not reach here, because no other tasks should be received by the platform proxy");
+        }
 
         log.info("updateTaskNoChangeInCoreQueryRequest FINISHED!");
     }

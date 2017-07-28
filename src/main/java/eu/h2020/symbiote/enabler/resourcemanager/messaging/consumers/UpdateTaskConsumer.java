@@ -7,6 +7,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
@@ -41,8 +42,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
     @Value("${rabbit.exchange.enablerPlatformProxy.name}")
     private String platformProxyExchange;
 
-    @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStartRequested}")
-    private String platformProxyAcquisitionStartRequestedRoutingKey;
+    @Value("${rabbit.routingKey.enablerPlatformProxy.taskUpdated}")
+    private String platformProxyTaskUpdatedKey;
 
     @Autowired
     @Qualifier("symbIoTeCoreUrl")
@@ -91,18 +92,55 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 TaskInfo storedTaskInfo = taskInfoRepository.findByTaskId(taskInfoRequest.getTaskId());
 
                 // ToDO: Check if Task exists
-
                 if (taskInfoRequest.getCoreQueryRequest() == null ||
                         taskInfoRequest.getCoreQueryRequest().equals(storedTaskInfo.getCoreQueryRequest())){
 
                     log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " did not change.");
 
                     TaskInfo updatedTaskInfo = new TaskInfo(taskInfoRequest);
+
+                    // If a value is null, retain the previous value
+                    if (updatedTaskInfo.getMinNoResources() == null)
+                        updatedTaskInfo.setMinNoResources(storedTaskInfo.getMinNoResources());
+                    if (updatedTaskInfo.getQueryInterval_ms() == null)
+                        updatedTaskInfo.setQueryInterval_ms(storedTaskInfo.getQueryInterval_ms());
+                    if (updatedTaskInfo.getAllowCaching() == null)
+                        updatedTaskInfo.setAllowCaching(storedTaskInfo.getAllowCaching());
+                    if (updatedTaskInfo.getCachingInterval_ms() == null)
+                        updatedTaskInfo.setCachingInterval_ms(storedTaskInfo.getCachingInterval_ms());
+                    if (updatedTaskInfo.getInformPlatformProxy() == null)
+                        updatedTaskInfo.setInformPlatformProxy(storedTaskInfo.getInformPlatformProxy());
+                    if (updatedTaskInfo.getEnablerLogicName() == null)
+                        updatedTaskInfo.setEnablerLogicName(storedTaskInfo.getEnablerLogicName());
+
+                    // Always retain the following values in the updatedTaskInfo if the CoreQuery Request does not change
+                    updatedTaskInfo.setCoreQueryRequest(CoreQueryRequest.newInstance(storedTaskInfo.getCoreQueryRequest()));
                     updatedTaskInfo.setResourceIds(new ArrayList<>(storedTaskInfo.getResourceIds()));
                     updatedTaskInfo.setStoredResourceIds(new ArrayList<>(storedTaskInfo.getStoredResourceIds()));
+
                     taskInfoRepository.save(updatedTaskInfo);
+
+                    // Inform Enabler Logic in any case
                     resourceManagerTaskInfoResponseList.add(new ResourceManagerTaskInfoResponse(updatedTaskInfo));
+
+                    // Inform Platform Proxy
+                    if (updatedTaskInfo.getInformPlatformProxy() == true &&
+                            (updatedTaskInfo.getQueryInterval_ms() != storedTaskInfo.getQueryInterval_ms() ||
+                            !updatedTaskInfo.getEnablerLogicName().equals(storedTaskInfo.getEnablerLogicName()))) {
+
+                        PlatformProxyAcquisitionStartRequest updateRequest = new PlatformProxyAcquisitionStartRequest();
+                        updateRequest.setTaskId(updatedTaskInfo.getTaskId());
+                        updateRequest.setEnablerLogicName(updatedTaskInfo.getEnablerLogicName());
+                        updateRequest.setQueryInterval_ms(updatedTaskInfo.getQueryInterval_ms());
+                        updateRequest.setResources(null); // Setting resources to null if there are no updates
+
+                        platformProxyAcquisitionStartRequestList.add(updateRequest);
+                    }
+
+
                 } else {
+                    log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " changed.");
+
                     String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
                     QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
 
@@ -128,8 +166,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
             // Sending requests to PlatformProxy
             for (PlatformProxyAcquisitionStartRequest req : platformProxyAcquisitionStartRequestList) {
-                log.info("Sending requests to Platform Proxy");
-                rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
+                log.info("Sending request to Platform Proxy for task " + req.getTaskId());
+                rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyTaskUpdatedKey, req);
             }
 
 

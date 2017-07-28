@@ -80,9 +80,14 @@ public class DummyPlatformProxyListener {
             log.info("PlatformProxyListener received request: " + responseInString);
             log.info("requestReceivedByListener.size() = " + startAcquisitionRequestsReceivedByListener.size());
 
-            for(PlatformProxyResourceInfo req : request.getResources()) {
-                log.info("request = " + req.getResourceId());
+            if (request.getResources() != null) {
+                for(PlatformProxyResourceInfo req : request.getResources()) {
+                    log.info("request = " + req.getResourceId());
+                }
+            } else {
+                log.info("The request.getResources() was null");
             }
+
         } catch (JsonProcessingException e) {
             log.info(e.toString());
         }
@@ -94,7 +99,7 @@ public class DummyPlatformProxyListener {
             exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
                     internal = "${rabbit.exchange.enablerPlatformProxy.internal}", type = "${rabbit.exchange.enablerPlatformProxy.type}"),
-            key = "${rabbit.routingKey.enablerPlatformProxy.resourcesUpdated}")
+            key = "${rabbit.routingKey.enablerPlatformProxy.taskUpdated}")
     )
     public void platformProxyResourcesUpdatedListener(PlatformProxyUpdateRequest request) {
         updateAcquisitionRequestsReceivedByListener.add(request);
@@ -104,8 +109,12 @@ public class DummyPlatformProxyListener {
             log.info("PlatformProxyListener received update request: " + responseInString);
             log.info("updateRequestReceivedByListener.size() = " + updateAcquisitionRequestsReceivedByListener.size());
 
-            for(PlatformProxyResourceInfo req : request.getNewResources()) {
-                log.info("request = " + req.getResourceId());
+            if (request.getResources() != null) {
+                for(PlatformProxyResourceInfo req : request.getResources()) {
+                    log.info("request = " + req.getResourceId());
+                }
+            } else {
+                log.info("The request.getResources() was null. So, we have no new resources to query");
             }
         } catch (JsonProcessingException e) {
             log.info(e.toString());

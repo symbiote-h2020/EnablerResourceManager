@@ -39,8 +39,8 @@ public final class ProblematicResourcesHandler {
     @Value("${rabbit.exchange.enablerLogic.name}")
     private String enablerLogicExchange;
 
-    @Value("${rabbit.routingKey.enablerPlatformProxy.resourcesUpdated}")
-    private String platformProxyResourcesUpdatedKey;
+    @Value("${rabbit.routingKey.enablerPlatformProxy.taskUpdated}")
+    private String platformProxyTaskUpdatedKey;
     @Value("${rabbit.routingKey.enablerLogic.resourcesUpdated}")
     private String genericEnablerLogicResourcesUpdatedKey;
     @Value("${rabbit.routingKey.enablerLogic.notEnoughResources}")
@@ -78,11 +78,15 @@ public final class ProblematicResourcesHandler {
                         // Inform Platform Proxy
                         if (taskInfo.getInformPlatformProxy()) {
 
-                            PlatformProxyUpdateRequest platformProxyUpdateRequest = new PlatformProxyUpdateRequest(newTaskInfo.getTaskId(),
-                                    problematicResourcesHandlerResult.getPlatformProxyResourceInfoList());
+                            PlatformProxyUpdateRequest platformProxyUpdateRequest = new PlatformProxyUpdateRequest();
+                            platformProxyUpdateRequest.setTaskId(newTaskInfo.getTaskId());
+                            platformProxyUpdateRequest.setQueryInterval_ms(newTaskInfo.getQueryInterval_ms());
+                            platformProxyUpdateRequest.setEnablerLogicName(newTaskInfo.getEnablerLogicName());
+                            platformProxyUpdateRequest.setResources(problematicResourcesHandlerResult.getPlatformProxyResourceInfoList());
+
 
                             // Sending requests to PlatformProxy about the new resource ids of the task
-                            rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyResourcesUpdatedKey,
+                            rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyTaskUpdatedKey,
                                     platformProxyUpdateRequest);
                         }
 

@@ -89,11 +89,11 @@ public class ProblematicResourcesTestHelper {
         // Test what Platform Proxy receives
         updateRequestsReceivedByPlatformProxy = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
         assertEquals(1, updateRequestsReceivedByPlatformProxy.size());
-        assertEquals(4, updateRequestsReceivedByPlatformProxy.get(0).getNewResources().size());
-        assertEquals("4", updateRequestsReceivedByPlatformProxy.get(0).getNewResources().get(0).getResourceId());
-        assertEquals("5", updateRequestsReceivedByPlatformProxy.get(0).getNewResources().get(1).getResourceId());
-        assertEquals("6", updateRequestsReceivedByPlatformProxy.get(0).getNewResources().get(2).getResourceId());
-        assertEquals("7", updateRequestsReceivedByPlatformProxy.get(0).getNewResources().get(3).getResourceId());
+        assertEquals(4, updateRequestsReceivedByPlatformProxy.get(0).getResources().size());
+        assertEquals("4", updateRequestsReceivedByPlatformProxy.get(0).getResources().get(0).getResourceId());
+        assertEquals("5", updateRequestsReceivedByPlatformProxy.get(0).getResources().get(1).getResourceId());
+        assertEquals("6", updateRequestsReceivedByPlatformProxy.get(0).getResources().get(2).getResourceId());
+        assertEquals("7", updateRequestsReceivedByPlatformProxy.get(0).getResources().get(3).getResourceId());
 
         // Test what Enabler Logic receives
         updateRequestsReceivedByEnablerLogic = dummyEnablerLogicListener.getUpdateResourcesReceivedByListener();
