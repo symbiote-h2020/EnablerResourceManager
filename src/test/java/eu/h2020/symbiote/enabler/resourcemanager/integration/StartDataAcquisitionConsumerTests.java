@@ -92,6 +92,8 @@ public class StartDataAcquisitionConsumerTests {
     public void resourceManagerGetResourceDetailsTest() throws Exception {
         log.info("resourceManagerGetResourceDetailsTest STARTED!");
 
+        // ToDo: add default field value in TaskInfo
+
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
         List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
@@ -129,6 +131,9 @@ public class StartDataAcquisitionConsumerTests {
 
         // Test what Platform Proxy receives
         startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+
+        assertEquals(2, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
 
         if (startAcquisitionRequestsReceivedByListener.get(0).getResources().size() == 2) {
             assertEquals("resource1", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
@@ -255,6 +260,7 @@ public class StartDataAcquisitionConsumerTests {
         // Test what Platform Proxy receives
         startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
         assertEquals(1, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
         assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
         assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
 

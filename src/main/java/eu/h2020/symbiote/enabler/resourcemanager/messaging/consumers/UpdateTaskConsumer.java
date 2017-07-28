@@ -45,6 +45,9 @@ public class UpdateTaskConsumer extends DefaultConsumer {
     @Value("${rabbit.routingKey.enablerPlatformProxy.taskUpdated}")
     private String platformProxyTaskUpdatedKey;
 
+    @Value("${rabbit.routingKey.enablerPlatformProxy.cancelTasks}")
+    private String platformProxyCancelTasksRoutingKey;
+
     @Autowired
     @Qualifier("symbIoTeCoreUrl")
     private String symbIoTeCoreUrl;
@@ -81,6 +84,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         ResourceManagerAcquisitionStartResponse response  = new ResourceManagerAcquisitionStartResponse();
         ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = new ArrayList<>();
         ArrayList<PlatformProxyAcquisitionStartRequest> platformProxyAcquisitionStartRequestList = new ArrayList<>();
+        CancelTaskRequest cancelTaskRequest = new CancelTaskRequest();
+        cancelTaskRequest.setTaskIdList(new ArrayList<>());
 
         log.info("Received UpdateTask request : " + requestInString);
 
@@ -124,7 +129,16 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     resourceManagerTaskInfoResponseList.add(new ResourceManagerTaskInfoResponse(updatedTaskInfo));
 
                     // Inform Platform Proxy
-                    if (updatedTaskInfo.getInformPlatformProxy() == true &&
+                    if (storedTaskInfo.getInformPlatformProxy() != updatedTaskInfo.getInformPlatformProxy()) {
+                        if (updatedTaskInfo.getInformPlatformProxy()) {
+                            // send StartAcquisitionRequest
+                        }
+                        else {
+                            // send CancelTaskRequest
+                            cancelTaskRequest.getTaskIdList().add(updatedTaskInfo.getTaskId());
+                        }
+                    }
+                    else if (updatedTaskInfo.getInformPlatformProxy() == true &&
                             (updatedTaskInfo.getQueryInterval_ms() != storedTaskInfo.getQueryInterval_ms() ||
                             !updatedTaskInfo.getEnablerLogicName().equals(storedTaskInfo.getEnablerLogicName()))) {
 
@@ -152,6 +166,17 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     // Store the taskInfo
                     TaskInfo taskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
                     taskInfoRepository.save(taskInfo);
+
+                    // Inform Platform Proxy depending on the informPlatformProxy transition
+                    if (storedTaskInfo.getInformPlatformProxy() != taskInfo.getInformPlatformProxy()) {
+                        if (taskInfo.getInformPlatformProxy()) {
+                            // send StartAcquisitionRequest
+                        }
+                        else {
+                            // send CancelTaskRequest
+                            cancelTaskRequest.getTaskIdList().add(taskInfo.getTaskId());
+                        }
+                    }
                 }
             }
 
@@ -164,17 +189,19 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         return m;
                     });
 
-            // Sending requests to PlatformProxy
+            // Sending requests to PlatformProxy about updated tasks
             for (PlatformProxyAcquisitionStartRequest req : platformProxyAcquisitionStartRequestList) {
                 log.info("Sending request to Platform Proxy for task " + req.getTaskId());
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyTaskUpdatedKey, req);
             }
 
+            // Inform Platform Proxy
+            if (cancelTaskRequest.getTaskIdList().size() > 0) {
+                rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyCancelTasksRoutingKey, cancelTaskRequest);
+            }
 
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
         }
-
-
     }
 }

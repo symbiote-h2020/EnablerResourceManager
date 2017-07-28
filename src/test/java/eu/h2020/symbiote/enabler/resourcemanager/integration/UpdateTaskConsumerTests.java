@@ -6,6 +6,7 @@ import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.CancelTaskConsumer;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCallbackCustom;
@@ -94,7 +95,9 @@ public class UpdateTaskConsumerTests {
 
     @Test
     public void updateTaskTest() throws Exception {
-        log.info("updateTaskNoChangeInCoreQueryRequest STARTED!");
+        // In this test, the value of informPlatformProxy remains the same in all the tasks
+
+        log.info("updateTaskTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
@@ -119,6 +122,7 @@ public class UpdateTaskConsumerTests {
 
         TaskInfo task2 = new TaskInfo(task1);
         task2.setTaskId("2");
+        task2.setInformPlatformProxy(false); // Because we want to keep the same value in the updatedTask2
         task2.setResourceIds(Arrays.asList("21", "22"));
         taskInfoRepository.save(task2);
 
@@ -129,6 +133,7 @@ public class UpdateTaskConsumerTests {
 
         TaskInfo task4 = new TaskInfo(task1);
         task4.setTaskId("4");
+        task4.setInformPlatformProxy(false); // Because we want to keep the same value in the updatedTask4
         task4.setResourceIds(Arrays.asList("41", "42"));
         taskInfoRepository.save(task4);
 
@@ -211,15 +216,13 @@ public class UpdateTaskConsumerTests {
         TaskInfo storedTaskInfo5 = taskInfoRepository.findByTaskId("5");
         TaskInfo storedTaskInfo6 = taskInfoRepository.findByTaskId("6");
 
-
         // Only task3.equals(storedTaskInfo3) should be true, because updateTask3 is the only one where nothing changes
         assertEquals(false, task1.equals(storedTaskInfo1));
-        assertEquals(false, task2.equals(storedTaskInfo2));
+        assertEquals(true, task2.equals(storedTaskInfo2));
         assertEquals(true, task3.equals(storedTaskInfo3));
         assertEquals(false, task4.equals(storedTaskInfo4));
         assertEquals(false, task5.equals(storedTaskInfo5));
         assertEquals(false, task6.equals(storedTaskInfo6));
-
 
         // Only updatedTask1.equals(storedTaskInfo1) and updatedTask3.equals(storedTaskInfo3) should be false, because
         // storedTaskInfo1 has modified resources and storedTaskInfo3 has the initial fields, not null fields
@@ -229,7 +232,6 @@ public class UpdateTaskConsumerTests {
         assertEquals(true, updatedTask4.equals(storedTaskInfo4));
         assertEquals(true, updatedTask5.equals(storedTaskInfo5));
         assertEquals(true, updatedTask6.equals(storedTaskInfo6));
-
 
         // Test what Enabler Logic receives
         assertEquals(6, resultRef.get().getResources().size());
@@ -263,7 +265,9 @@ public class UpdateTaskConsumerTests {
         // Test what Platform Proxy receives
         taskUpdateRequestsReceivedByListener = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
 
-        assertEquals(3, taskUpdateRequestsReceivedByListener.size());
+        assertEquals(3, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
 
         for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
 
@@ -294,6 +298,108 @@ public class UpdateTaskConsumerTests {
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
-        log.info("updateTaskNoChangeInCoreQueryRequest FINISHED!");
+        log.info("updateTaskTest FINISHED!");
     }
+
+    @Test
+    public void updateTaskWithInformPlatformProxyBecomingFalseTest() throws Exception {
+        // In this test, the value of informPlatformProxy changes from true to false
+
+        log.info("updateTaskWithInformPlatformProxyBecomingFalseTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<CancelTaskRequest> cancelTaskRequestsReceivedByListener;
+
+        TaskInfo task1 = new TaskInfo();
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .locationName("Zurich")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .build();
+
+        task1.setTaskId("1");
+        task1.setMinNoResources(2);
+        task1.setCoreQueryRequest(coreQueryRequest);
+        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
+        task1.setQueryInterval_ms(60);
+        task1.setAllowCaching(true);
+        task1.setCachingInterval_ms(new Long(1000));
+        task1.setInformPlatformProxy(true);
+        task1.setStoredResourceIds(Arrays.asList("3", "4"));
+        task1.setEnablerLogicName("enablerLogic");
+        taskInfoRepository.save(task1);
+
+        TaskInfo task2 = new TaskInfo(task1);
+        task2.setTaskId("2");
+        task2.setResourceIds(Arrays.asList("21", "22"));
+        taskInfoRepository.save(task2);
+
+         // This task should reach Platform Proxy and inform it for new resources
+        TaskInfo updatedTask1 = new TaskInfo(task1);
+        updatedTask1.getCoreQueryRequest().setLocation_name("Paris");
+        updatedTask1.setInformPlatformProxy(false);
+
+        // This task should not reach Platform Proxy, because InformPlatformProxy == false
+        TaskInfo updatedTask2 = new TaskInfo(task2);
+        updatedTask2.setInformPlatformProxy(false);
+
+        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+                new ResourceManagerTaskInfoRequest(updatedTask2)));
+
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("updateTask", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        TaskInfo storedTaskInfo1 = taskInfoRepository.findByTaskId("1");
+        TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
+
+        // Both tasks change their informPlatformProxy field
+        assertEquals(false, task1.equals(storedTaskInfo1));
+        assertEquals(false, task2.equals(storedTaskInfo2));
+
+        // Only updatedTask1.equals(storedTaskInfo1) should be false, because it has modified resources
+        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
+        assertEquals(true, updatedTask2.equals(storedTaskInfo2));
+
+        // Test what Enabler Logic receives
+        assertEquals(2, resultRef.get().getResources().size());
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
+
+        while(dummyPlatformProxyListener.cancelTaskRequestsReceived() < 1) {
+            log.info("updateAcquisitionRequestsReceived.size(): " + dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        // Test what Platform Proxy receives
+        cancelTaskRequestsReceivedByListener = dummyPlatformProxyListener.getCancelTaskRequestsReceivedByListener();
+
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(1, dummyPlatformProxyListener.cancelTaskRequestsReceived());
+
+        assertEquals(2, cancelTaskRequestsReceivedByListener.get(0).getTaskIdList().size());
+        assertEquals("1", cancelTaskRequestsReceivedByListener.get(0).getTaskIdList().get(0));
+        assertEquals("2", cancelTaskRequestsReceivedByListener.get(0).getTaskIdList().get(1));
+
+        log.info("updateTaskWithInformPlatformProxyBecomingFalseTest FINISHED!");
+    }
+
 }
