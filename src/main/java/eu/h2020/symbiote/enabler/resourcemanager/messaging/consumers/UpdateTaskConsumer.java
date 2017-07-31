@@ -124,15 +124,22 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     updatedTaskInfo.setResourceIds(new ArrayList<>(storedTaskInfo.getResourceIds()));
                     updatedTaskInfo.setStoredResourceIds(new ArrayList<>(storedTaskInfo.getStoredResourceIds()));
 
-                    taskInfoRepository.save(updatedTaskInfo);
+                    // Check if allowCaching changed value
+                    if (storedTaskInfo.getAllowCaching() != updatedTaskInfo.getAllowCaching()) {
+                        if (updatedTaskInfo.getAllowCaching()) {
+                            // ToDo: Acquire resources
+                            // ToDo: Configure the timer
+                        } else {
+                            updatedTaskInfo.getStoredResourceIds().clear();
+                            // Todo: Clear The timer
+                        }
+                    }
 
-                    // Inform Enabler Logic in any case
-                    resourceManagerTaskInfoResponseList.add(new ResourceManagerTaskInfoResponse(updatedTaskInfo));
-
-                    // Inform Platform Proxy
+                    // Check if informPlatformProxy changed value
                     if (storedTaskInfo.getInformPlatformProxy() != updatedTaskInfo.getInformPlatformProxy()) {
                         if (updatedTaskInfo.getInformPlatformProxy()) {
                             // send StartAcquisitionRequest
+
                         }
                         else {
                             // send CancelTaskRequest
@@ -152,6 +159,10 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         platformProxyUpdateRequestArrayList.add(updateRequest);
                     }
 
+                    // Inform Enabler Logic in any case
+                    resourceManagerTaskInfoResponseList.add(new ResourceManagerTaskInfoResponse(updatedTaskInfo));
+
+                    taskInfoRepository.save(updatedTaskInfo);
 
                 } else {
                     log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " changed.");

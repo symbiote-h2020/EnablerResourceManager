@@ -301,7 +301,7 @@ public class UpdateTaskConsumerTests {
         log.info("updateTaskTest FINISHED!");
     }
 
-//    @Test
+    @Test
     public void updateTaskWithInformPlatformProxyBecomingFalseTest() throws Exception {
         // In this test, the value of informPlatformProxy changes from true to false
 
@@ -402,4 +402,100 @@ public class UpdateTaskConsumerTests {
         log.info("updateTaskWithInformPlatformProxyBecomingFalseTest FINISHED!");
     }
 
+    @Test
+    public void updateTaskWithAllowCachingBecomingFalseTest() throws Exception {
+        // In this test, the value of allowCaching changes from true to false
+
+        log.info("updateTaskWithAllowCachingBecomingFalseTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<CancelTaskRequest> cancelTaskRequestsReceivedByListener;
+
+        TaskInfo task1 = new TaskInfo();
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .locationName("Zurich")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .build();
+
+        task1.setTaskId("1");
+        task1.setMinNoResources(2);
+        task1.setCoreQueryRequest(coreQueryRequest);
+        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
+        task1.setQueryInterval_ms(60);
+        task1.setAllowCaching(true);
+        task1.setCachingInterval_ms(new Long(1000));
+        task1.setInformPlatformProxy(false);
+        task1.setStoredResourceIds(Arrays.asList("3", "4"));
+        task1.setEnablerLogicName("enablerLogic");
+        taskInfoRepository.save(task1);
+
+        TaskInfo task2 = new TaskInfo(task1);
+        task2.setTaskId("2");
+        task2.setResourceIds(Arrays.asList("21", "22"));
+        taskInfoRepository.save(task2);
+
+        // This task should reach Platform Proxy and inform it for new resources
+        TaskInfo updatedTask1 = new TaskInfo(task1);
+        updatedTask1.getCoreQueryRequest().setLocation_name("Paris");
+        updatedTask1.setAllowCaching(false);
+
+        // This task should not reach Platform Proxy, because nothing that concerns the Platform Proxy changes
+        TaskInfo updatedTask2 = new TaskInfo(task2);
+        updatedTask2.setAllowCaching(false);
+
+        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+                new ResourceManagerTaskInfoRequest(updatedTask2)));
+
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("updateTask", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        TaskInfo storedTaskInfo1 = taskInfoRepository.findByTaskId("1");
+        TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
+
+        // Both tasks change their allowCaching field
+        assertEquals(false, task1.equals(storedTaskInfo1));
+        assertEquals(false, task2.equals(storedTaskInfo2));
+
+        // Both should be false, because the stored resources are cleared
+        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
+        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
+
+        // Test if the stored resources were cleared in both tasks
+        assertEquals(0, storedTaskInfo1.getStoredResourceIds().size());
+        assertEquals(0, storedTaskInfo2.getStoredResourceIds().size());
+
+        // Test what Enabler Logic receives
+        assertEquals(2, resultRef.get().getResources().size());
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
+
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        // Test what Platform Proxy receives
+        cancelTaskRequestsReceivedByListener = dummyPlatformProxyListener.getCancelTaskRequestsReceivedByListener();
+
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
+
+        log.info("updateTaskWithAllowCachingBecomingFalseTest FINISHED!");
+    }
 }
