@@ -13,6 +13,7 @@ import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResp
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
+import javafx.concurrent.Task;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -127,9 +128,30 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     // Check if allowCaching changed value
                     if (storedTaskInfo.getAllowCaching() != updatedTaskInfo.getAllowCaching()) {
                         if (updatedTaskInfo.getAllowCaching()) {
-                            // ToDo: Acquire resources
+                            log.debug("AllowCaching changed value from false to true");
+
+                            // Acquire resources
+                            String queryUrl = searchHelper.buildRequestUrl(updatedTaskInfo);
+                            QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
+                                    .queryAndProcessSearchResponse(queryUrl, updatedTaskInfo);
+
+                            TaskInfo newTaskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
+                            updatedTaskInfo.setStoredResourceIds(new ArrayList<>());
+
+                            // Add the resource ids of the newTask that are not already in the resourceIds list
+                            for (String resource : newTaskInfo.getResourceIds()) {
+                                if (!updatedTaskInfo.getStoredResourceIds().contains(resource)) {
+                                    updatedTaskInfo.getStoredResourceIds().add(resource);
+                                }
+                            }
+
+                            // Also, add the storedResource ids of the newTask
+                            updatedTaskInfo.getStoredResourceIds().addAll(newTaskInfo.getStoredResourceIds());
+
                             // ToDo: Configure the timer
                         } else {
+                            log.debug("AllowCaching changed value from true to false");
+
                             updatedTaskInfo.getStoredResourceIds().clear();
                             // Todo: Clear The timer
                         }
