@@ -83,7 +83,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         String requestInString = new String(body, "UTF-8");
         ResourceManagerAcquisitionStartResponse response  = new ResourceManagerAcquisitionStartResponse();
         ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = new ArrayList<>();
-        ArrayList<PlatformProxyAcquisitionStartRequest> platformProxyAcquisitionStartRequestList = new ArrayList<>();
+        ArrayList<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList = new ArrayList<>();
+        ArrayList<PlatformProxyTaskInfo> platformProxyUpdateRequestArrayList = new ArrayList<>();
         CancelTaskRequest cancelTaskRequest = new CancelTaskRequest();
         cancelTaskRequest.setTaskIdList(new ArrayList<>());
 
@@ -142,13 +143,13 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                             (updatedTaskInfo.getQueryInterval_ms() != storedTaskInfo.getQueryInterval_ms() ||
                             !updatedTaskInfo.getEnablerLogicName().equals(storedTaskInfo.getEnablerLogicName()))) {
 
-                        PlatformProxyAcquisitionStartRequest updateRequest = new PlatformProxyAcquisitionStartRequest();
+                        PlatformProxyUpdateRequest updateRequest = new PlatformProxyUpdateRequest();
                         updateRequest.setTaskId(updatedTaskInfo.getTaskId());
                         updateRequest.setEnablerLogicName(updatedTaskInfo.getEnablerLogicName());
                         updateRequest.setQueryInterval_ms(updatedTaskInfo.getQueryInterval_ms());
                         updateRequest.setResources(null); // Setting resources to null if there are no updates
 
-                        platformProxyAcquisitionStartRequestList.add(updateRequest);
+                        platformProxyUpdateRequestArrayList.add(updateRequest);
                     }
 
 
@@ -156,12 +157,15 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " changed.");
 
                     String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
-                    QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
+                    QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
+                            .queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
 
                     if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
-                        resourceManagerTaskInfoResponseList.add(newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse());
-                    if (newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest() != null)
-                        platformProxyAcquisitionStartRequestList.add(newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest());
+                        resourceManagerTaskInfoResponseList.add(
+                                newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse());
+                    if (newQueryAndProcessSearchResponseResult.getPlatformProxyTaskInfo() != null)
+                        platformProxyUpdateRequestArrayList.add(
+                                newQueryAndProcessSearchResponseResult.getPlatformProxyTaskInfo());
 
                     // Store the taskInfo
                     TaskInfo taskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
@@ -190,7 +194,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     });
 
             // Sending requests to PlatformProxy about updated tasks
-            for (PlatformProxyAcquisitionStartRequest req : platformProxyAcquisitionStartRequestList) {
+            for (PlatformProxyTaskInfo req : platformProxyUpdateRequestArrayList) {
                 log.info("Sending request to Platform Proxy for task " + req.getTaskId());
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyTaskUpdatedKey, req);
             }

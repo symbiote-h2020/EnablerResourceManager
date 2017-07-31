@@ -153,7 +153,7 @@ public final class ProblematicResourcesHandler {
 
                         if (taskInfo.getInformPlatformProxy()) {
                             platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
-                                    getPlatformProxyAcquisitionStartRequest().getResources());
+                                    getPlatformProxyTaskInfo().getResources());
                         }
                     }
 

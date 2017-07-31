@@ -3,6 +3,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.enabler.messaging.model.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,10 +17,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
-import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
-import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskResponseToComponents;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
@@ -88,7 +85,7 @@ public class SearchHelper {
         HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
 
         ResourceManagerTaskInfoResponse taskInfoResponse = new ResourceManagerTaskInfoResponse(taskInfoRequest);
-        PlatformProxyAcquisitionStartRequest requestToPlatformProxy = new PlatformProxyAcquisitionStartRequest();
+        PlatformProxyTaskInfo requestToPlatformProxy = new PlatformProxyTaskInfo();
         QueryResponse queryResponse = null;
 
         // FIX ME: Consider Connection timeouts or errors
@@ -116,7 +113,7 @@ public class SearchHelper {
                 requestToPlatformProxy.setResources(taskResponseToComponents.getPlatformProxyResourceInfoList());
 
                 // Store all requests that need to be forwarded to PlatformProxy
-                queryAndProcessSearchResponseResult.setPlatformProxyAcquisitionStartRequest(requestToPlatformProxy);
+                queryAndProcessSearchResponseResult.setPlatformProxyTaskInfo(requestToPlatformProxy);
 
             }
         } catch (HttpClientErrorException e) {

@@ -85,7 +85,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         String requestInString = new String(body, "UTF-8");
         ResourceManagerAcquisitionStartResponse response  = new ResourceManagerAcquisitionStartResponse();
         ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = new ArrayList<>();
-        ArrayList<PlatformProxyAcquisitionStartRequest> platformProxyAcquisitionStartRequestList = new ArrayList<>();
+        ArrayList<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList = new ArrayList<>();
 
         log.info("Received StartDataAcquisition request : " + requestInString);
 
@@ -95,12 +95,15 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             // Process each task request
             for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getResources()) {
                 String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
-                QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
+                QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
+                        .queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
 
                 if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
-                    resourceManagerTaskInfoResponseList.add(newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse());
-                if (newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest() != null)
-                    platformProxyAcquisitionStartRequestList.add(newQueryAndProcessSearchResponseResult.getPlatformProxyAcquisitionStartRequest());
+                    resourceManagerTaskInfoResponseList.add(
+                            newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse());
+                if (newQueryAndProcessSearchResponseResult.getPlatformProxyTaskInfo() != null)
+                    platformProxyAcquisitionStartRequestList.add(
+                            newQueryAndProcessSearchResponseResult.getPlatformProxyTaskInfo());
 
                 // Store the taskInfo
                 TaskInfo taskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
@@ -117,7 +120,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                     });
 
             // Sending requests to PlatformProxy
-            for (PlatformProxyAcquisitionStartRequest req : platformProxyAcquisitionStartRequestList) {
+            for (PlatformProxyTaskInfo req : platformProxyAcquisitionStartRequestList) {
                 log.info("Sending request to Platform Proxy for task " + req.getTaskId());
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
             }

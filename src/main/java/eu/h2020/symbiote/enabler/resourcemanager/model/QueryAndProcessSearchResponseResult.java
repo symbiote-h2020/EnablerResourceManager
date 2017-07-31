@@ -1,6 +1,7 @@
 package eu.h2020.symbiote.enabler.resourcemanager.model;
 
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
+import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyTaskInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
 
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ import java.util.ArrayList;
  */
 public class QueryAndProcessSearchResponseResult {
     private ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse;
-    private PlatformProxyAcquisitionStartRequest platformProxyAcquisitionStartRequest;
+    private PlatformProxyTaskInfo platformProxyTaskInfo;
     private TaskInfo taskInfo;
 
     public QueryAndProcessSearchResponseResult() {
@@ -22,9 +23,9 @@ public class QueryAndProcessSearchResponseResult {
         this.resourceManagerTaskInfoResponse = resourceManagerTaskInfoResponse;
     }
 
-    public PlatformProxyAcquisitionStartRequest getPlatformProxyAcquisitionStartRequest() { return this.platformProxyAcquisitionStartRequest; }
-    public void setPlatformProxyAcquisitionStartRequest(PlatformProxyAcquisitionStartRequest platformProxyAcquisitionStartRequest) {
-        this.platformProxyAcquisitionStartRequest = platformProxyAcquisitionStartRequest;
+    public PlatformProxyTaskInfo getPlatformProxyTaskInfo() { return this.platformProxyTaskInfo; }
+    public void setPlatformProxyTaskInfo(PlatformProxyTaskInfo platformProxyTaskInfo) {
+        this.platformProxyTaskInfo = platformProxyTaskInfo;
     }
 
     public TaskInfo getTaskInfo() { return taskInfo; }
