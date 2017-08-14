@@ -1,6 +1,7 @@
 package eu.h2020.symbiote.enabler.resourcemanager.dummyListeners;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.security.certificate.Certificate;
 import eu.h2020.symbiote.security.constants.AAMConstants;
 import eu.h2020.symbiote.security.enums.IssuingAuthorityType;
@@ -41,7 +42,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 
@@ -218,14 +218,19 @@ public class DummyAAMRestListeners {
 
     @RequestMapping(method = RequestMethod.GET, value = "/query")
     public ResponseEntity search(@RequestParam(value = "location_name", required = false) String location,
-                                 @RequestParam(value = "id", required = false) String id ) {
+                                 @RequestParam(value = "id", required = false) String id,
+                                 @RequestParam(value = "should_rank") Boolean should_rank) {
         
         log.info("Search request");
 
-        ObjectMapper mapper = new ObjectMapper();
-        QueryResponse response = new QueryResponse();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+
+        if (!should_rank)
+            return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);
+
+        ObjectMapper mapper = new ObjectMapper();
+        QueryResponse response = new QueryResponse();
 
         if (id == null) {
             switch (location) {

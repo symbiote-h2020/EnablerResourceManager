@@ -66,6 +66,7 @@ public class SearchHelper {
     public String buildRequestUrl(String resourceId){
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .id(resourceId)
+                .shouldRank(true)
                 .build();
         String url = coreQueryRequest.buildQuery(symbIoTeCoreUrl);
         log.info("url= " + url);

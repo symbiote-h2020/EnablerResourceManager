@@ -194,6 +194,9 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 } else {
                     log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " changed.");
 
+                    // Always request ranked results
+                    taskInfoRequest.getCoreQueryRequest().setShould_rank(true);
+
                     String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
                     QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
                             .queryAndProcessSearchResponse(queryUrl, taskInfoRequest);

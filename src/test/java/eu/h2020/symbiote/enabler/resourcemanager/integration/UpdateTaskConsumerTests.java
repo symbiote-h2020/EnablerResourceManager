@@ -106,6 +106,7 @@ public class UpdateTaskConsumerTests {
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
+                .shouldRank(true)
                 .build();
 
         task1.setTaskId("1");
@@ -314,6 +315,7 @@ public class UpdateTaskConsumerTests {
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
+                .shouldRank(true)
                 .build();
 
         task1.setTaskId("1");
@@ -414,6 +416,7 @@ public class UpdateTaskConsumerTests {
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
+                .shouldRank(true)
                 .build();
 
         task1.setTaskId("1");
