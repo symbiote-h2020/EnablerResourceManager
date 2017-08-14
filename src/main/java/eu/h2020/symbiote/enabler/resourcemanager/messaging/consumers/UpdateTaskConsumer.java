@@ -3,19 +3,23 @@ package eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
-import javafx.concurrent.Task;
+
+import eu.h2020.symbiote.util.IntervalFormatter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -109,12 +113,12 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     // If a value is null, retain the previous value
                     if (updatedTaskInfo.getMinNoResources() == null)
                         updatedTaskInfo.setMinNoResources(storedTaskInfo.getMinNoResources());
-                    if (updatedTaskInfo.getQueryInterval_ms() == null)
-                        updatedTaskInfo.setQueryInterval_ms(storedTaskInfo.getQueryInterval_ms());
+                    if (updatedTaskInfo.getQueryInterval() == null)
+                        updatedTaskInfo.setQueryInterval(storedTaskInfo.getQueryInterval());
                     if (updatedTaskInfo.getAllowCaching() == null)
                         updatedTaskInfo.setAllowCaching(storedTaskInfo.getAllowCaching());
-                    if (updatedTaskInfo.getCachingInterval_ms() == null)
-                        updatedTaskInfo.setCachingInterval_ms(storedTaskInfo.getCachingInterval_ms());
+                    if (updatedTaskInfo.getCachingInterval() == null)
+                        updatedTaskInfo.setCachingInterval(storedTaskInfo.getCachingInterval());
                     if (updatedTaskInfo.getInformPlatformProxy() == null)
                         updatedTaskInfo.setInformPlatformProxy(storedTaskInfo.getInformPlatformProxy());
                     if (updatedTaskInfo.getEnablerLogicName() == null)
@@ -168,14 +172,15 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                             cancelTaskRequest.getTaskIdList().add(updatedTaskInfo.getTaskId());
                         }
                     }
-                    else if (updatedTaskInfo.getInformPlatformProxy() == true &&
-                            (updatedTaskInfo.getQueryInterval_ms() != storedTaskInfo.getQueryInterval_ms() ||
+                    else if (updatedTaskInfo.getInformPlatformProxy() &&
+                            (!updatedTaskInfo.getQueryInterval().equals(storedTaskInfo.getQueryInterval()) ||
                             !updatedTaskInfo.getEnablerLogicName().equals(storedTaskInfo.getEnablerLogicName()))) {
 
                         PlatformProxyUpdateRequest updateRequest = new PlatformProxyUpdateRequest();
                         updateRequest.setTaskId(updatedTaskInfo.getTaskId());
                         updateRequest.setEnablerLogicName(updatedTaskInfo.getEnablerLogicName());
-                        updateRequest.setQueryInterval_ms(updatedTaskInfo.getQueryInterval_ms());
+                        updateRequest.setQueryInterval_ms(new IntervalFormatter(updatedTaskInfo.getQueryInterval())
+                                .getMillis());
                         updateRequest.setResources(null); // Setting resources to null if there are no updates
 
                         platformProxyUpdateRequestArrayList.add(updateRequest);

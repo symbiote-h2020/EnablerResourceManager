@@ -41,7 +41,7 @@ public class ProblematicResourcesTestHelper {
         taskInfo.setTaskId("task1");
         taskInfo.setMinNoResources(5);
         taskInfo.setCoreQueryRequest(new CoreQueryRequest());
-        taskInfo.setQueryInterval_ms(100);
+        taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
         taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
@@ -115,7 +115,7 @@ public class ProblematicResourcesTestHelper {
         taskInfo.setTaskId("task1");
         taskInfo.setCoreQueryRequest(new CoreQueryRequest());
         taskInfo.setMinNoResources(5);
-        taskInfo.setQueryInterval_ms(100);
+        taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
         taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6")));
@@ -176,7 +176,7 @@ public class ProblematicResourcesTestHelper {
         taskInfo.setTaskId("task1");
         taskInfo.setMinNoResources(5);
         taskInfo.setCoreQueryRequest(new CoreQueryRequest());
-        taskInfo.setQueryInterval_ms(100);
+        taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
         taskInfo.setAllowCaching(true);
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl")));

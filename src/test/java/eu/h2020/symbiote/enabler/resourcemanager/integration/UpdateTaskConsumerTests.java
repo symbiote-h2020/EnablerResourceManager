@@ -112,9 +112,9 @@ public class UpdateTaskConsumerTests {
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
         task1.setResourceIds(Arrays.asList("resource1", "resource2"));
-        task1.setQueryInterval_ms(60);
+        task1.setQueryInterval("P0-0-0T0:0:0.06");
         task1.setAllowCaching(true);
-        task1.setCachingInterval_ms(new Long(1000));
+        task1.setCachingInterval("P0-0-0T0:0:1");
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         task1.setEnablerLogicName("enablerLogic");
@@ -166,9 +166,9 @@ public class UpdateTaskConsumerTests {
         updatedTask3.setMinNoResources(null);
         updatedTask3.setCoreQueryRequest(null);
         updatedTask3.setAllowCaching(null);
-        updatedTask3.setCachingInterval_ms(null);
+        updatedTask3.setCachingInterval(null);
         updatedTask3.setInformPlatformProxy(null);
-        updatedTask3.setQueryInterval_ms(null);
+        updatedTask3.setQueryInterval(null);
         updatedTask3.setEnablerLogicName(null);
         updatedTask3.setResourceIds(Arrays.asList("31", "32"));
         updatedTask3.setStoredResourceIds(Arrays.asList("3", "4"));
@@ -177,7 +177,7 @@ public class UpdateTaskConsumerTests {
         TaskInfo updatedTask4 = new TaskInfo(task4);
         updatedTask4.setInformPlatformProxy(false);
         updatedTask4.setEnablerLogicName("updatedTask4");
-        updatedTask4.setQueryInterval_ms(100);
+        updatedTask4.setQueryInterval("P0-0-0T0:0:0.1");
 
         // This task should reach Platform Proxy, because InformPlatformProxy == true and the enablerLogic changed
         TaskInfo updatedTask5 = new TaskInfo(task5);
@@ -185,7 +185,7 @@ public class UpdateTaskConsumerTests {
 
         // This task should reach Platform Proxy, because InformPlatformProxy == true and the query interval changed
         TaskInfo updatedTask6 = new TaskInfo(task6);
-        updatedTask6.setQueryInterval_ms(100);
+        updatedTask6.setQueryInterval("P0-0-0T0:0:0.1");
 
         ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
@@ -277,21 +277,21 @@ public class UpdateTaskConsumerTests {
                 assertEquals("resource1", request.getResources().get(0).getResourceId());
                 assertEquals("resource2", request.getResources().get(1).getResourceId());
                 assertEquals("enablerLogic", request.getEnablerLogicName());
-                assertEquals(60, (int) request.getQueryInterval_ms());
+                assertEquals(60, (long) request.getQueryInterval_ms());
                 continue;
             }
 
             if (request.getTaskId().equals("5")) {
                 assertEquals(null, request.getResources());
                 assertEquals("updatedTask5", request.getEnablerLogicName());
-                assertEquals(60, (int) request.getQueryInterval_ms());
+                assertEquals(60, (long) request.getQueryInterval_ms());
                 continue;
             }
 
             if (request.getTaskId().equals("6")) {
                 assertEquals(null, request.getResources());
                 assertEquals("enablerLogic", request.getEnablerLogicName());
-                assertEquals(100, (int) request.getQueryInterval_ms());
+                assertEquals(100, (long) request.getQueryInterval_ms());
                 continue;
             }
 
@@ -320,9 +320,9 @@ public class UpdateTaskConsumerTests {
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
         task1.setResourceIds(Arrays.asList("resource1", "resource2"));
-        task1.setQueryInterval_ms(60);
+        task1.setQueryInterval("P0-0-0T0:0:0.06");
         task1.setAllowCaching(true);
-        task1.setCachingInterval_ms(new Long(1000));
+        task1.setCachingInterval("P0-0-0T0:0:1");
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         task1.setEnablerLogicName("enablerLogic");
@@ -420,9 +420,9 @@ public class UpdateTaskConsumerTests {
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
         task1.setResourceIds(Arrays.asList("resource1", "resource2"));
-        task1.setQueryInterval_ms(60);
+        task1.setQueryInterval("P0-0-0T0:0:0.06");
         task1.setAllowCaching(true);
-        task1.setCachingInterval_ms(new Long(1000));
+        task1.setCachingInterval("P0-0-0T0:0:1");
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         task1.setEnablerLogicName("enablerLogic");

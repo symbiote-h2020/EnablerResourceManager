@@ -102,9 +102,9 @@ public class CancelTaskConsumerTests {
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
         task1.setResourceIds(Arrays.asList("1", "2"));
-        task1.setQueryInterval_ms(60);
+        task1.setQueryInterval("P0-0-0T0:0:0.06");
         task1.setAllowCaching(true);
-        task1.setCachingInterval_ms(new Long(1000));
+        task1.setCachingInterval("P0-0-0T0:0:1");
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         taskInfoRepository.save(task1);
@@ -183,9 +183,9 @@ public class CancelTaskConsumerTests {
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
         task1.setResourceIds(Arrays.asList("1", "2"));
-        task1.setQueryInterval_ms(60);
+        task1.setQueryInterval("P0-0-0T0:0:0.06");
         task1.setAllowCaching(true);
-        task1.setCachingInterval_ms(new Long(1000));
+        task1.setCachingInterval("P0-0-0T0:0:1");
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         taskInfoRepository.save(task1);

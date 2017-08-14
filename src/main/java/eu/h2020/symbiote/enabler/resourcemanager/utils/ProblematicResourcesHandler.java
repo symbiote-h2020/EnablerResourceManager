@@ -11,6 +11,7 @@ import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandl
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 
+import eu.h2020.symbiote.util.IntervalFormatter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -80,9 +81,11 @@ public final class ProblematicResourcesHandler {
 
                             PlatformProxyUpdateRequest platformProxyUpdateRequest = new PlatformProxyUpdateRequest();
                             platformProxyUpdateRequest.setTaskId(newTaskInfo.getTaskId());
-                            platformProxyUpdateRequest.setQueryInterval_ms(newTaskInfo.getQueryInterval_ms());
+                            platformProxyUpdateRequest.setQueryInterval_ms(new IntervalFormatter(newTaskInfo
+                                    .getQueryInterval()).getMillis());
                             platformProxyUpdateRequest.setEnablerLogicName(newTaskInfo.getEnablerLogicName());
-                            platformProxyUpdateRequest.setResources(problematicResourcesHandlerResult.getPlatformProxyResourceInfoList());
+                            platformProxyUpdateRequest.setResources(problematicResourcesHandlerResult
+                                    .getPlatformProxyResourceInfoList());
 
 
                             // Sending requests to PlatformProxy about the new resource ids of the task

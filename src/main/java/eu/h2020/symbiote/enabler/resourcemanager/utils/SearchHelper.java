@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.enabler.messaging.model.*;
+import eu.h2020.symbiote.util.IntervalFormatter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,7 +109,7 @@ public class SearchHelper {
             // Finallizing request to PlatformProxy
             if (taskInfoRequest.getInformPlatformProxy()) {
                 requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
-                requestToPlatformProxy.setQueryInterval_ms(taskInfoResponse.getQueryInterval_ms());
+                requestToPlatformProxy.setQueryInterval_ms(new IntervalFormatter(taskInfoResponse.getQueryInterval()).getMillis());
                 requestToPlatformProxy.setEnablerLogicName(taskInfoResponse.getEnablerLogicName());
                 requestToPlatformProxy.setResources(taskResponseToComponents.getPlatformProxyResourceInfoList());
 
@@ -116,9 +117,7 @@ public class SearchHelper {
                 queryAndProcessSearchResponseResult.setPlatformProxyTaskInfo(requestToPlatformProxy);
 
             }
-        } catch (HttpClientErrorException e) {
-            log.info(e.toString());
-        } catch (HttpServerErrorException e) {
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
             log.info(e.toString());
         }
 
@@ -186,11 +185,7 @@ public class SearchHelper {
                     taskResponseToComponents.addToResourceIdsForEnablerLogic(queryResourceResult.getId());
                 }
             }
-        } catch (SecurityException e) {
-            log.info(e.toString());
-        } catch (HttpClientErrorException e) {
-            log.info(e.toString());
-        } catch (HttpServerErrorException e) {
+        } catch (SecurityException | HttpClientErrorException | HttpServerErrorException e) {
             log.info(e.toString());
         }
 

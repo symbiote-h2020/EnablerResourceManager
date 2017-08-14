@@ -53,9 +53,9 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
         this.setTaskId(request.getTaskId());
         this.setMinNoResources(request.getMinNoResources());
         this.setCoreQueryRequest(request.getCoreQueryRequest());
-        this.setQueryInterval_ms(request.getQueryInterval_ms());
+        this.setQueryInterval(request.getQueryInterval());
         this.setAllowCaching(request.getAllowCaching());
-        this.setCachingInterval_ms(request.getCachingInterval_ms());
+        this.setCachingInterval(request.getCachingInterval());
         this.setInformPlatformProxy(request.getInformPlatformProxy());
         this.setEnablerLogicName(request.getEnablerLogicName());
     }
@@ -79,9 +79,9 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
         return Objects.equals(this.getTaskId(), taskInfo.getTaskId())
                 && Objects.equals(this.getMinNoResources(), taskInfo.getMinNoResources())
                 && Objects.equals(this.getCoreQueryRequest(), taskInfo.getCoreQueryRequest())
-                && Objects.equals(this.getQueryInterval_ms(), taskInfo.getQueryInterval_ms())
+                && Objects.equals(this.getQueryInterval(), taskInfo.getQueryInterval())
                 && Objects.equals(this.getAllowCaching(), taskInfo.getAllowCaching())
-                && Objects.equals(this.getCachingInterval_ms(), taskInfo.getCachingInterval_ms())
+                && Objects.equals(this.getCachingInterval(), taskInfo.getCachingInterval())
                 && Objects.equals(this.getInformPlatformProxy(), taskInfo.getInformPlatformProxy())
                 && Objects.equals(this.getEnablerLogicName(), taskInfo.getEnablerLogicName())
                 && Objects.equals(this.getResourceIds(), taskInfo.getResourceIds())

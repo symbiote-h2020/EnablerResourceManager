@@ -171,7 +171,7 @@ public class StartDataAcquisitionConsumerTests {
         request1.setTaskId("1");
         request1.setMinNoResources(2);
         request1.setCoreQueryRequest(coreQueryRequest1);
-        request1.setQueryInterval_ms(60);
+        request1.setQueryInterval("P0-0-0T0:0:0.06");
         resources.add(request1);
 
         query.setResources(resources);
