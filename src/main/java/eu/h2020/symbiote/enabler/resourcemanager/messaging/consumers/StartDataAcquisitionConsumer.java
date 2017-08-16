@@ -101,7 +101,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 // Perform the request
                 String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
                 QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
-                        .queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
+                        .queryAndProcessSearchResponse(queryUrl, taskInfoRequest, false);
 
                 if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
                     resourceManagerTaskInfoResponseList.add(
@@ -112,12 +112,37 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
                 // Store the taskInfo
                 TaskInfo taskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
-                taskInfoRepository.save(taskInfo);
+                if (taskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS ||
+                        taskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES)
+                    taskInfoRepository.save(taskInfo);
             }
 
 
             // Sending response to EnablerLogic
+            int noSuccessfulTasks = 0;
+            int noFailedTasks = 0;
+
             response.setResources(resourceManagerTaskInfoResponseList);
+
+            for (ResourceManagerTaskInfoResponse taskInfoResponse : response.getResources()) {
+                if (taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS)
+                    noSuccessfulTasks++;
+                else
+                    noFailedTasks++;
+            }
+
+            if (noFailedTasks == 0) {
+                log.info("All the task requests were successful!");
+                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.SUCCESS);
+            } else if (noSuccessfulTasks == 0){
+                log.info("All the task requests were successful");
+                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED);
+            } else if (noSuccessfulTasks < response.getResources().size()) {
+                log.info("Only " + noSuccessfulTasks + " of the " + response.getResources().size()
+                        + " task requests were successful.");
+                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.PARTIAL_SUCCESS);
+            }
+
             rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
                     m -> {
                         m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
@@ -131,7 +156,18 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             }
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
+        } catch (IllegalArgumentException e) {
+            log.info("Interval Wrong Format: " + e.toString());
+
         }
+
+        ResourceManagerAcquisitionStartResponse wrongIntervalFormatResponse = new ResourceManagerAcquisitionStartResponse();
+        wrongIntervalFormatResponse.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL);
+        rabbitTemplate.convertAndSend(properties.getReplyTo(), wrongIntervalFormatResponse,
+                m -> {
+                    m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
+                    return m;
+                });
 
 
     }

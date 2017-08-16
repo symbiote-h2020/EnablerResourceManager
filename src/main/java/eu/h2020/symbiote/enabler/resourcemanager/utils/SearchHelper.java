@@ -75,7 +75,8 @@ public class SearchHelper {
     }
 
     public QueryAndProcessSearchResponseResult queryAndProcessSearchResponse (String queryUrl,
-                                                                              ResourceManagerTaskInfoRequest taskInfoRequest)  {
+                                                                              ResourceManagerTaskInfoRequest taskInfoRequest,
+                                                                              Boolean singleResourceQuery)  {
 
         ObjectMapper mapper = new ObjectMapper();
 
@@ -106,9 +107,15 @@ public class SearchHelper {
 
             // Finalizing task response to EnablerLogic
             taskInfoResponse.setResourceIds(taskResponseToComponents.getResourceIdsForEnablerLogic());
+            if ((taskInfoResponse.getResourceIds().size() >= taskInfoResponse.getMinNoResources()) ||
+                    (singleResourceQuery && taskInfoResponse.getResourceIds().size() == 1))
+                taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+            else if (!singleResourceQuery)
+                taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
 
             // Finallizing request to PlatformProxy
-            if (taskInfoRequest.getInformPlatformProxy()) {
+            if (taskInfoResponse.getInformPlatformProxy() &&
+                    taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS) {
                 requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
                 requestToPlatformProxy.setQueryInterval_ms(new IntervalFormatter(taskInfoResponse.getQueryInterval()).getMillis());
                 requestToPlatformProxy.setEnablerLogicName(taskInfoResponse.getEnablerLogicName());
@@ -120,6 +127,7 @@ public class SearchHelper {
             }
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             log.info(e.toString());
+            taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.FAILED);
         }
 
         TaskInfo taskInfo = new TaskInfo(taskInfoResponse);

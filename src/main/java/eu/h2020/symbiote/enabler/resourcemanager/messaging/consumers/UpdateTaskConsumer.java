@@ -137,7 +137,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                             // Acquire resources
                             String queryUrl = searchHelper.buildRequestUrl(updatedTaskInfo);
                             QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
-                                    .queryAndProcessSearchResponse(queryUrl, updatedTaskInfo);
+                                    .queryAndProcessSearchResponse(queryUrl, updatedTaskInfo, false);
 
                             TaskInfo newTaskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
                             updatedTaskInfo.setStoredResourceIds(new ArrayList<>());
@@ -187,7 +187,9 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     }
 
                     // Inform Enabler Logic in any case
-                    resourceManagerTaskInfoResponseList.add(new ResourceManagerTaskInfoResponse(updatedTaskInfo));
+                    ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse =
+                            new ResourceManagerTaskInfoResponse(updatedTaskInfo);
+                    resourceManagerTaskInfoResponseList.add(resourceManagerTaskInfoResponse);
 
                     taskInfoRepository.save(updatedTaskInfo);
 
@@ -199,7 +201,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                     String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
                     QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
-                            .queryAndProcessSearchResponse(queryUrl, taskInfoRequest);
+                            .queryAndProcessSearchResponse(queryUrl, taskInfoRequest, false);
 
                     if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
                         resourceManagerTaskInfoResponseList.add(

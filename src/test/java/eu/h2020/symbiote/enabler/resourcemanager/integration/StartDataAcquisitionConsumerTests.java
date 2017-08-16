@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -115,8 +116,11 @@ public class StartDataAcquisitionConsumerTests {
         log.info("Response String: " + responseInString);
 
         // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
 
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
@@ -149,6 +153,20 @@ public class StartDataAcquisitionConsumerTests {
             assertEquals("enablerLogicName", startAcquisitionRequestsReceivedByListener.get(1).getEnablerLogicName());
             assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
         }
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("resource1", taskInfo.getResourceIds().get(0));
+        assertEquals("resource2", taskInfo.getResourceIds().get(1));
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("resource4", taskInfo.getResourceIds().get(0));
 
         log.info("resourceManagerGetResourceDetailsTest FINISHED!");
     }
@@ -212,11 +230,16 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED, resultRef.get().getStatus());
         assertEquals(0, resultRef.get().getResources().get(0).getResourceIds().size());
 
         // Test what Platform Proxy receives
         TimeUnit.MILLISECONDS.sleep(500);
         assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(null, taskInfo);
 
         log.info("resourceManagerGetResourceDetailsBadRequestTest FINISHED!");
     }
@@ -246,8 +269,11 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
 
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
@@ -264,6 +290,20 @@ public class StartDataAcquisitionConsumerTests {
         assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
         assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
 
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("resource1", taskInfo.getResourceIds().get(0));
+        assertEquals("resource2", taskInfo.getResourceIds().get(1));
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("resource4", taskInfo.getResourceIds().get(0));
+
         log.info("notSendingToPlatformProxyTest FINISHED!");
     }
 
@@ -274,7 +314,7 @@ public class StartDataAcquisitionConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
 
-        // Forward to PlatformProxy only the 2nd task
+        // Cache only the 2nd task
         query.getResources().get(0).setAllowCaching(true);
 
         log.info("Before sending the message");
@@ -291,8 +331,11 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
 
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
@@ -306,16 +349,179 @@ public class StartDataAcquisitionConsumerTests {
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
         assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
 
         log.info("allowCachingTest FINISHED!");
+
+    }
+
+    @Test
+    public void notEnoughResourcesTest() throws Exception {
+        log.info("notEnoughResourcesTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
+
+        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        query.getResources().get(0).setAllowCaching(true);
+        query.getResources().get(1).setMinNoResources(3);
+        query.getResources().get(1).setAllowCaching(true);
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.PARTIAL_SUCCESS, resultRef.get().getStatus());
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
+        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(1).getStatus());
+
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("resource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
+        assertEquals("resource5", resultRef.get().getResources().get(1).getResourceIds().get(1));
+
+        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 1) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        // Test what Platform Proxy receives
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+        assertEquals(1, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(2, startAcquisitionRequestsReceivedByListener.get(0).getResources().size());
+        assertEquals("resource1", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+        assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(1).getResourceId());
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(1, taskInfo.getStoredResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("resource1", taskInfo.getResourceIds().get(0));
+        assertEquals("resource2", taskInfo.getResourceIds().get(1));
+        assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
+        assertEquals("resource4", taskInfo.getResourceIds().get(0));
+        assertEquals("resource5", taskInfo.getResourceIds().get(1));
+
+        log.info("notEnoughResourcesTest FINISHED!");
+
+    }
+
+    @Test
+    public void wrongQueryIntervalFormatTest() throws Exception {
+        log.info("wrongQueryIntervalFormatTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
+
+        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        Field queryIntervalField = query.getResources().get(1).getClass().getDeclaredField("queryInterval");
+        queryIntervalField.setAccessible(true);
+        queryIntervalField.set(query.getResources().get(1), "10s");
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        // Test what Platform Proxy receives
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(null, taskInfo);
+
+        log.info("wrongQueryIntervalFormatTest FINISHED!");
+
+    }
+
+    @Test
+    public void wrongCacheIntervalFormatTest() throws Exception {
+        log.info("wrongQueryIntervalFormatTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
+
+        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        Field cachingIntervalField = query.getResources().get(1).getClass().getDeclaredField("cachingInterval");
+        cachingIntervalField.setAccessible(true);
+        cachingIntervalField.set(query.getResources().get(1), "10s");
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        // Test what Platform Proxy receives
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(null, taskInfo);
+
+        log.info("wrongQueryIntervalFormatTest FINISHED!");
 
     }
 

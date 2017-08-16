@@ -75,7 +75,8 @@ public final class ProblematicResourcesHandler {
                     TaskInfo newTaskInfo = problematicResourcesHandlerResult.getTaskInfo();
                     taskInfoRepository.save(newTaskInfo);
 
-                    if (problematicResourcesHandlerResult.getStatus() == ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY) {
+                    if (problematicResourcesHandlerResult.getStatus() ==
+                            ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY) {
                         // Inform Platform Proxy
                         if (taskInfo.getInformPlatformProxy()) {
 
@@ -149,12 +150,14 @@ public final class ProblematicResourcesHandler {
                     String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
 
                     queryAndProcessSearchResponseResult =
-                            searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfo);
+                            searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfo, true);
 
                     if (queryAndProcessSearchResponseResult.getTaskInfo().getResourceIds().size() != 0) {
                         newResourceIds.add(candidateResourceId);
 
-                        if (taskInfo.getInformPlatformProxy()) {
+                        if (taskInfo.getInformPlatformProxy() &&
+                                queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
+                                ResourceManagerTaskInfoResponseStatus.SUCCESS) {
                             platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
                                     getPlatformProxyTaskInfo().getResources());
                         }

@@ -35,7 +35,7 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
 
     public TaskInfo (TaskInfo taskInfo) {
         this((ResourceManagerTaskInfoResponse) taskInfo);
-        storedResourceIds = new ArrayList<>(taskInfo.getStoredResourceIds());
+        setStoredResourceIds(new ArrayList<>(taskInfo.getStoredResourceIds()));
     }
 
     public List<String> getStoredResourceIds() { return storedResourceIds; }
