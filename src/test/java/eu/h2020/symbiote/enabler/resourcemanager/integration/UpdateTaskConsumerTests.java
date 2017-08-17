@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -300,6 +301,94 @@ public class UpdateTaskConsumerTests {
         }
 
         log.info("updateTaskTest FINISHED!");
+    }
+
+    @Test
+    public void wrongQueryIntervalFormatUpdateTest() throws Exception {
+        log.info("wrongQueryIntervalFormatUpdateTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+
+        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        Field queryIntervalField = query.getResources().get(1).getClass().getDeclaredField("queryInterval");
+        queryIntervalField.setAccessible(true);
+        queryIntervalField.set(query.getResources().get(1), "10s");
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, query);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        // Test what Platform Proxy receives
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(null, taskInfo);
+
+        log.info("wrongQueryIntervalFormatUpdateTest FINISHED!");
+
+    }
+
+    @Test
+    public void wrongCacheIntervalFormatUpdateTest() throws Exception {
+        log.info("wrongCacheIntervalFormatUpdateTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+
+        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        Field cachingIntervalField = query.getResources().get(1).getClass().getDeclaredField("cachingInterval");
+        cachingIntervalField.setAccessible(true);
+        cachingIntervalField.set(query.getResources().get(1), "10s");
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, query);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        // Test what Platform Proxy receives
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(null, taskInfo);
+
+        log.info("wrongCacheIntervalFormatUpdateTest FINISHED!");
+
     }
 
     @Test

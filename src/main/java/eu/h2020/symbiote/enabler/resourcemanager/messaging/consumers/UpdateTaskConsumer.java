@@ -249,6 +249,17 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
+        } catch (IllegalArgumentException e) {
+            log.info("Interval Wrong Format: " + e.toString());
+
         }
+
+        ResourceManagerAcquisitionStartResponse wrongIntervalFormatResponse = new ResourceManagerAcquisitionStartResponse();
+        wrongIntervalFormatResponse.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL);
+        rabbitTemplate.convertAndSend(properties.getReplyTo(), wrongIntervalFormatResponse,
+                m -> {
+                    m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
+                    return m;
+                });
     }
 }

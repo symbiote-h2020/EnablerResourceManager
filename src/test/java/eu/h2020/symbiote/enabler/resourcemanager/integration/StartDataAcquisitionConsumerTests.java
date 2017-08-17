@@ -438,7 +438,6 @@ public class StartDataAcquisitionConsumerTests {
         log.info("wrongQueryIntervalFormatTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
         Field queryIntervalField = query.getResources().get(1).getClass().getDeclaredField("queryInterval");
@@ -464,7 +463,6 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(500);
 
         // Test what Platform Proxy receives
-        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
         assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
 
@@ -481,10 +479,9 @@ public class StartDataAcquisitionConsumerTests {
 
     @Test
     public void wrongCacheIntervalFormatTest() throws Exception {
-        log.info("wrongQueryIntervalFormatTest STARTED!");
+        log.info("wrongCacheIntervalFormatTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
         Field cachingIntervalField = query.getResources().get(1).getClass().getDeclaredField("cachingInterval");
@@ -510,7 +507,6 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(500);
 
         // Test what Platform Proxy receives
-        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
         assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
 
@@ -521,7 +517,7 @@ public class StartDataAcquisitionConsumerTests {
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(null, taskInfo);
 
-        log.info("wrongQueryIntervalFormatTest FINISHED!");
+        log.info("wrongCacheIntervalFormatTest FINISHED!");
 
     }
 
