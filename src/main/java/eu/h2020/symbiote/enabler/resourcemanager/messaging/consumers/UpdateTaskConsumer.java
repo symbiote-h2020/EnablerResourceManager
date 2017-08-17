@@ -144,7 +144,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                             // Add the resource ids of the newTask that are not already in the resourceIds list
                             for (String resource : newTaskInfo.getResourceIds()) {
-                                if (!updatedTaskInfo.getStoredResourceIds().contains(resource)) {
+                                if (!updatedTaskInfo.getResourceIds().contains(resource)) {
                                     updatedTaskInfo.getStoredResourceIds().add(resource);
                                 }
                             }

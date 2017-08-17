@@ -525,10 +525,11 @@ public class UpdateTaskConsumerTests {
         task2.setResourceIds(Arrays.asList("21", "22"));
         taskInfoRepository.save(task2);
 
+        // resource1 should not be in the storedResourceIds after the update
         TaskInfo task3 = new TaskInfo(task1);
         task3.setTaskId("3");
         task3.getCoreQueryRequest().setLocation_name("Paris");
-        task3.setResourceIds(Arrays.asList("31", "32"));
+        task3.setResourceIds(Arrays.asList("31", "32", "resource1"));
         task3.setAllowCaching(false);
         taskInfoRepository.save(task3);
 
@@ -604,13 +605,15 @@ public class UpdateTaskConsumerTests {
         assertEquals(false, updatedTask3.equals(storedTaskInfo2));
 
 
-        // Test if the stored resources were cleared in both tasks
+        // Test if the stored resources were cleared in the first 2 tasks
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
         assertEquals(0, storedTaskInfo1.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo2.getResourceIds().size());
         assertEquals(0, storedTaskInfo2.getStoredResourceIds().size());
-        assertEquals(2, storedTaskInfo3.getResourceIds().size());
-        assertEquals(3, storedTaskInfo3.getStoredResourceIds().size());
+
+        // Test if stored resources were added in the last 2 tasks
+        assertEquals(3, storedTaskInfo3.getResourceIds().size());
+        assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo4.getResourceIds().size());
         assertEquals(1, storedTaskInfo4.getStoredResourceIds().size());
 
@@ -621,20 +624,20 @@ public class UpdateTaskConsumerTests {
         assertEquals("22", storedTaskInfo2.getResourceIds().get(1));
         assertEquals("31", storedTaskInfo3.getResourceIds().get(0));
         assertEquals("32", storedTaskInfo3.getResourceIds().get(1));
+        assertEquals("resource1", storedTaskInfo3.getResourceIds().get(2));
         assertEquals("resource1", storedTaskInfo4.getResourceIds().get(0));
         assertEquals("resource2", storedTaskInfo4.getResourceIds().get(1));
 
         // Check the storedResourceIds
-        assertEquals("resource1", storedTaskInfo3.getStoredResourceIds().get(0));
-        assertEquals("resource2", storedTaskInfo3.getStoredResourceIds().get(1));
-        assertEquals("resource3", storedTaskInfo3.getStoredResourceIds().get(2));
+        assertEquals("resource2", storedTaskInfo3.getStoredResourceIds().get(0));
+        assertEquals("resource3", storedTaskInfo3.getStoredResourceIds().get(1));
         assertEquals("resource3", storedTaskInfo4.getStoredResourceIds().get(0));
 
         // Test what Enabler Logic receives
         assertEquals(4, resultRef.get().getResources().size());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(2).getResourceIds().size());
+        assertEquals(3, resultRef.get().getResources().get(2).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(3).getResourceIds().size());
 
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
@@ -643,6 +646,7 @@ public class UpdateTaskConsumerTests {
         assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
         assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
         assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
+        assertEquals("resource1", resultRef.get().getResources().get(2).getResourceIds().get(2));
         assertEquals("resource1", resultRef.get().getResources().get(3).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(3).getResourceIds().get(1));
 
