@@ -77,6 +77,7 @@ public final class ProblematicResourcesHandler {
 
                     if (problematicResourcesHandlerResult.getStatus() ==
                             ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY) {
+
                         // Inform Platform Proxy
                         if (taskInfo.getInformPlatformProxy()) {
 
@@ -152,7 +153,8 @@ public final class ProblematicResourcesHandler {
                     queryAndProcessSearchResponseResult =
                             searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfo, true);
 
-                    if (queryAndProcessSearchResponseResult.getTaskInfo().getResourceIds().size() != 0) {
+                    if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
+                            ResourceManagerTaskInfoResponseStatus.SUCCESS) {
                         newResourceIds.add(candidateResourceId);
 
                         if (taskInfo.getInformPlatformProxy() &&

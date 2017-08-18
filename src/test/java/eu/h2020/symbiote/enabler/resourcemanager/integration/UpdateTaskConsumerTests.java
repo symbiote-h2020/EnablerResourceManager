@@ -203,7 +203,7 @@ public class UpdateTaskConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("updateTask", resultRef));
+        future.addCallback(new ListenableFutureCallbackCustom("updateTaskTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -319,7 +319,7 @@ public class UpdateTaskConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureCallbackCustom("wrongQueryIntervalFormatUpdateTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -363,7 +363,7 @@ public class UpdateTaskConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureCallbackCustom("wrongCacheIntervalFormatUpdateTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -443,7 +443,7 @@ public class UpdateTaskConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("updateTask", resultRef));
+        future.addCallback(new ListenableFutureCallbackCustom("updateTaskWithInformPlatformProxyBecomingFalseTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -577,7 +577,7 @@ public class UpdateTaskConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("updateTaskWithAllowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureCallbackCustom("updateTaskWithAllowCachingBecomingFalseTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -601,8 +601,8 @@ public class UpdateTaskConsumerTests {
         assertEquals(false, updatedTask2.equals(storedTaskInfo2));
 
         // Because the storedResources are updated
-        assertEquals(false, updatedTask3.equals(storedTaskInfo2));
-        assertEquals(false, updatedTask3.equals(storedTaskInfo2));
+        assertEquals(false, updatedTask3.equals(storedTaskInfo3));
+        assertEquals(false, updatedTask4.equals(storedTaskInfo4));
 
 
         // Test if the stored resources were cleared in the first 2 tasks
@@ -684,5 +684,190 @@ public class UpdateTaskConsumerTests {
         }
 
         log.info("updateTaskWithAllowCachingBecomingFalseTest FINISHED!");
+    }
+
+    @Test
+    public void changeInMinNoResourcesTest() throws Exception {
+
+        log.info("changeInMinNoResourcesTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
+
+        TaskInfo task1 = new TaskInfo();
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .locationName("Paris")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .shouldRank(true)
+                .build();
+
+        task1.setTaskId("1");
+        task1.setMinNoResources(2);
+        task1.setCoreQueryRequest(coreQueryRequest);
+        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
+        task1.setQueryInterval("P0-0-0T0:0:0.06");
+        task1.setAllowCaching(true);
+        task1.setCachingInterval("P0-0-0T0:0:1");
+        task1.setInformPlatformProxy(true);
+        task1.setStoredResourceIds(Arrays.asList("3", "4"));
+        task1.setEnablerLogicName("enablerLogic");
+        taskInfoRepository.save(task1);
+
+        TaskInfo task2 = new TaskInfo(task1);
+        task2.setTaskId("2");
+        task2.setResourceIds(Arrays.asList("21", "22"));
+        taskInfoRepository.save(task2);
+
+        TaskInfo task3 = new TaskInfo(task1);
+        task3.setTaskId("3");
+        task3.setResourceIds(Arrays.asList("31", "32"));
+        taskInfoRepository.save(task3);
+
+        TaskInfo task4 = new TaskInfo(task1);
+        task4.setTaskId("4");
+        task4.setResourceIds(Arrays.asList("41", "42"));
+        task4.setStoredResourceIds(Arrays.asList("3", "4", "badCRAMrespose"));
+        taskInfoRepository.save(task4);
+
+        // ToDo: Add a test when a task is saved with NOT_ENOUGH_RESOURCES STATUS
+
+        // This task should not reach Platform Proxy, since minNoResources decreased
+        // allowCaching == true
+        TaskInfo updatedTask1 = new TaskInfo(task1);
+        updatedTask1.setMinNoResources(1);
+
+        // This task should reach Platform Proxy, since minNoResources increased and there were enough resources
+        // allowCaching == true
+        TaskInfo updatedTask2 = new TaskInfo(task2);
+        updatedTask2.setMinNoResources(3);
+
+        // This task should not reach Platform Proxy, since minNoResources increased and there were not enough resources
+        // allowCaching == true
+        TaskInfo updatedTask3 = new TaskInfo(task3);
+        updatedTask3.setMinNoResources(5);
+
+        // This task should not reach Platform Proxy, because there are not enough resources
+        // allowCaching == false
+        TaskInfo updatedTask4 = new TaskInfo(task4);
+        updatedTask4.setMinNoResources(5);
+
+
+        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+                new ResourceManagerTaskInfoRequest(updatedTask2),
+                new ResourceManagerTaskInfoRequest(updatedTask3),
+                new ResourceManagerTaskInfoRequest(updatedTask4)));
+
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("changeInMinNoResourcesTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        TaskInfo storedTaskInfo1 = taskInfoRepository.findByTaskId("1");
+        TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
+        TaskInfo storedTaskInfo3 = taskInfoRepository.findByTaskId("3");
+        TaskInfo storedTaskInfo4 = taskInfoRepository.findByTaskId("4");
+
+        // All tasks minNoResources field has been changed
+        assertEquals(false, task1.equals(storedTaskInfo1));
+        assertEquals(false, task2.equals(storedTaskInfo2));
+        assertEquals(false, task3.equals(storedTaskInfo3));
+        assertEquals(false, task4.equals(storedTaskInfo4));
+
+        // Because the storedResources are updated only in the 2nd case
+        assertEquals(true, updatedTask1.equals(storedTaskInfo1));
+        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
+        assertEquals(true, updatedTask3.equals(storedTaskInfo3));
+        assertEquals(false, updatedTask4.equals(storedTaskInfo4));
+
+        // Check the sizes of resourceIds and storedResourceIds
+        assertEquals(2, storedTaskInfo1.getResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getStoredResourceIds().size());
+        assertEquals(3, storedTaskInfo2.getResourceIds().size());
+        assertEquals(1, storedTaskInfo2.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo3.getResourceIds().size());
+        assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
+        assertEquals(4, storedTaskInfo4.getResourceIds().size());
+        assertEquals(0, storedTaskInfo4.getStoredResourceIds().size());
+
+        // Check the resourceIds
+        assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
+        assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
+        assertEquals("21", storedTaskInfo2.getResourceIds().get(0));
+        assertEquals("22", storedTaskInfo2.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo2.getResourceIds().get(2));
+        assertEquals("31", storedTaskInfo3.getResourceIds().get(0));
+        assertEquals("32", storedTaskInfo3.getResourceIds().get(1));
+        assertEquals("41", storedTaskInfo4.getResourceIds().get(0));
+        assertEquals("42", storedTaskInfo4.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo4.getResourceIds().get(2));
+        assertEquals("4", storedTaskInfo4.getResourceIds().get(3));
+
+        // Check the storedResourceIds
+        assertEquals("4", storedTaskInfo2.getStoredResourceIds().get(0));
+        assertEquals("3", storedTaskInfo3.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo3.getStoredResourceIds().get(1));
+
+        // Test what Enabler Logic receives
+        assertEquals(4, resultRef.get().getResources().size());
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
+        assertEquals(3, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
+        assertEquals(2, resultRef.get().getResources().get(2).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(2).getStatus());
+        assertEquals(4, resultRef.get().getResources().get(3).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(3).getStatus());
+
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
+        assertEquals("3", resultRef.get().getResources().get(1).getResourceIds().get(2));
+        assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
+        assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
+        assertEquals("41", resultRef.get().getResources().get(3).getResourceIds().get(0));
+        assertEquals("42", resultRef.get().getResources().get(3).getResourceIds().get(1));
+        assertEquals("3", resultRef.get().getResources().get(3).getResourceIds().get(2));
+        assertEquals("4", resultRef.get().getResources().get(3).getResourceIds().get(3));
+
+        while (dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 1) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        // Test what Platform Proxy receives
+
+        taskUpdateRequestsReceivedByListener = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
+
+        assertEquals(1, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
+
+        for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
+
+            log.info("id = " + request.getTaskId());
+
+            if (request.getTaskId().equals("2")) {
+                assertEquals("21", request.getResources().get(0).getResourceId());
+                assertEquals("22", request.getResources().get(1).getResourceId());
+                assertEquals("3", request.getResources().get(2).getResourceId());
+                continue;
+            }
+
+            fail("The code should not reach here, because no other tasks should be received by the platform proxy");
+        }
+
+        log.info("changeInMinNoResourcesTest FINISHED!");
     }
 }
