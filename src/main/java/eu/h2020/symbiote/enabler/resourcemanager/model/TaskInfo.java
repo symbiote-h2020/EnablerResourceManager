@@ -2,14 +2,11 @@ package eu.h2020.symbiote.enabler.resourcemanager.model;
 
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
-import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
-import org.springframework.data.annotation.Id;
+import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created by vasgl on 7/17/2017.
@@ -17,29 +14,41 @@ import java.util.Objects;
 public class TaskInfo extends ResourceManagerTaskInfoResponse {
 
     private List<String> storedResourceIds;
+    private Map<String, String>
+            resourceUrls;
 
     public TaskInfo() {
+        setResourceIds(new ArrayList<>());
         storedResourceIds = new ArrayList<>();
+        resourceUrls = new HashMap<>();
     }
 
     public TaskInfo (ResourceManagerTaskInfoRequest resourceManagerTaskInfoRequest) {
         super(resourceManagerTaskInfoRequest);
         setResourceIds(new ArrayList<>());
+        setStatus(ResourceManagerTaskInfoResponseStatus.UNKNOWN);
         storedResourceIds = new ArrayList<>();
+        resourceUrls = new HashMap<>();
     }
 
     public TaskInfo (ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse) {
         super(resourceManagerTaskInfoResponse);
         storedResourceIds = new ArrayList<>();
+        resourceUrls = new HashMap<>();
     }
 
     public TaskInfo (TaskInfo taskInfo) {
         this((ResourceManagerTaskInfoResponse) taskInfo);
         setStoredResourceIds(new ArrayList<>(taskInfo.getStoredResourceIds()));
+        setResourceUrls(new HashMap<String, String>(taskInfo.getResourceUrls()) {
+        });
     }
 
     public List<String> getStoredResourceIds() { return storedResourceIds; }
     public void setStoredResourceIds(List<String> list) { this.storedResourceIds = list; }
+
+    public Map<String, String> getResourceUrls() { return resourceUrls; }
+    public void setResourceUrls(Map<String, String> resourceUrls) { this.resourceUrls = resourceUrls; }
 
     public void calculateStoredResourceIds(QueryResponse queryResponse) {
         for (QueryResourceResult result : queryResponse.getResources()) {
@@ -49,15 +58,12 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
         }
     }
 
-    public void updateTaskInfo(ResourceManagerTaskInfoRequest request) {
-        this.setTaskId(request.getTaskId());
-        this.setMinNoResources(request.getMinNoResources());
-        this.setCoreQueryRequest(request.getCoreQueryRequest());
-        this.setQueryInterval(request.getQueryInterval());
-        this.setAllowCaching(request.getAllowCaching());
-        this.setCachingInterval(request.getCachingInterval());
-        this.setInformPlatformProxy(request.getInformPlatformProxy());
-        this.setEnablerLogicName(request.getEnablerLogicName());
+    public void addResourceIds(Map<String, String> resourcesMap) {
+        for (Map.Entry<String, String> entry : resourcesMap.entrySet()) {
+            if (!getResourceIds().contains(entry.getKey()))
+                getResourceIds().add((entry.getKey()));
+            resourceUrls.put(entry.getKey(), entry.getValue());
+        }
     }
 
     @Override
@@ -85,7 +91,9 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
                 && Objects.equals(this.getInformPlatformProxy(), taskInfo.getInformPlatformProxy())
                 && Objects.equals(this.getEnablerLogicName(), taskInfo.getEnablerLogicName())
                 && Objects.equals(this.getResourceIds(), taskInfo.getResourceIds())
-                && Objects.equals(this.getStoredResourceIds(), taskInfo.getStoredResourceIds());
+                && Objects.equals(this.getStatus(), taskInfo.getStatus())
+                && Objects.equals(this.getStoredResourceIds(), taskInfo.getStoredResourceIds())
+                && Objects.equals(this.getResourceUrls(), taskInfo.getResourceUrls());
     }
 
     //    Todo: Implement update in storedResourceIds

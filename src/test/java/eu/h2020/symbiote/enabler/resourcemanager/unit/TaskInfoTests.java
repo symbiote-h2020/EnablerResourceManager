@@ -5,6 +5,7 @@ import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
+import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 
 import eu.h2020.symbiote.util.IntervalFormatter;
@@ -18,6 +19,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -45,6 +48,7 @@ public class TaskInfoTests {
         request.setAllowCaching(true);
         request.setCachingInterval("P0-0-0T0:0:1");
         request.setInformPlatformProxy(true);
+        request.setEnablerLogicName("enablerLogicName");
 
         TaskInfo taskInfo = new TaskInfo(request);
         assertEquals(request.getTaskId(), taskInfo.getTaskId());
@@ -55,8 +59,11 @@ public class TaskInfoTests {
         assertEquals(request.getAllowCaching(), taskInfo.getAllowCaching());
         assertEquals(request.getCachingInterval(), taskInfo.getCachingInterval());
         assertEquals(request.getInformPlatformProxy(), taskInfo.getInformPlatformProxy());
+        assertEquals(request.getEnablerLogicName(), taskInfo.getEnablerLogicName());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.UNKNOWN, taskInfo.getStatus());
         assertEquals(0, taskInfo.getResourceIds().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(0, taskInfo.getResourceUrls().size());
     }
 
     @Test
@@ -75,6 +82,8 @@ public class TaskInfoTests {
         response.setAllowCaching(true);
         response.setCachingInterval("P0-0-0T0:0:1");
         response.setInformPlatformProxy(true);
+        response.setEnablerLogicName("enablerLogicName");
+        response.setStatus(ResourceManagerTaskInfoResponseStatus.UNKNOWN);
 
         TaskInfo taskInfo = new TaskInfo(response);
         assertEquals(response.getTaskId(), taskInfo.getTaskId());
@@ -86,7 +95,10 @@ public class TaskInfoTests {
         assertEquals(response.getAllowCaching(), taskInfo.getAllowCaching());
         assertEquals(response.getCachingInterval(), taskInfo.getCachingInterval());
         assertEquals(response.getInformPlatformProxy(), taskInfo.getInformPlatformProxy());
+        assertEquals(response.getEnablerLogicName(), taskInfo.getEnablerLogicName());
+        assertEquals(response.getStatus(), taskInfo.getStatus());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(0, taskInfo.getResourceUrls().size());
     }
 
     @Test
@@ -96,6 +108,9 @@ public class TaskInfoTests {
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", "http://1.com");
+        resourceUrls.put("2", "http://2.com");
 
         initialTaskInfo.setTaskId("1");
         initialTaskInfo.setMinNoResources(2);
@@ -105,7 +120,10 @@ public class TaskInfoTests {
         initialTaskInfo.setAllowCaching(true);
         initialTaskInfo.setCachingInterval("P0-0-0T0:0:1");
         initialTaskInfo.setInformPlatformProxy(true);
+        initialTaskInfo.setEnablerLogicName("enablerLogicName");
+        initialTaskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.UNKNOWN);
         initialTaskInfo.setStoredResourceIds(Arrays.asList("3", "4"));
+        initialTaskInfo.setResourceUrls(resourceUrls);
 
         TaskInfo taskInfo = new TaskInfo(initialTaskInfo);
         assertEquals(initialTaskInfo.getTaskId(), taskInfo.getTaskId());
@@ -116,8 +134,11 @@ public class TaskInfoTests {
         assertEquals(initialTaskInfo.getQueryInterval(), taskInfo.getQueryInterval());
         assertEquals(initialTaskInfo.getAllowCaching(), taskInfo.getAllowCaching());
         assertEquals(initialTaskInfo.getCachingInterval(), taskInfo.getCachingInterval());
+        assertEquals(initialTaskInfo.getEnablerLogicName(), taskInfo.getEnablerLogicName());
         assertEquals(initialTaskInfo.getInformPlatformProxy(), taskInfo.getInformPlatformProxy());
+        assertEquals(initialTaskInfo.getStatus(), taskInfo.getStatus());
         assertEquals(initialTaskInfo.getStoredResourceIds(), taskInfo.getStoredResourceIds());
+        assertEquals(initialTaskInfo.getResourceUrls(), taskInfo.getResourceUrls());
 
     }
 
@@ -164,62 +185,140 @@ public class TaskInfoTests {
     }
 
     @Test
+    public void addResourceIds() {
+        TaskInfo taskInfo = new TaskInfo();
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", "http://1.com");
+        resourceUrls.put("2", "http://2.com");
+
+        taskInfo.setResourceIds(Arrays.asList("1", "2"));
+        taskInfo.setResourceUrls(resourceUrls);
+
+        Map<String, String> newResourceUrls = new HashMap<>();
+        resourceUrls.put("1", "http://1new.com");
+        resourceUrls.put("2", "http://2.com");
+        resourceUrls.put("3", "http://3.com");
+        resourceUrls.put("4", "http://4.com");
+
+        taskInfo.addResourceIds(newResourceUrls);
+
+        assertEquals(4, taskInfo.getResourceIds().size());
+        assertEquals("1", taskInfo.getResourceIds().get(1));
+        assertEquals("2", taskInfo.getResourceIds().get(2));
+        assertEquals("3", taskInfo.getResourceIds().get(3));
+        assertEquals("4", taskInfo.getResourceIds().get(4));
+
+        assertEquals(4, taskInfo.getResourceUrls().size());
+        assertEquals("http://1new.com", taskInfo.getResourceUrls().get("1"));
+        assertEquals("http://2.com", taskInfo.getResourceUrls().get("2"));
+        assertEquals("http://3.com", taskInfo.getResourceUrls().get("3"));
+        assertEquals("http://4.com", taskInfo.getResourceUrls().get("4"));
+    }
+
+    @Test
     public void testEquals() {
         TaskInfo taskInfo1 = new TaskInfo();
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
+        ArrayList<String> resourceIds = new ArrayList<>();
+        resourceIds.add("1");
+        resourceIds.add("2");
+        ArrayList<String> StoredResourceIds = new ArrayList<>();
+        StoredResourceIds.add("3");
+        StoredResourceIds.add("4");
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", "http://1.com");
+        resourceUrls.put("2", "http://2.com");
 
         taskInfo1.setTaskId("1");
         taskInfo1.setMinNoResources(2);
         taskInfo1.setCoreQueryRequest(coreQueryRequest);
-        ArrayList<String> resourceIds = new ArrayList<>();
-        resourceIds.add("3");
-        resourceIds.add("4");
-        taskInfo1.setResourceIds(resourceIds);
         taskInfo1.setQueryInterval("P0-0-0T0:0:0.06");
         taskInfo1.setAllowCaching(true);
         taskInfo1.setCachingInterval("P0-0-0T0:0:1");
         taskInfo1.setInformPlatformProxy(true);
         taskInfo1.setEnablerLogicName("TestEnablerLogic");
-        ArrayList<String> StoredResourceIds = new ArrayList<>();
-        StoredResourceIds.add("3");
-        StoredResourceIds.add("4");
+        taskInfo1.setResourceIds(resourceIds);
+        taskInfo1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
         taskInfo1.setStoredResourceIds(StoredResourceIds);
+        taskInfo1.setResourceUrls(resourceUrls);
 
         TaskInfo taskInfo2 = new TaskInfo(taskInfo1);
         assertEquals(true, taskInfo1.equals(taskInfo2));
 
-        taskInfo2.setEnablerLogicName("vasilis");
-        assertEquals("TestEnablerLogic", taskInfo1.getEnablerLogicName());
-        assertEquals("vasilis", taskInfo2.getEnablerLogicName());
+        taskInfo2.setTaskId("2");
+        assertEquals("1", taskInfo1.getTaskId());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setTaskId(taskInfo1.getTaskId());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
 
-        taskInfo2.setQueryInterval("P0-0-0T0:0:0.07");
-        assertEquals(60, (long) new IntervalFormatter(taskInfo1.getQueryInterval()).getMillis());
-        assertEquals(70, (long) new IntervalFormatter(taskInfo2.getQueryInterval()).getMillis());
+        taskInfo2.setMinNoResources(5);
+        assertEquals(2, (int) taskInfo1.getMinNoResources());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setMinNoResources(taskInfo1.getMinNoResources());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
 
         taskInfo2.getCoreQueryRequest().setLocation_name("Athens");
         assertEquals("Zurich", taskInfo1.getCoreQueryRequest().getLocation_name());
-
-        taskInfo2.getCoreQueryRequest().setObserved_property(Arrays.asList("temperature", "air quality"));
-        assertEquals("humidity", taskInfo1.getCoreQueryRequest().getObserved_property().get(1));
-
         assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.getCoreQueryRequest().setLocation_name("Zurich");
+        assertEquals(true, taskInfo1.equals(taskInfo2));
 
+        taskInfo2.setQueryInterval("P0-0-0T0:0:0.07");
+        assertEquals(60, (long) new IntervalFormatter(taskInfo1.getQueryInterval()).getMillis());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setQueryInterval(taskInfo1.getQueryInterval());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
 
-        TaskInfo taskInfo3 = new TaskInfo(taskInfo1);
-        taskInfo3.getResourceIds().add("3");
-        taskInfo3.getStoredResourceIds().add("6");
+        taskInfo2.setAllowCaching(false);
+        assertEquals(true, taskInfo1.getAllowCaching());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setAllowCaching(taskInfo1.getAllowCaching());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
 
+        taskInfo2.setCachingInterval("P0-0-0T0:0:0.07");
+        assertEquals(1000, (long) new IntervalFormatter(taskInfo1.getCachingInterval()).getMillis());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setCachingInterval(taskInfo1.getCachingInterval());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
+
+        taskInfo2.setInformPlatformProxy(false);
+        assertEquals(true, taskInfo1.getInformPlatformProxy());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setInformPlatformProxy(taskInfo1.getInformPlatformProxy());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
+
+        taskInfo2.setEnablerLogicName("Test");
+        assertEquals("TestEnablerLogic", taskInfo1.getEnablerLogicName());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setEnablerLogicName(taskInfo1.getEnablerLogicName());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
+
+        taskInfo2.getResourceIds().add("3");
         assertEquals(2, taskInfo1.getResourceIds().size());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setResourceIds(taskInfo1.getResourceIds());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
+
+        taskInfo2.setStatus(ResourceManagerTaskInfoResponseStatus.FAILED);
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo1.getStatus());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setStatus(taskInfo1.getStatus());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
+
+        taskInfo2.getStoredResourceIds().add("5");
         assertEquals(2, taskInfo1.getStoredResourceIds().size());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setStoredResourceIds(taskInfo1.getStoredResourceIds());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
 
-        assertEquals(3, taskInfo3.getResourceIds().size());
-        assertEquals(3, taskInfo3.getStoredResourceIds().size());
-
-        assertEquals(false, taskInfo1.getStoredResourceIds().equals(taskInfo3.getStoredResourceIds()));
-        assertEquals(false, taskInfo1.equals(taskInfo3));
+        taskInfo2.getResourceUrls().put("5", "http://5.com");
+        assertEquals(2, taskInfo1.getResourceUrls().size());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setResourceUrls(taskInfo1.getResourceUrls());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
 
     }
 }
