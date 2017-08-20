@@ -33,10 +33,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -928,7 +925,17 @@ public class UpdateTaskConsumerTests {
         task4.setResourceUrls(resourceUrls4);
         taskInfoRepository.save(task4);
 
-        // ToDo: Add a test when a task is saved with NOT_ENOUGH_RESOURCES STATUS
+        Map<String, String> resourceUrls5 = new HashMap<>();
+        resourceUrls5.put("51", symbIoTeCoreUrl + "/Sensors('51')");
+        resourceUrls5.put("52", symbIoTeCoreUrl + "/Sensors('52')");
+        TaskInfo task5 = new TaskInfo(task1);
+        task5.setTaskId("5");
+        task5.setMinNoResources(3);
+        task5.setResourceIds(Arrays.asList("51", "52"));
+        task5.setStoredResourceIds(new ArrayList<>());
+        task5.setResourceUrls(resourceUrls5);
+        task5.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
+        taskInfoRepository.save(task5);
 
         // This task should not reach Platform Proxy, since minNoResources decreased
         TaskInfo updatedTask1 = new TaskInfo(task1);
@@ -946,12 +953,16 @@ public class UpdateTaskConsumerTests {
         TaskInfo updatedTask4 = new TaskInfo(task4);
         updatedTask4.setMinNoResources(5);
 
+        // This task should reach Platform Proxy, because a task with status NOT_ENOUGH_RESOURCES was updated
+        TaskInfo updatedTask5 = new TaskInfo(task5);
+        updatedTask5.setMinNoResources(2);
 
         ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3),
-                new ResourceManagerTaskInfoRequest(updatedTask4)));
+                new ResourceManagerTaskInfoRequest(updatedTask4),
+                new ResourceManagerTaskInfoRequest(updatedTask5)));
 
 
         log.info("Before sending the message");
@@ -971,23 +982,27 @@ public class UpdateTaskConsumerTests {
         TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
         TaskInfo storedTaskInfo3 = taskInfoRepository.findByTaskId("3");
         TaskInfo storedTaskInfo4 = taskInfoRepository.findByTaskId("4");
+        TaskInfo storedTaskInfo5 = taskInfoRepository.findByTaskId("5");
 
         // All tasks minNoResources field has been changed
         assertEquals(false, task1.equals(storedTaskInfo1));
         assertEquals(false, task2.equals(storedTaskInfo2));
         assertEquals(false, task3.equals(storedTaskInfo3));
         assertEquals(false, task4.equals(storedTaskInfo4));
+        assertEquals(false, task5.equals(storedTaskInfo5));
 
         assertEquals(true, updatedTask1.equals(storedTaskInfo1)); // Nothing changes
-        assertEquals(false, updatedTask2.equals(storedTaskInfo2)); // The storedResources are updated
+        assertEquals(false, updatedTask2.equals(storedTaskInfo2)); // The storedResourcesIds are updated
         assertEquals(false, updatedTask3.equals(storedTaskInfo3)); // The status changed to NOT_ENOUGH_RESOURCES
         assertEquals(false, updatedTask4.equals(storedTaskInfo4)); // The status changed to NOT_ENOUGH_RESOURCES
+        assertEquals(false, updatedTask5.equals(storedTaskInfo5)); // The status changed to SUCCESS
 
         // Check the statuses
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, storedTaskInfo3.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, storedTaskInfo4.getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo5.getStatus());
 
         // Check the sizes of resourceIds, storedResourceIds and resourceUrls
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
@@ -1002,6 +1017,9 @@ public class UpdateTaskConsumerTests {
         assertEquals(4, storedTaskInfo4.getResourceIds().size());
         assertEquals(0, storedTaskInfo4.getStoredResourceIds().size());
         assertEquals(4, storedTaskInfo4.getResourceUrls().size());
+        assertEquals(2, storedTaskInfo5.getResourceIds().size());
+        assertEquals(0, storedTaskInfo5.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo5.getResourceUrls().size());
 
         // Check the resourceIds
         assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
@@ -1017,6 +1035,8 @@ public class UpdateTaskConsumerTests {
         assertEquals("42", storedTaskInfo4.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo4.getResourceIds().get(2));
         assertEquals("4", storedTaskInfo4.getResourceIds().get(3));
+        assertEquals("51", storedTaskInfo5.getResourceIds().get(0));
+        assertEquals("52", storedTaskInfo5.getResourceIds().get(1));
 
         // Check the storedResourceIds
         assertEquals("4", storedTaskInfo2.getStoredResourceIds().get(0));
@@ -1035,9 +1055,11 @@ public class UpdateTaskConsumerTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('42')", storedTaskInfo4.getResourceUrls().get("42"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('3')", storedTaskInfo4.getResourceUrls().get("3"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('4')", storedTaskInfo4.getResourceUrls().get("4"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('51')", storedTaskInfo5.getResourceUrls().get("51"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('52')", storedTaskInfo5.getResourceUrls().get("52"));
 
         // Test what Enabler Logic receives
-        assertEquals(4, resultRef.get().getResources().size());
+        assertEquals(5, resultRef.get().getResources().size());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(3, resultRef.get().getResources().get(1).getResourceIds().size());
@@ -1046,6 +1068,8 @@ public class UpdateTaskConsumerTests {
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(2).getStatus());
         assertEquals(4, resultRef.get().getResources().get(3).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(3).getStatus());
+        assertEquals(2, resultRef.get().getResources().get(4).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(4).getStatus());
 
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
@@ -1060,8 +1084,10 @@ public class UpdateTaskConsumerTests {
         assertEquals("42", resultRef.get().getResources().get(3).getResourceIds().get(1));
         assertEquals("3", resultRef.get().getResources().get(3).getResourceIds().get(2));
         assertEquals("4", resultRef.get().getResources().get(3).getResourceIds().get(3));
+        assertEquals("51", resultRef.get().getResources().get(4).getResourceIds().get(0));
+        assertEquals("52", resultRef.get().getResources().get(4).getResourceIds().get(1));
 
-        while (dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 1) {
+        while (dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 2) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
         // Added extra delay to make sure that the message is handled
@@ -1071,7 +1097,7 @@ public class UpdateTaskConsumerTests {
 
         taskUpdateRequestsReceivedByListener = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
 
-        assertEquals(1, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(2, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
 
@@ -1095,9 +1121,25 @@ public class UpdateTaskConsumerTests {
                 continue;
             }
 
+            if (request.getTaskId().equals("5")) {
+                Map<String, String> resourcesMap = new HashMap<>();
+                resourcesMap.put("51", symbIoTeCoreUrl + "/Sensors('51')");
+                resourcesMap.put("52", symbIoTeCoreUrl + "/Sensors('52')");
+                resourcesMap.put("3", symbIoTeCoreUrl + "/Sensors('3')");
+
+                assertEquals(2, request.getResources().size());
+                assertEquals(resourcesMap.get(request.getResources().get(0).getResourceId()),
+                        request.getResources().get(0).getAccessURL());
+                assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
+                        request.getResources().get(1).getAccessURL());
+                continue;
+            }
+
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
         log.info("changeInMinNoResourcesTest FINISHED!");
     }
+
+
 }

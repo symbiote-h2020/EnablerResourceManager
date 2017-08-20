@@ -222,7 +222,24 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                             }
                         }
+                    } else if (updatedTaskInfo.getMinNoResources() < storedTaskInfo.getMinNoResources()) { // Check if minNoResources decreased
+                        if (updatedTaskInfo.getMinNoResources() <= updatedTaskInfo.getResourceIds().size() &&
+                                storedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES) {
+                            updatedTaskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+                        }
                     }
+
+                    // Inform Enabler Logic in any case
+                    ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse =
+                            new ResourceManagerTaskInfoResponse(updatedTaskInfo);
+                    if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN)
+                        responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
+                    resourceManagerTaskInfoResponse.setStatus(responseStatus);
+                    resourceManagerTaskInfoResponseList.add(resourceManagerTaskInfoResponse);
+
+                    updatedTaskInfo.setStatus(responseStatus);
+
+                    // Check if there is a need to inform Platform Proxy
 
                     // Check if informPlatformProxy changed value
                     if (storedTaskInfo.getInformPlatformProxy() != updatedTaskInfo.getInformPlatformProxy()) {
@@ -238,7 +255,9 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     else if (updatedTaskInfo.getInformPlatformProxy() && informPlatformProxy &&
                             (!updatedTaskInfo.getQueryInterval().equals(storedTaskInfo.getQueryInterval()) ||
                                     !updatedTaskInfo.getEnablerLogicName().equals(storedTaskInfo.getEnablerLogicName()) ||
-                                            platformProxyResourceInfoList.size() > 0)) {
+                                            platformProxyResourceInfoList.size() > 0 ||
+                                    (updatedTaskInfo.getStatus() != storedTaskInfo.getStatus() &&
+                                            updatedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS))) {
 
                         PlatformProxyUpdateRequest updateRequest = new PlatformProxyUpdateRequest();
                         platformProxyResourceInfoList = new ArrayList<>();
@@ -260,15 +279,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         platformProxyUpdateRequestArrayList.add(updateRequest);
                     }
 
-                    // Inform Enabler Logic in any case
-                    ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse =
-                            new ResourceManagerTaskInfoResponse(updatedTaskInfo);
-                    if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN)
-                        responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
-                    resourceManagerTaskInfoResponse.setStatus(responseStatus);
-                    resourceManagerTaskInfoResponseList.add(resourceManagerTaskInfoResponse);
 
-                    updatedTaskInfo.setStatus(responseStatus);
                     taskInfoRepository.save(updatedTaskInfo);
 
                 } else {
