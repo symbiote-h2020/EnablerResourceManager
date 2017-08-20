@@ -147,7 +147,7 @@ public class ProblematicResourcesTestHelper {
         taskInfo.setAllowCaching(true);
         taskInfo.setCachingInterval("P0-0-0T0:0:0.1");
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
-        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6")));
+        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "badCRAMrespose")));
         taskInfo.setInformPlatformProxy(true);
         taskInfo.setEnablerLogicName("testEnablerLogic");
         taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
@@ -180,27 +180,25 @@ public class ProblematicResourcesTestHelper {
         assertEquals(null, taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
-        assertEquals(1, taskInfo.getResourceIds().size());
-        assertEquals(3, taskInfo.getStoredResourceIds().size());
-        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(3, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(3, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
-
-        assertEquals("4", taskInfo.getStoredResourceIds().get(0));
-        assertEquals("5", taskInfo.getStoredResourceIds().get(1));
-        assertEquals("6", taskInfo.getStoredResourceIds().get(2));
+        assertEquals("4", taskInfo.getResourceIds().get(1));
+        assertEquals("5", taskInfo.getResourceIds().get(2));
 
         assertEquals(symbIoTeCoreUrl + "/Sensors('2')", taskInfo.getResourceUrls().get("2"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('4')", taskInfo.getResourceUrls().get("4"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('5')", taskInfo.getResourceUrls().get("5"));
 
 
         // Test what Enabler Logic receives
         notEnoughResourcesMessagesReceived = dummyEnablerLogicListener.getNotEnoughResourcesMessagesReceivedByListener();
         assertEquals(1, notEnoughResourcesMessagesReceived.size());
         assertEquals("task1", notEnoughResourcesMessagesReceived.get(0).getTaskId());
-        assertEquals(5, (int) notEnoughResourcesMessagesReceived.get(0).getMinNoResources());
-        assertEquals(1, (int) notEnoughResourcesMessagesReceived.get(0).getNoResourcesAcquired());
-        assertEquals(3, (int) notEnoughResourcesMessagesReceived.get(0).getMaxNoResourcesThatCanBeAcquired());
+        assertEquals(3, (int) notEnoughResourcesMessagesReceived.get(0).getNoResourcesAcquired());
 
         // Test what Platform Proxy receives
         updateRequestsReceivedByPlatformProxy = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
@@ -282,9 +280,7 @@ public class ProblematicResourcesTestHelper {
         notEnoughResourcesMessagesReceived = dummyEnablerLogicListener.getNotEnoughResourcesMessagesReceivedByListener();
         assertEquals(1, notEnoughResourcesMessagesReceived.size());
         assertEquals("task1", notEnoughResourcesMessagesReceived.get(0).getTaskId());
-        assertEquals(5, (int) notEnoughResourcesMessagesReceived.get(0).getMinNoResources());
         assertEquals(4, (int) notEnoughResourcesMessagesReceived.get(0).getNoResourcesAcquired());
-        assertEquals(0, (int) notEnoughResourcesMessagesReceived.get(0).getMaxNoResourcesThatCanBeAcquired());
 
         // Test what Platform Proxy receives
         updateRequestsReceivedByPlatformProxy = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();

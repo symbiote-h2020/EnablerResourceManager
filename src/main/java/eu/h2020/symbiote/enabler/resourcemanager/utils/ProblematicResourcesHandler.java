@@ -140,67 +140,53 @@ public final class ProblematicResourcesHandler {
                 problematicResourcesInfo.getProblematicResourceIds().size();
 
         if (taskInfo.getAllowCaching()) {
-            if (noNewResourcesNeeded <= taskInfo.getStoredResourceIds().size()) {
-                log.info("Task with id = " + taskId + " has enough resources to replace the problematic ones.");
 
-                List<String> newResourceIds = new ArrayList<>();
-                Map<String, String> newResourceUrls = new HashMap<>();
+            List<String> newResourceIds = new ArrayList<>();
+            Map<String, String> newResourceUrls = new HashMap<>();
 
-                QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
-                List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
+            QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
+            List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
 
-                while (newResourceIds.size() != noNewResourcesNeeded &&
-                        taskInfo.getStoredResourceIds().size() != 0) {
-                    String candidateResourceId = taskInfo.getStoredResourceIds().get(0);
-                    String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
+            while (newResourceIds.size() != noNewResourcesNeeded &&
+                    taskInfo.getStoredResourceIds().size() != 0) {
+                String candidateResourceId = taskInfo.getStoredResourceIds().get(0);
+                String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
 
-                    queryAndProcessSearchResponseResult =
-                            searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfo, true);
+                queryAndProcessSearchResponseResult =
+                        searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfo, true);
 
-                    if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
-                            ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+                if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
+                        ResourceManagerTaskInfoResponseStatus.SUCCESS) {
 
-                        newResourceIds.add(candidateResourceId);
-                        newResourceUrls.put(candidateResourceId, queryAndProcessSearchResponseResult.
-                                getTaskInfo().getResourceUrls().get(candidateResourceId));
+                    newResourceIds.add(candidateResourceId);
+                    newResourceUrls.put(candidateResourceId, queryAndProcessSearchResponseResult.
+                            getTaskInfo().getResourceUrls().get(candidateResourceId));
 
-                        if (taskInfo.getInformPlatformProxy() &&
-                                queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
-                                ResourceManagerTaskInfoResponseStatus.SUCCESS) {
-                            platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
-                                    getPlatformProxyTaskInfo().getResources());
-                        }
+                    if (taskInfo.getInformPlatformProxy() &&
+                            queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
+                                    ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+                        platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
+                                getPlatformProxyTaskInfo().getResources());
                     }
-
-                    //ToDo: add it to another list if CRAM does not respond with a url
-                    taskInfo.getStoredResourceIds().remove(0);
                 }
 
-                // ToDo: add it to another list, not just remove it
-                taskInfo.deleteResourceIds(problematicResourcesInfo.getProblematicResourceIds());
-                taskInfo.addResourceIds(newResourceUrls);
+                //ToDo: add it to another list if CRAM does not respond with a url
+                taskInfo.getStoredResourceIds().remove(0);
+            }
 
-                if (newResourceIds.size() == noNewResourcesNeeded) {
-                    return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(taskInfo, platformProxyResourceInfoList, newResourceIds);
-                } else {
-                    log.info("Not enough resources are available.");
+            // ToDo: add it to another list, not just remove it
+            taskInfo.deleteResourceIds(problematicResourcesInfo.getProblematicResourceIds());
+            taskInfo.addResourceIds(newResourceUrls);
 
-                    taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
-                    NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
-                            taskInfo.getMinNoResources(), taskInfo.getResourceIds().size(), taskInfo.getStoredResourceIds().size());
-
-                    return ProblematicResourcesHandlerResult.notEnoughResources(taskInfo,notEnoughResourcesAvailable);
-                }
-
+            if (newResourceIds.size() == noNewResourcesNeeded) {
+                return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(taskInfo, platformProxyResourceInfoList, newResourceIds);
             } else {
-                log.info("Not even the maximum number of resources are enough");
-
-                // ToDo: add it to another list, not just remove it
-                taskInfo.getResourceIds().removeAll(problematicResourcesInfo.getProblematicResourceIds());
+                log.info("Not enough resources are available.");
 
                 taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
                 NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
-                        taskInfo.getMinNoResources(), taskInfo.getResourceIds().size(), taskInfo.getStoredResourceIds().size());
+                        taskInfo.getResourceIds().size());
+
                 return ProblematicResourcesHandlerResult.notEnoughResources(taskInfo,notEnoughResourcesAvailable);
             }
         }

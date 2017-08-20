@@ -178,8 +178,6 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         // ToDo: Behavior when allowCaching == false
                         int noNewResourcesNeeded = updatedTaskInfo.getMinNoResources() - storedTaskInfo.getMinNoResources();
                         if (updatedTaskInfo.getAllowCaching()) {
-                            log.info("Task with id = " + updatedTaskInfo.getTaskId() + " has enough resources " +
-                                    "to conform to the minNoResources change");
 
                             Map<String, String> newResourceUrls = new HashMap<>();
                             QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
