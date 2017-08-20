@@ -11,12 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Created by vasgl on 7/26/2017.
@@ -31,11 +30,19 @@ public class ProblematicResourcesTestHelper {
     }
 
     public static void problematicResourceMessageWithEnoughResourcesTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                                                         RabbitTemplate rabbitTemplate, DummyPlatformProxyListener dummyPlatformProxyListener,
-                                                                         DummyEnablerLogicListener dummyEnablerLogicListener, String resourceManagerExchangeName) throws Exception {
+                                                                         RabbitTemplate rabbitTemplate,
+                                                                         DummyPlatformProxyListener dummyPlatformProxyListener,
+                                                                         DummyEnablerLogicListener dummyEnablerLogicListener,
+                                                                         String resourceManagerExchangeName,
+                                                                         String symbIoTeCoreUrl) throws Exception {
 
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<ResourcesUpdated> updateRequestsReceivedByEnablerLogic;
+
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
+        resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
+        resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
@@ -43,10 +50,13 @@ public class ProblematicResourcesTestHelper {
         taskInfo.setCoreQueryRequest(new CoreQueryRequest());
         taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
         taskInfo.setAllowCaching(true);
+        taskInfo.setCachingInterval("P0-0-0T0:0:0.1");
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
         taskInfo.setInformPlatformProxy(true);
         taskInfo.setEnablerLogicName("testEnablerLogic");
+        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        taskInfo.setResourceUrls(resourceUrls);
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -71,12 +81,15 @@ public class ProblematicResourcesTestHelper {
         // Added extra delay to make sure that the message is handled
         TimeUnit.MILLISECONDS.sleep(100);
 
+        // Test what is stored in the database
         taskInfo = taskInfoRepository.findByTaskId("task2");
         assertEquals(null, taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(5, taskInfo.getResourceIds().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
+        assertEquals(5, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
         assertEquals("4", taskInfo.getResourceIds().get(1));
@@ -85,6 +98,12 @@ public class ProblematicResourcesTestHelper {
         assertEquals("7", taskInfo.getResourceIds().get(4));
 
         assertEquals("8", taskInfo.getStoredResourceIds().get(0));
+
+        assertEquals(symbIoTeCoreUrl + "/Sensors('2')", taskInfo.getResourceUrls().get("2"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('4')", taskInfo.getResourceUrls().get("4"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('5')", taskInfo.getResourceUrls().get("5"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('6')", taskInfo.getResourceUrls().get("6"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('7')", taskInfo.getResourceUrls().get("7"));
 
         // Test what Platform Proxy receives
         updateRequestsReceivedByPlatformProxy = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
@@ -106,10 +125,19 @@ public class ProblematicResourcesTestHelper {
     }
 
     public static void problematicResourceMessageWithNotEnoughResourcesTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                                                            RabbitTemplate rabbitTemplate, DummyPlatformProxyListener dummyPlatformProxyListener,
-                                                                            DummyEnablerLogicListener dummyEnablerLogicListener, String resourceManagerExchangeName) throws Exception {
+                                                                            RabbitTemplate rabbitTemplate,
+                                                                            DummyPlatformProxyListener dummyPlatformProxyListener,
+                                                                            DummyEnablerLogicListener dummyEnablerLogicListener,
+                                                                            String resourceManagerExchangeName,
+                                                                            String symbIoTeCoreUrl) throws Exception {
 
+        List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
+
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
+        resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
+        resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
@@ -117,10 +145,13 @@ public class ProblematicResourcesTestHelper {
         taskInfo.setMinNoResources(5);
         taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
         taskInfo.setAllowCaching(true);
+        taskInfo.setCachingInterval("P0-0-0T0:0:0.1");
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6")));
         taskInfo.setInformPlatformProxy(true);
         taskInfo.setEnablerLogicName("testEnablerLogic");
+        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        taskInfo.setResourceUrls(resourceUrls);
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -144,17 +175,23 @@ public class ProblematicResourcesTestHelper {
         // Added extra delay to make sure that the message is handled
         TimeUnit.MILLISECONDS.sleep(100);
 
+        // Test what is stored in the database
         taskInfo = taskInfoRepository.findByTaskId("task2");
         assertEquals(null, taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(1, taskInfo.getResourceIds().size());
         assertEquals(3, taskInfo.getStoredResourceIds().size());
+        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
+
         assertEquals("4", taskInfo.getStoredResourceIds().get(0));
         assertEquals("5", taskInfo.getStoredResourceIds().get(1));
         assertEquals("6", taskInfo.getStoredResourceIds().get(2));
+
+        assertEquals(symbIoTeCoreUrl + "/Sensors('2')", taskInfo.getResourceUrls().get("2"));
 
 
         // Test what Enabler Logic receives
@@ -164,13 +201,26 @@ public class ProblematicResourcesTestHelper {
         assertEquals(5, (int) notEnoughResourcesMessagesReceived.get(0).getMinNoResources());
         assertEquals(1, (int) notEnoughResourcesMessagesReceived.get(0).getNoResourcesAcquired());
         assertEquals(3, (int) notEnoughResourcesMessagesReceived.get(0).getMaxNoResourcesThatCanBeAcquired());
+
+        // Test what Platform Proxy receives
+        updateRequestsReceivedByPlatformProxy = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
+        assertEquals(0, updateRequestsReceivedByPlatformProxy.size());
     }
 
     public static void problematicResourceMessageWithEnoughStoredOnlyResourcesTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                                                                   RabbitTemplate rabbitTemplate, DummyPlatformProxyListener dummyPlatformProxyListener,
-                                                                                   DummyEnablerLogicListener dummyEnablerLogicListener, String resourceManagerExchangeName) throws Exception {
+                                                                                   RabbitTemplate rabbitTemplate,
+                                                                                   DummyPlatformProxyListener dummyPlatformProxyListener,
+                                                                                   DummyEnablerLogicListener dummyEnablerLogicListener,
+                                                                                   String resourceManagerExchangeName,
+                                                                                   String symbIoTeCoreUrl) throws Exception {
 
+        List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
+
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
+        resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
+        resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
@@ -178,10 +228,13 @@ public class ProblematicResourcesTestHelper {
         taskInfo.setCoreQueryRequest(new CoreQueryRequest());
         taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
         taskInfo.setAllowCaching(true);
+        taskInfo.setCachingInterval("P0-0-0T0:0:0.1");
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl")));
         taskInfo.setInformPlatformProxy(true);
         taskInfo.setEnablerLogicName("testEnablerLogic");
+        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        taskInfo.setResourceUrls(resourceUrls);
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -205,18 +258,25 @@ public class ProblematicResourcesTestHelper {
         // Added extra delay to make sure that the message is handled
         TimeUnit.MILLISECONDS.sleep(100);
 
+        // Test what is stored in the database
         taskInfo = taskInfoRepository.findByTaskId("task2");
         assertEquals(null, taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(4, taskInfo.getResourceIds().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(4, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
         assertEquals("4", taskInfo.getResourceIds().get(1));
         assertEquals("5", taskInfo.getResourceIds().get(2));
         assertEquals("6", taskInfo.getResourceIds().get(3));
 
+        assertEquals(symbIoTeCoreUrl + "/Sensors('2')", taskInfo.getResourceUrls().get("2"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('4')", taskInfo.getResourceUrls().get("4"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('5')", taskInfo.getResourceUrls().get("5"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('6')", taskInfo.getResourceUrls().get("6"));
 
         // Test what Enabler Logic receives
         notEnoughResourcesMessagesReceived = dummyEnablerLogicListener.getNotEnoughResourcesMessagesReceivedByListener();
@@ -225,5 +285,9 @@ public class ProblematicResourcesTestHelper {
         assertEquals(5, (int) notEnoughResourcesMessagesReceived.get(0).getMinNoResources());
         assertEquals(4, (int) notEnoughResourcesMessagesReceived.get(0).getNoResourcesAcquired());
         assertEquals(0, (int) notEnoughResourcesMessagesReceived.get(0).getMaxNoResourcesThatCanBeAcquired());
+
+        // Test what Platform Proxy receives
+        updateRequestsReceivedByPlatformProxy = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
+        assertEquals(0, updateRequestsReceivedByPlatformProxy.size());
     }
 }

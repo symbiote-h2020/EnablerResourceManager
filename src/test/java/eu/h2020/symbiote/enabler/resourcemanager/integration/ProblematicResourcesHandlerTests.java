@@ -2,6 +2,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesInfo;
+import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.ComponentScan;
@@ -24,6 +26,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -49,9 +53,18 @@ public class ProblematicResourcesHandlerTests {
     @Autowired
     private ProblematicResourcesHandler problematicResourcesHandler;
 
+    @Autowired
+    @Qualifier("symbIoTeCoreUrl")
+    private String symbIoTeCoreUrl;
+
     @Test
     public void replaceProblematicResourcesEnoughResourcesAvailableTest() {
         log.info("replaceProblematicResourcesEnoughResourcesAvailableTest STARTED!");
+
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
+        resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
+        resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setTaskId("task1");
@@ -64,7 +77,8 @@ public class ProblematicResourcesHandlerTests {
         taskInfo.setEnablerLogicName("TestEnablerLogic");
         taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
         taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
-
+        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        taskInfo.setResourceUrls(resourceUrls);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
         problematicResourcesInfo.setTaskId("task1");

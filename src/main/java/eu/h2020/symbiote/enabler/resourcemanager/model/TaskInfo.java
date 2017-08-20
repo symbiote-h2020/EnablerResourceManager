@@ -2,6 +2,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.model;
 
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
@@ -63,6 +64,21 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
             if (!getResourceIds().contains(entry.getKey()))
                 getResourceIds().add((entry.getKey()));
             resourceUrls.put(entry.getKey(), entry.getValue());
+        }
+    }
+
+    public void addResourceIds(List<PlatformProxyResourceInfo> platformProxyResourceInfoList) {
+        for (PlatformProxyResourceInfo entry : platformProxyResourceInfoList) {
+            if (!getResourceIds().contains(entry.getResourceId()))
+                getResourceIds().add((entry.getResourceId()));
+            resourceUrls.put(entry.getResourceId(), entry.getAccessURL());
+        }
+    }
+
+    public void deleteResourceIds(List<String> resourceIds) {
+        for (String entry : resourceIds) {
+            getResourceIds().remove(entry);
+            resourceUrls.remove(entry);
         }
     }
 

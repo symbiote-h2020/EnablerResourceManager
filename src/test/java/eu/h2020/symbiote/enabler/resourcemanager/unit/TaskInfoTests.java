@@ -3,6 +3,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.unit;
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
+import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
@@ -185,34 +186,101 @@ public class TaskInfoTests {
     }
 
     @Test
-    public void addResourceIds() {
+    public void addResourceIdsMapTest() {
         TaskInfo taskInfo = new TaskInfo();
         Map<String, String> resourceUrls = new HashMap<>();
         resourceUrls.put("1", "http://1.com");
         resourceUrls.put("2", "http://2.com");
 
-        taskInfo.setResourceIds(Arrays.asList("1", "2"));
+        taskInfo.setResourceIds(new ArrayList<>(Arrays.asList("1", "2")));
         taskInfo.setResourceUrls(resourceUrls);
 
         Map<String, String> newResourceUrls = new HashMap<>();
-        resourceUrls.put("1", "http://1new.com");
-        resourceUrls.put("2", "http://2.com");
-        resourceUrls.put("3", "http://3.com");
-        resourceUrls.put("4", "http://4.com");
+        newResourceUrls.put("1", "http://1new.com");
+        newResourceUrls.put("2", "http://2.com");
+        newResourceUrls.put("3", "http://3.com");
+        newResourceUrls.put("4", "http://4.com");
 
         taskInfo.addResourceIds(newResourceUrls);
 
         assertEquals(4, taskInfo.getResourceIds().size());
-        assertEquals("1", taskInfo.getResourceIds().get(1));
-        assertEquals("2", taskInfo.getResourceIds().get(2));
-        assertEquals("3", taskInfo.getResourceIds().get(3));
-        assertEquals("4", taskInfo.getResourceIds().get(4));
+        assertEquals("1", taskInfo.getResourceIds().get(0));
+        assertEquals("2", taskInfo.getResourceIds().get(1));
+        assertEquals("3", taskInfo.getResourceIds().get(2));
+        assertEquals("4", taskInfo.getResourceIds().get(3));
 
         assertEquals(4, taskInfo.getResourceUrls().size());
         assertEquals("http://1new.com", taskInfo.getResourceUrls().get("1"));
         assertEquals("http://2.com", taskInfo.getResourceUrls().get("2"));
         assertEquals("http://3.com", taskInfo.getResourceUrls().get("3"));
         assertEquals("http://4.com", taskInfo.getResourceUrls().get("4"));
+    }
+
+    @Test
+    public void addResourceIdsPlatformProxyResourceInfoListTest() {
+        TaskInfo taskInfo = new TaskInfo();
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", "http://1.com");
+        resourceUrls.put("2", "http://2.com");
+
+        taskInfo.setResourceIds(new ArrayList<>(Arrays.asList("1", "2")));
+        taskInfo.setResourceUrls(resourceUrls);
+
+        PlatformProxyResourceInfo platformProxyResourceInfo1 = new PlatformProxyResourceInfo();
+        platformProxyResourceInfo1.setResourceId("1");
+        platformProxyResourceInfo1.setAccessURL("http://1new.com");
+
+        PlatformProxyResourceInfo platformProxyResourceInfo2 = new PlatformProxyResourceInfo();
+        platformProxyResourceInfo2.setResourceId("2");
+        platformProxyResourceInfo2.setAccessURL("http://2.com");
+
+        PlatformProxyResourceInfo platformProxyResourceInfo3 = new PlatformProxyResourceInfo();
+        platformProxyResourceInfo3.setResourceId("3");
+        platformProxyResourceInfo3.setAccessURL("http://3.com");
+
+        PlatformProxyResourceInfo platformProxyResourceInfo4 = new PlatformProxyResourceInfo();
+        platformProxyResourceInfo4.setResourceId("4");
+        platformProxyResourceInfo4.setAccessURL("http://4.com");
+
+        ArrayList<PlatformProxyResourceInfo> platformProxyResourceInfoArrayList = new ArrayList<>();
+        platformProxyResourceInfoArrayList.add(platformProxyResourceInfo1);
+        platformProxyResourceInfoArrayList.add(platformProxyResourceInfo2);
+        platformProxyResourceInfoArrayList.add(platformProxyResourceInfo3);
+        platformProxyResourceInfoArrayList.add(platformProxyResourceInfo4);
+
+        taskInfo.addResourceIds(platformProxyResourceInfoArrayList);
+
+        assertEquals(4, taskInfo.getResourceIds().size());
+        assertEquals("1", taskInfo.getResourceIds().get(0));
+        assertEquals("2", taskInfo.getResourceIds().get(1));
+        assertEquals("3", taskInfo.getResourceIds().get(2));
+        assertEquals("4", taskInfo.getResourceIds().get(3));
+
+        assertEquals(4, taskInfo.getResourceUrls().size());
+        assertEquals("http://1new.com", taskInfo.getResourceUrls().get("1"));
+        assertEquals("http://2.com", taskInfo.getResourceUrls().get("2"));
+        assertEquals("http://3.com", taskInfo.getResourceUrls().get("3"));
+        assertEquals("http://4.com", taskInfo.getResourceUrls().get("4"));
+    }
+
+    @Test
+    public void deleteResourceIdsTest() {
+        TaskInfo taskInfo = new TaskInfo();
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", "http://1.com");
+        resourceUrls.put("2", "http://2.com");
+
+        taskInfo.setResourceIds(new ArrayList<>(Arrays.asList("1", "2")));
+        taskInfo.setResourceUrls(resourceUrls);
+
+        taskInfo.deleteResourceIds(new ArrayList<>(Arrays.asList("1", "3")));
+
+        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals("2", taskInfo.getResourceIds().get(0));
+
+        assertEquals(1, taskInfo.getResourceUrls().size());
+        assertEquals("http://2.com", taskInfo.getResourceUrls().get("2"));
+
     }
 
     @Test

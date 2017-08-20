@@ -22,6 +22,7 @@ import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,7 +34,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -70,6 +73,10 @@ public class UpdateTaskConsumerTests {
 
     @Autowired
     private DummyEnablerLogicListener dummyEnablerLogicListener;
+
+    @Autowired
+    @Qualifier("symbIoTeCoreUrl")
+    private String symbIoTeCoreUrl;
 
     @Value("${rabbit.exchange.resourceManager.name}")
     private String resourceManagerExchangeName;
@@ -110,6 +117,10 @@ public class UpdateTaskConsumerTests {
                 .shouldRank(true)
                 .build();
 
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
         task1.setTaskId("1");
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
@@ -120,39 +131,56 @@ public class UpdateTaskConsumerTests {
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         task1.setEnablerLogicName("enablerLogic");
+        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        task1.setResourceUrls(resourceUrls1);
         taskInfoRepository.save(task1);
 
+        Map<String, String> resourceUrls2 = new HashMap<>();
+        resourceUrls2.put("21", symbIoTeCoreUrl + "/Sensors('21')");
+        resourceUrls2.put("22", symbIoTeCoreUrl + "/Sensors('22')");
         TaskInfo task2 = new TaskInfo(task1);
         task2.setTaskId("2");
         task2.setInformPlatformProxy(false); // Because we want to keep the same value in the updatedTask2
         task2.setResourceIds(Arrays.asList("21", "22"));
+        task2.setResourceUrls(resourceUrls2);
         taskInfoRepository.save(task2);
 
+        Map<String, String> resourceUrls3 = new HashMap<>();
+        resourceUrls3.put("31", symbIoTeCoreUrl + "/Sensors('31')");
+        resourceUrls3.put("32", symbIoTeCoreUrl + "/Sensors('32')");
         TaskInfo task3 = new TaskInfo(task1);
         task3.setTaskId("3");
         task3.setResourceIds(Arrays.asList("31", "32"));
+        task3.setResourceUrls(resourceUrls3);
         taskInfoRepository.save(task3);
 
+        Map<String, String> resourceUrls4 = new HashMap<>();
+        resourceUrls4.put("41", symbIoTeCoreUrl + "/Sensors('41')");
+        resourceUrls4.put("42", symbIoTeCoreUrl + "/Sensors('42')");
         TaskInfo task4 = new TaskInfo(task1);
         task4.setTaskId("4");
         task4.setInformPlatformProxy(false); // Because we want to keep the same value in the updatedTask4
         task4.setResourceIds(Arrays.asList("41", "42"));
+        task4.setResourceUrls(resourceUrls4);
         taskInfoRepository.save(task4);
 
+        Map<String, String> resourceUrls5 = new HashMap<>();
+        resourceUrls5.put("51", symbIoTeCoreUrl + "/Sensors('51')");
+        resourceUrls5.put("52", symbIoTeCoreUrl + "/Sensors('52')");
         TaskInfo task5 = new TaskInfo(task1);
         task5.setTaskId("5");
         task5.setResourceIds(Arrays.asList("51", "52"));
+        task5.setResourceUrls(resourceUrls5);
         taskInfoRepository.save(task5);
 
+        Map<String, String> resourceUrls6 = new HashMap<>();
+        resourceUrls6.put("61", symbIoTeCoreUrl + "/Sensors('61')");
+        resourceUrls6.put("62", symbIoTeCoreUrl + "/Sensors('62')");
         TaskInfo task6 = new TaskInfo(task1);
         task6.setTaskId("6");
         task6.setResourceIds(Arrays.asList("61", "62"));
+        task6.setResourceUrls(resourceUrls6);
         taskInfoRepository.save(task6);
-
-        TaskInfo task7 = new TaskInfo(task1);
-        task7.setTaskId("7");
-        task7.setResourceIds(Arrays.asList("71", "72"));
-        taskInfoRepository.save(task7);
 
         // This task should reach Platform Proxy and inform it for new resources
         TaskInfo updatedTask1 = new TaskInfo(task1);
@@ -160,7 +188,6 @@ public class UpdateTaskConsumerTests {
 
         // This task should not reach Platform Proxy, because InformPlatformProxy == false
         TaskInfo updatedTask2 = new TaskInfo(task2);
-        updatedTask2.setInformPlatformProxy(false);
 
         // This task should not reach Platform Proxy, because there is nothing new to report
         TaskInfo updatedTask3 = new TaskInfo();
@@ -174,6 +201,8 @@ public class UpdateTaskConsumerTests {
         updatedTask3.setEnablerLogicName(null);
         updatedTask3.setResourceIds(Arrays.asList("31", "32"));
         updatedTask3.setStoredResourceIds(Arrays.asList("3", "4"));
+        updatedTask3.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        updatedTask3.setResourceUrls(resourceUrls3);
 
         // This task should not reach Platform Proxy, because InformPlatformProxy == false
         TaskInfo updatedTask4 = new TaskInfo(task4);
@@ -235,6 +264,72 @@ public class UpdateTaskConsumerTests {
         assertEquals(true, updatedTask5.equals(storedTaskInfo5));
         assertEquals(true, updatedTask6.equals(storedTaskInfo6));
 
+        // Test what is stored in the database
+        assertEquals(2, storedTaskInfo1.getResourceIds().size());
+        assertEquals(1, storedTaskInfo1.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
+        assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
+        assertEquals("resource3", storedTaskInfo1.getStoredResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo1.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo1.getResourceUrls().get("resource2"));
+
+        assertEquals(2, storedTaskInfo2.getResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals("21", storedTaskInfo2.getResourceIds().get(0));
+        assertEquals("22", storedTaskInfo2.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo2.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo2.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('21')", storedTaskInfo2.getResourceUrls().get("21"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('22')", storedTaskInfo2.getResourceUrls().get("22"));
+
+        assertEquals(2, storedTaskInfo3.getResourceIds().size());
+        assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo3.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo3.getStatus());
+        assertEquals("31", storedTaskInfo3.getResourceIds().get(0));
+        assertEquals("32", storedTaskInfo3.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo3.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo3.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('31')", storedTaskInfo3.getResourceUrls().get("31"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('32')", storedTaskInfo3.getResourceUrls().get("32"));
+
+        assertEquals(2, storedTaskInfo4.getResourceIds().size());
+        assertEquals(2, storedTaskInfo4.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo4.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo4.getStatus());
+        assertEquals("41", storedTaskInfo4.getResourceIds().get(0));
+        assertEquals("42", storedTaskInfo4.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo4.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo4.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('41')", storedTaskInfo4.getResourceUrls().get("41"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('42')", storedTaskInfo4.getResourceUrls().get("42"));
+
+        assertEquals(2, storedTaskInfo5.getResourceIds().size());
+        assertEquals(2, storedTaskInfo5.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo5.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo5.getStatus());
+        assertEquals("51", storedTaskInfo5.getResourceIds().get(0));
+        assertEquals("52", storedTaskInfo5.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo5.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo5.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('51')", storedTaskInfo5.getResourceUrls().get("51"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('52')", storedTaskInfo5.getResourceUrls().get("52"));
+
+        assertEquals(2, storedTaskInfo6.getResourceIds().size());
+        assertEquals(2, storedTaskInfo6.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo6.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo6.getStatus());
+        assertEquals("61", storedTaskInfo6.getResourceIds().get(0));
+        assertEquals("62", storedTaskInfo6.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo6.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo6.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('61')", storedTaskInfo6.getResourceUrls().get("61"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('62')", storedTaskInfo6.getResourceUrls().get("62"));
+
         // Test what Enabler Logic receives
         assertEquals(6, resultRef.get().getResources().size());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
@@ -284,15 +379,29 @@ public class UpdateTaskConsumerTests {
             }
 
             if (request.getTaskId().equals("5")) {
-                assertEquals(null, request.getResources());
-                assertEquals("updatedTask5", request.getEnablerLogicName());
+                Map<String, String> resourcesMap = new HashMap<>();
+                resourcesMap.put("51", symbIoTeCoreUrl + "/Sensors('51')");
+                resourcesMap.put("52", symbIoTeCoreUrl + "/Sensors('52')");
+
+                assertEquals(2, request.getResources().size());
+                assertEquals(resourcesMap.get(request.getResources().get(0).getResourceId()),
+                        request.getResources().get(0).getAccessURL());
+                assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
+                        request.getResources().get(1).getAccessURL());
                 assertEquals(60, (long) request.getQueryInterval_ms());
                 continue;
             }
 
             if (request.getTaskId().equals("6")) {
-                assertEquals(null, request.getResources());
-                assertEquals("enablerLogic", request.getEnablerLogicName());
+                Map<String, String> resourcesMap = new HashMap<>();
+                resourcesMap.put("61", symbIoTeCoreUrl + "/Sensors('61')");
+                resourcesMap.put("62", symbIoTeCoreUrl + "/Sensors('62')");
+
+                assertEquals(2, request.getResources().size());
+                assertEquals(resourcesMap.get(request.getResources().get(0).getResourceId()),
+                        request.getResources().get(0).getAccessURL());
+                assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
+                        request.getResources().get(1).getAccessURL());
                 assertEquals(100, (long) request.getQueryInterval_ms());
                 continue;
             }
@@ -407,6 +516,10 @@ public class UpdateTaskConsumerTests {
                 .shouldRank(true)
                 .build();
 
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
         task1.setTaskId("1");
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
@@ -417,11 +530,17 @@ public class UpdateTaskConsumerTests {
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         task1.setEnablerLogicName("enablerLogic");
+        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        task1.setResourceUrls(resourceUrls1);
         taskInfoRepository.save(task1);
 
+        Map<String, String> resourceUrls2 = new HashMap<>();
+        resourceUrls2.put("21", symbIoTeCoreUrl + "/Sensors('21')");
+        resourceUrls2.put("22", symbIoTeCoreUrl + "/Sensors('22')");
         TaskInfo task2 = new TaskInfo(task1);
         task2.setTaskId("2");
         task2.setResourceIds(Arrays.asList("21", "22"));
+        task2.setResourceUrls(resourceUrls2);
         taskInfoRepository.save(task2);
 
          // This task should reach Platform Proxy and inform it for new resources
@@ -461,6 +580,28 @@ public class UpdateTaskConsumerTests {
         // Only updatedTask1.equals(storedTaskInfo1) should be false, because it has modified resources
         assertEquals(false, updatedTask1.equals(storedTaskInfo1));
         assertEquals(true, updatedTask2.equals(storedTaskInfo2));
+
+        // Test what is stored in the database
+        assertEquals(2, storedTaskInfo1.getResourceIds().size());
+        assertEquals(1, storedTaskInfo1.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
+        assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
+        assertEquals("resource3", storedTaskInfo1.getStoredResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo1.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo1.getResourceUrls().get("resource2"));
+
+        assertEquals(2, storedTaskInfo2.getResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals("21", storedTaskInfo2.getResourceIds().get(0));
+        assertEquals("22", storedTaskInfo2.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo2.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo2.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('21')", storedTaskInfo2.getResourceUrls().get("21"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('22')", storedTaskInfo2.getResourceUrls().get("22"));
 
         // Test what Enabler Logic receives
         assertEquals(2, resultRef.get().getResources().size());
@@ -508,6 +649,10 @@ public class UpdateTaskConsumerTests {
                 .shouldRank(true)
                 .build();
 
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
         task1.setTaskId("1");
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
@@ -518,25 +663,40 @@ public class UpdateTaskConsumerTests {
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         task1.setEnablerLogicName("enablerLogic");
+        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        task1.setResourceUrls(resourceUrls1);
         taskInfoRepository.save(task1);
 
+        Map<String, String> resourceUrls2 = new HashMap<>();
+        resourceUrls2.put("21", symbIoTeCoreUrl + "/Sensors('21')");
+        resourceUrls2.put("22", symbIoTeCoreUrl + "/Sensors('22')");
         TaskInfo task2 = new TaskInfo(task1);
         task2.setTaskId("2");
         task2.setResourceIds(Arrays.asList("21", "22"));
+        task2.setResourceUrls(resourceUrls2);
         taskInfoRepository.save(task2);
 
         // resource1 should not be in the storedResourceIds after the update
+        Map<String, String> resourceUrls3 = new HashMap<>();
+        resourceUrls3.put("31", symbIoTeCoreUrl + "/Sensors('31')");
+        resourceUrls3.put("32", symbIoTeCoreUrl + "/Sensors('32')");
+        resourceUrls3.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         TaskInfo task3 = new TaskInfo(task1);
         task3.setTaskId("3");
         task3.getCoreQueryRequest().setLocation_name("Paris");
         task3.setResourceIds(Arrays.asList("31", "32", "resource1"));
         task3.setAllowCaching(false);
+        task3.setResourceUrls(resourceUrls3);
         taskInfoRepository.save(task3);
 
+        Map<String, String> resourceUrls4 = new HashMap<>();
+        resourceUrls4.put("41", symbIoTeCoreUrl + "/Sensors('41')");
+        resourceUrls4.put("42", symbIoTeCoreUrl + "/Sensors('42')");
         TaskInfo task4 = new TaskInfo(task1);
         task4.setTaskId("4");
         task4.setResourceIds(Arrays.asList("41", "42"));
         task4.setAllowCaching(false);
+        task4.setResourceUrls(resourceUrls4);
         taskInfoRepository.save(task4);
 
         // This task should reach Platform Proxy and inform it for new resources
@@ -608,14 +768,24 @@ public class UpdateTaskConsumerTests {
         // Test if the stored resources were cleared in the first 2 tasks
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
         assertEquals(0, storedTaskInfo1.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getResourceUrls().size());
         assertEquals(2, storedTaskInfo2.getResourceIds().size());
         assertEquals(0, storedTaskInfo2.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getResourceUrls().size());
+
+        // Test the statuses
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo3.getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo4.getStatus());
 
         // Test if stored resources were added in the last 2 tasks
         assertEquals(3, storedTaskInfo3.getResourceIds().size());
         assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
+        assertEquals(3, storedTaskInfo3.getResourceUrls().size());
         assertEquals(2, storedTaskInfo4.getResourceIds().size());
         assertEquals(1, storedTaskInfo4.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo4.getResourceUrls().size());
 
         // Check the resourceIds
         assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
@@ -632,6 +802,17 @@ public class UpdateTaskConsumerTests {
         assertEquals("resource2", storedTaskInfo3.getStoredResourceIds().get(0));
         assertEquals("resource3", storedTaskInfo3.getStoredResourceIds().get(1));
         assertEquals("resource3", storedTaskInfo4.getStoredResourceIds().get(0));
+
+        // Check the resourceUrls
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo1.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo1.getResourceUrls().get("resource2"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('21')", storedTaskInfo2.getResourceUrls().get("21"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('22')", storedTaskInfo2.getResourceUrls().get("22"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('31')", storedTaskInfo3.getResourceUrls().get("31"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('32')", storedTaskInfo3.getResourceUrls().get("32"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo3.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo4.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo4.getResourceUrls().get("resource2"));
 
         // Test what Enabler Logic receives
         assertEquals(4, resultRef.get().getResources().size());
@@ -701,6 +882,10 @@ public class UpdateTaskConsumerTests {
                 .shouldRank(true)
                 .build();
 
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
         task1.setTaskId("1");
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
@@ -711,43 +896,53 @@ public class UpdateTaskConsumerTests {
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
         task1.setEnablerLogicName("enablerLogic");
+        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        task1.setResourceUrls(resourceUrls1);
         taskInfoRepository.save(task1);
 
+        Map<String, String> resourceUrls2 = new HashMap<>();
+        resourceUrls2.put("21", symbIoTeCoreUrl + "/Sensors('21')");
+        resourceUrls2.put("22", symbIoTeCoreUrl + "/Sensors('22')");
         TaskInfo task2 = new TaskInfo(task1);
         task2.setTaskId("2");
         task2.setResourceIds(Arrays.asList("21", "22"));
+        task2.setResourceUrls(resourceUrls2);
         taskInfoRepository.save(task2);
 
+        Map<String, String> resourceUrls3 = new HashMap<>();
+        resourceUrls3.put("31", symbIoTeCoreUrl + "/Sensors('31')");
+        resourceUrls3.put("32", symbIoTeCoreUrl + "/Sensors('32')");
         TaskInfo task3 = new TaskInfo(task1);
         task3.setTaskId("3");
         task3.setResourceIds(Arrays.asList("31", "32"));
+        task3.setResourceUrls(resourceUrls3);
         taskInfoRepository.save(task3);
 
+        Map<String, String> resourceUrls4 = new HashMap<>();
+        resourceUrls4.put("41", symbIoTeCoreUrl + "/Sensors('41')");
+        resourceUrls4.put("42", symbIoTeCoreUrl + "/Sensors('42')");
         TaskInfo task4 = new TaskInfo(task1);
         task4.setTaskId("4");
         task4.setResourceIds(Arrays.asList("41", "42"));
         task4.setStoredResourceIds(Arrays.asList("3", "4", "badCRAMrespose"));
+        task4.setResourceUrls(resourceUrls4);
         taskInfoRepository.save(task4);
 
         // ToDo: Add a test when a task is saved with NOT_ENOUGH_RESOURCES STATUS
 
         // This task should not reach Platform Proxy, since minNoResources decreased
-        // allowCaching == true
         TaskInfo updatedTask1 = new TaskInfo(task1);
         updatedTask1.setMinNoResources(1);
 
         // This task should reach Platform Proxy, since minNoResources increased and there were enough resources
-        // allowCaching == true
         TaskInfo updatedTask2 = new TaskInfo(task2);
         updatedTask2.setMinNoResources(3);
 
-        // This task should not reach Platform Proxy, since minNoResources increased and there were not enough resources
-        // allowCaching == true
+        // This task should not reach Platform Proxy, since minNoResources increased and there were not enough storedResources
         TaskInfo updatedTask3 = new TaskInfo(task3);
         updatedTask3.setMinNoResources(5);
 
-        // This task should not reach Platform Proxy, because there are not enough resources
-        // allowCaching == false
+        // This task should not reach Platform Proxy, because there are not enough available resources
         TaskInfo updatedTask4 = new TaskInfo(task4);
         updatedTask4.setMinNoResources(5);
 
@@ -783,21 +978,30 @@ public class UpdateTaskConsumerTests {
         assertEquals(false, task3.equals(storedTaskInfo3));
         assertEquals(false, task4.equals(storedTaskInfo4));
 
-        // Because the storedResources are updated only in the 2nd case
-        assertEquals(true, updatedTask1.equals(storedTaskInfo1));
-        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
-        assertEquals(true, updatedTask3.equals(storedTaskInfo3));
-        assertEquals(false, updatedTask4.equals(storedTaskInfo4));
+        assertEquals(true, updatedTask1.equals(storedTaskInfo1)); // Nothing changes
+        assertEquals(false, updatedTask2.equals(storedTaskInfo2)); // The storedResources are updated
+        assertEquals(false, updatedTask3.equals(storedTaskInfo3)); // The status changed to NOT_ENOUGH_RESOURCES
+        assertEquals(false, updatedTask4.equals(storedTaskInfo4)); // The status changed to NOT_ENOUGH_RESOURCES
 
-        // Check the sizes of resourceIds and storedResourceIds
+        // Check the statuses
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, storedTaskInfo3.getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, storedTaskInfo4.getStatus());
+
+        // Check the sizes of resourceIds, storedResourceIds and resourceUrls
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
         assertEquals(2, storedTaskInfo1.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getResourceUrls().size());
         assertEquals(3, storedTaskInfo2.getResourceIds().size());
         assertEquals(1, storedTaskInfo2.getStoredResourceIds().size());
-        assertEquals(2, storedTaskInfo3.getResourceIds().size());
-        assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
+        assertEquals(3, storedTaskInfo2.getResourceUrls().size());
+        assertEquals(4, storedTaskInfo3.getResourceIds().size());
+        assertEquals(0, storedTaskInfo3.getStoredResourceIds().size());
+        assertEquals(4, storedTaskInfo3.getResourceUrls().size());
         assertEquals(4, storedTaskInfo4.getResourceIds().size());
         assertEquals(0, storedTaskInfo4.getStoredResourceIds().size());
+        assertEquals(4, storedTaskInfo4.getResourceUrls().size());
 
         // Check the resourceIds
         assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
@@ -807,6 +1011,8 @@ public class UpdateTaskConsumerTests {
         assertEquals("3", storedTaskInfo2.getResourceIds().get(2));
         assertEquals("31", storedTaskInfo3.getResourceIds().get(0));
         assertEquals("32", storedTaskInfo3.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo3.getResourceIds().get(2));
+        assertEquals("4", storedTaskInfo3.getResourceIds().get(3));
         assertEquals("41", storedTaskInfo4.getResourceIds().get(0));
         assertEquals("42", storedTaskInfo4.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo4.getResourceIds().get(2));
@@ -814,8 +1020,21 @@ public class UpdateTaskConsumerTests {
 
         // Check the storedResourceIds
         assertEquals("4", storedTaskInfo2.getStoredResourceIds().get(0));
-        assertEquals("3", storedTaskInfo3.getStoredResourceIds().get(0));
-        assertEquals("4", storedTaskInfo3.getStoredResourceIds().get(1));
+
+        // Check the resourceUrls
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo1.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo1.getResourceUrls().get("resource2"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('21')", storedTaskInfo2.getResourceUrls().get("21"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('22')", storedTaskInfo2.getResourceUrls().get("22"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('3')", storedTaskInfo2.getResourceUrls().get("3"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('31')", storedTaskInfo3.getResourceUrls().get("31"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('32')", storedTaskInfo3.getResourceUrls().get("32"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('3')", storedTaskInfo3.getResourceUrls().get("3"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('4')", storedTaskInfo3.getResourceUrls().get("4"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('41')", storedTaskInfo4.getResourceUrls().get("41"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('42')", storedTaskInfo4.getResourceUrls().get("42"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('3')", storedTaskInfo4.getResourceUrls().get("3"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('4')", storedTaskInfo4.getResourceUrls().get("4"));
 
         // Test what Enabler Logic receives
         assertEquals(4, resultRef.get().getResources().size());
@@ -823,7 +1042,7 @@ public class UpdateTaskConsumerTests {
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(3, resultRef.get().getResources().get(1).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
-        assertEquals(2, resultRef.get().getResources().get(2).getResourceIds().size());
+        assertEquals(4, resultRef.get().getResources().get(2).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(2).getStatus());
         assertEquals(4, resultRef.get().getResources().get(3).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(3).getStatus());
@@ -835,6 +1054,8 @@ public class UpdateTaskConsumerTests {
         assertEquals("3", resultRef.get().getResources().get(1).getResourceIds().get(2));
         assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
         assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
+        assertEquals("3", resultRef.get().getResources().get(2).getResourceIds().get(2));
+        assertEquals("4", resultRef.get().getResources().get(2).getResourceIds().get(3));
         assertEquals("41", resultRef.get().getResources().get(3).getResourceIds().get(0));
         assertEquals("42", resultRef.get().getResources().get(3).getResourceIds().get(1));
         assertEquals("3", resultRef.get().getResources().get(3).getResourceIds().get(2));
@@ -859,9 +1080,18 @@ public class UpdateTaskConsumerTests {
             log.info("id = " + request.getTaskId());
 
             if (request.getTaskId().equals("2")) {
-                assertEquals("21", request.getResources().get(0).getResourceId());
-                assertEquals("22", request.getResources().get(1).getResourceId());
-                assertEquals("3", request.getResources().get(2).getResourceId());
+                Map<String, String> resourcesMap = new HashMap<>();
+                resourcesMap.put("21", symbIoTeCoreUrl + "/Sensors('21')");
+                resourcesMap.put("22", symbIoTeCoreUrl + "/Sensors('22')");
+                resourcesMap.put("3", symbIoTeCoreUrl + "/Sensors('3')");
+
+                assertEquals(3, request.getResources().size());
+                assertEquals(resourcesMap.get(request.getResources().get(0).getResourceId()),
+                        request.getResources().get(0).getAccessURL());
+                assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
+                        request.getResources().get(1).getAccessURL());
+                assertEquals(resourcesMap.get(request.getResources().get(2).getResourceId()),
+                        request.getResources().get(2).getAccessURL());
                 continue;
             }
 

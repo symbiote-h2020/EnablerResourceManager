@@ -90,6 +90,7 @@ public class SearchHelper {
         ResourceManagerTaskInfoResponse taskInfoResponse = new ResourceManagerTaskInfoResponse(taskInfoRequest);
         PlatformProxyTaskInfo requestToPlatformProxy = new PlatformProxyTaskInfo();
         QueryResponse queryResponse = null;
+        TaskResponseToComponents taskResponseToComponents = null;
 
         // FIX ME: Consider Connection timeouts or errors
         try {
@@ -103,7 +104,7 @@ public class SearchHelper {
             }
 
             queryResponse = queryResponseEntity.getBody();
-            TaskResponseToComponents taskResponseToComponents  = processSearchResponse(queryResponse, taskInfoRequest);
+            taskResponseToComponents  = processSearchResponse(queryResponse, taskInfoRequest);
 
             // Finalizing task response to EnablerLogic
             taskInfoResponse.setResourceIds(taskResponseToComponents.getResourceIdsForEnablerLogic());
@@ -133,6 +134,10 @@ public class SearchHelper {
         TaskInfo taskInfo = new TaskInfo(taskInfoResponse);
         if (taskInfoRequest.getAllowCaching())
             taskInfo.calculateStoredResourceIds(queryResponse);
+        if (taskResponseToComponents != null &&
+                (taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS ||
+                taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES))
+            taskInfo.addResourceIds(taskResponseToComponents.getPlatformProxyResourceInfoList());
 
         queryAndProcessSearchResponseResult.setResourceManagerTaskInfoResponse(taskInfoResponse);
         queryAndProcessSearchResponseResult.setTaskInfo(taskInfo);

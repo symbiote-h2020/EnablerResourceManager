@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -51,6 +52,10 @@ public class EnablerLogicWrongDataConsumerTests {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    @Autowired
+    @Qualifier("symbIoTeCoreUrl")
+    private String symbIoTeCoreUrl;
+
     @Value("${rabbit.exchange.resourceManager.name}")
     private String resourceManagerExchangeName;
 
@@ -74,7 +79,8 @@ public class EnablerLogicWrongDataConsumerTests {
         log.info("wrongDataResourcesWithEnoughResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughResourcesTest(wrongDataRoutingKey,
-                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
 
         log.info("wrongDataResourcesWithEnoughResourcesTest FINISHED!");
     }
@@ -84,7 +90,8 @@ public class EnablerLogicWrongDataConsumerTests {
         log.info("wrongDataResourcesWithNotEnoughResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.problematicResourceMessageWithNotEnoughResourcesTest(wrongDataRoutingKey,
-                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
 
         log.info("wrongDataResourcesWithNotEnoughResourcesTest FINISHED!");
     }
@@ -94,7 +101,8 @@ public class EnablerLogicWrongDataConsumerTests {
         log.info("wrongDataResourcesWithEnoughStoredOnlyResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughStoredOnlyResourcesTest(wrongDataRoutingKey,
-                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
 
         log.info("wrongDataResourcesWithEnoughStoredOnlyResourcesTest FINISHED!");
     }

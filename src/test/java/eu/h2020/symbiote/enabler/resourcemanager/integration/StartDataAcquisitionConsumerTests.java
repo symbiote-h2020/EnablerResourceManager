@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -68,6 +69,10 @@ public class StartDataAcquisitionConsumerTests {
 
     @Autowired
     private DummyEnablerLogicListener dummyEnablerLogicListener;
+
+    @Autowired
+    @Qualifier("symbIoTeCoreUrl")
+    private String symbIoTeCoreUrl;
 
     @Value("${rabbit.exchange.resourceManager.name}")
     private String resourceManagerExchangeName;
@@ -158,9 +163,12 @@ public class StartDataAcquisitionConsumerTests {
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(1, taskInfo.getResourceIds().size());
@@ -294,15 +302,20 @@ public class StartDataAcquisitionConsumerTests {
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(1, taskInfo.getResourceIds().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
         log.info("notSendingToPlatformProxyTest FINISHED!");
     }
@@ -349,19 +362,23 @@ public class StartDataAcquisitionConsumerTests {
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
+        assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
         assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(1, taskInfo.getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(1, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
         log.info("allowCachingTest FINISHED!");
-
     }
 
     @Test
@@ -417,20 +434,25 @@ public class StartDataAcquisitionConsumerTests {
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
+        assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
         assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(2, taskInfo.getResourceIds().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals("resource5", taskInfo.getResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource5')", taskInfo.getResourceUrls().get("resource5"));
 
         log.info("notEnoughResourcesTest FINISHED!");
-
     }
 
     @Test
@@ -474,7 +496,6 @@ public class StartDataAcquisitionConsumerTests {
         assertEquals(null, taskInfo);
 
         log.info("wrongQueryIntervalFormatTest FINISHED!");
-
     }
 
     @Test
@@ -518,7 +539,6 @@ public class StartDataAcquisitionConsumerTests {
         assertEquals(null, taskInfo);
 
         log.info("wrongCacheIntervalFormatTest FINISHED!");
-
     }
 
 }

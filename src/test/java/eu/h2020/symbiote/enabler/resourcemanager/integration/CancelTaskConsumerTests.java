@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,7 +31,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -62,6 +65,10 @@ public class CancelTaskConsumerTests {
 
     @Autowired
     private DummyEnablerLogicListener dummyEnablerLogicListener;
+
+    @Autowired
+    @Qualifier("symbIoTeCoreUrl")
+    private String symbIoTeCoreUrl;
 
     @Value("${rabbit.exchange.resourceManager.name}")
     private String resourceManagerExchangeName;
@@ -98,6 +105,10 @@ public class CancelTaskConsumerTests {
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
 
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
         task1.setTaskId("1");
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
@@ -107,6 +118,9 @@ public class CancelTaskConsumerTests {
         task1.setCachingInterval("P0-0-0T0:0:1");
         task1.setInformPlatformProxy(true);
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
+        task1.setEnablerLogicName("TestEnablerLogic");
+        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        task1.setResourceUrls(resourceUrls1);
         taskInfoRepository.save(task1);
 
         TaskInfo task2 = new TaskInfo(task1);
@@ -179,6 +193,10 @@ public class CancelTaskConsumerTests {
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
 
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
         task1.setTaskId("1");
         task1.setMinNoResources(2);
         task1.setCoreQueryRequest(coreQueryRequest);
@@ -187,7 +205,10 @@ public class CancelTaskConsumerTests {
         task1.setAllowCaching(true);
         task1.setCachingInterval("P0-0-0T0:0:1");
         task1.setInformPlatformProxy(true);
+        task1.setEnablerLogicName("TestEnablerLogic");
         task1.setStoredResourceIds(Arrays.asList("3", "4"));
+        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        task1.setResourceUrls(resourceUrls1);
         taskInfoRepository.save(task1);
 
         TaskInfo task2 = new TaskInfo(task1);

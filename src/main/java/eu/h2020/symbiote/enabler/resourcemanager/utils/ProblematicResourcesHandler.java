@@ -23,7 +23,9 @@ import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by vasgl on 7/20/2017.
@@ -142,6 +144,8 @@ public final class ProblematicResourcesHandler {
                 log.info("Task with id = " + taskId + " has enough resources to replace the problematic ones.");
 
                 List<String> newResourceIds = new ArrayList<>();
+                Map<String, String> newResourceUrls = new HashMap<>();
+
                 QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
                 List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
 
@@ -155,7 +159,10 @@ public final class ProblematicResourcesHandler {
 
                     if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
                             ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+
                         newResourceIds.add(candidateResourceId);
+                        newResourceUrls.put(candidateResourceId, queryAndProcessSearchResponseResult.
+                                getTaskInfo().getResourceUrls().get(candidateResourceId));
 
                         if (taskInfo.getInformPlatformProxy() &&
                                 queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
@@ -170,14 +177,15 @@ public final class ProblematicResourcesHandler {
                 }
 
                 // ToDo: add it to another list, not just remove it
-                taskInfo.getResourceIds().removeAll(problematicResourcesInfo.getProblematicResourceIds());
-                taskInfo.getResourceIds().addAll(newResourceIds);
+                taskInfo.deleteResourceIds(problematicResourcesInfo.getProblematicResourceIds());
+                taskInfo.addResourceIds(newResourceUrls);
 
                 if (newResourceIds.size() == noNewResourcesNeeded) {
                     return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(taskInfo, platformProxyResourceInfoList, newResourceIds);
                 } else {
                     log.info("Not enough resources are available.");
 
+                    taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
                     NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
                             taskInfo.getMinNoResources(), taskInfo.getResourceIds().size(), taskInfo.getStoredResourceIds().size());
 
@@ -190,6 +198,7 @@ public final class ProblematicResourcesHandler {
                 // ToDo: add it to another list, not just remove it
                 taskInfo.getResourceIds().removeAll(problematicResourcesInfo.getProblematicResourceIds());
 
+                taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
                 NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
                         taskInfo.getMinNoResources(), taskInfo.getResourceIds().size(), taskInfo.getStoredResourceIds().size());
                 return ProblematicResourcesHandlerResult.notEnoughResources(taskInfo,notEnoughResourcesAvailable);

@@ -27,7 +27,9 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -134,6 +136,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     updatedTaskInfo.setCoreQueryRequest(CoreQueryRequest.newInstance(storedTaskInfo.getCoreQueryRequest()));
                     updatedTaskInfo.setResourceIds(new ArrayList<>(storedTaskInfo.getResourceIds()));
                     updatedTaskInfo.setStoredResourceIds(new ArrayList<>(storedTaskInfo.getStoredResourceIds()));
+                    updatedTaskInfo.setResourceUrls(new HashMap<>(storedTaskInfo.getResourceUrls()));
 
                     // Check if allowCaching changed value
                     if (storedTaskInfo.getAllowCaching() != updatedTaskInfo.getAllowCaching()) {
@@ -172,61 +175,55 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         log.info("The update on task " + updatedTaskInfo.getTaskId() + " requests more resources: " +
                         storedTaskInfo.getMinNoResources() + " -> " + updatedTaskInfo.getMinNoResources());
 
+                        // ToDo: Behavior when allowCaching == false
                         int noNewResourcesNeeded = updatedTaskInfo.getMinNoResources() - storedTaskInfo.getMinNoResources();
                         if (updatedTaskInfo.getAllowCaching()) {
-                            if (noNewResourcesNeeded <= updatedTaskInfo.getStoredResourceIds().size()) {
-                                log.info("Task with id = " + updatedTaskInfo.getTaskId() + " has enough resources " +
-                                                "to conform to the minNoResources change");
+                            log.info("Task with id = " + updatedTaskInfo.getTaskId() + " has enough resources " +
+                                    "to conform to the minNoResources change");
 
-                                List<String> newResourceIds = new ArrayList<>();
-                                QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
+                            Map<String, String> newResourceUrls = new HashMap<>();
+                            QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
 
-                                while (newResourceIds.size() != noNewResourcesNeeded &&
-                                        updatedTaskInfo.getStoredResourceIds().size() != 0) {
-                                    String candidateResourceId = updatedTaskInfo.getStoredResourceIds().get(0);
-                                    String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
+                            while (newResourceUrls.size() != noNewResourcesNeeded &&
+                                    updatedTaskInfo.getStoredResourceIds().size() != 0) {
+                                String candidateResourceId = updatedTaskInfo.getStoredResourceIds().get(0);
+                                String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
 
-                                    queryAndProcessSearchResponseResult =
-                                            searchHelper.queryAndProcessSearchResponse(queryUrl, updatedTaskInfo, true);
+                                queryAndProcessSearchResponseResult =
+                                        searchHelper.queryAndProcessSearchResponse(queryUrl, updatedTaskInfo, true);
 
-                                    if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
-                                            ResourceManagerTaskInfoResponseStatus.SUCCESS) {
-                                        newResourceIds.add(candidateResourceId);
-                                    }
-
-                                    if (updatedTaskInfo.getInformPlatformProxy() &&
-                                            queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
-                                                    ResourceManagerTaskInfoResponseStatus.SUCCESS) {
-                                        platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
-                                                getPlatformProxyTaskInfo().getResources());
-                                    }
-
-                                    //ToDo: add it to another list if CRAM does not respond with a url
-                                    updatedTaskInfo.getStoredResourceIds().remove(0);
+                                if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
+                                        ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+                                    newResourceUrls.put(candidateResourceId, queryAndProcessSearchResponseResult.
+                                            getTaskInfo().getResourceUrls().get(candidateResourceId));
                                 }
 
-                                updatedTaskInfo.getResourceIds().addAll(newResourceIds);
-
-                                if (newResourceIds.size() == noNewResourcesNeeded) {
-                                    // Inform Enabler Logic that we have enough resources
-                                    responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
-
-                                } else {
-                                    log.info("Not enough resources are available.");
-                                    if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN)
-                                        responseStatus = ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES;
-                                    informPlatformProxy = false;
-
+                                if (updatedTaskInfo.getInformPlatformProxy() &&
+                                        queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
+                                                ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+                                    platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
+                                            getPlatformProxyTaskInfo().getResources());
                                 }
+
+                                //ToDo: add it to another list if CRAM does not respond with a url
+                                updatedTaskInfo.getStoredResourceIds().remove(0);
+                            }
+
+                            updatedTaskInfo.addResourceIds(newResourceUrls);
+
+                            if (newResourceUrls.size() == noNewResourcesNeeded) {
+                                log.info("There were enough resources to be added");
+                                responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
 
                             } else {
-                                log.info("Not even the maximum number of resources are enough");
-                                if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN)
+                                log.info("Not enough resources are available.");
+                                if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN) {
                                     responseStatus = ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES;
+                                }
                                 informPlatformProxy = false;
+
                             }
                         }
-
                     }
 
                     // Check if informPlatformProxy changed value
@@ -246,14 +243,21 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                                             platformProxyResourceInfoList.size() > 0)) {
 
                         PlatformProxyUpdateRequest updateRequest = new PlatformProxyUpdateRequest();
+                        platformProxyResourceInfoList = new ArrayList<>();
+
                         updateRequest.setTaskId(updatedTaskInfo.getTaskId());
                         updateRequest.setEnablerLogicName(updatedTaskInfo.getEnablerLogicName());
                         updateRequest.setQueryInterval_ms(new IntervalFormatter(updatedTaskInfo.getQueryInterval())
                                 .getMillis());
-                        if (platformProxyResourceInfoList.size() > 0)
-                            updateRequest.setResources(platformProxyResourceInfoList);
-                        else
-                            updateRequest.setResources(null); // ToDo: Maybe reconsider setting to null if the resources do not change
+
+                        for (Map.Entry<String, String> entry : updatedTaskInfo.getResourceUrls().entrySet()) {
+                            PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+                            platformProxyResourceInfo.setResourceId(entry.getKey());
+                            platformProxyResourceInfo.setAccessURL(entry.getValue());
+                            platformProxyResourceInfoList.add(platformProxyResourceInfo);
+                        }
+                        updateRequest.setResources(platformProxyResourceInfoList);
+
 
                         platformProxyUpdateRequestArrayList.add(updateRequest);
                     }
@@ -266,6 +270,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     resourceManagerTaskInfoResponse.setStatus(responseStatus);
                     resourceManagerTaskInfoResponseList.add(resourceManagerTaskInfoResponse);
 
+                    updatedTaskInfo.setStatus(responseStatus);
                     taskInfoRepository.save(updatedTaskInfo);
 
                 } else {
@@ -312,7 +317,6 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     });
 
             // Sending requests to PlatformProxy about updated tasks
-            log.info("platformProxyUpdateRequestArrayList.size(): " + platformProxyUpdateRequestArrayList.size());
             for (PlatformProxyTaskInfo req : platformProxyUpdateRequestArrayList) {
                 log.info("Sending request to Platform Proxy for task " + req.getTaskId());
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyTaskUpdatedKey, req);

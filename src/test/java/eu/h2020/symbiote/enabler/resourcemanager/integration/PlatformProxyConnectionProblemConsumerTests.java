@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,6 +54,10 @@ public class PlatformProxyConnectionProblemConsumerTests {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    @Autowired
+    @Qualifier("symbIoTeCoreUrl")
+    private String symbIoTeCoreUrl;
+
     @Value("${rabbit.exchange.resourceManager.name}")
     private String resourceManagerExchangeName;
 
@@ -76,7 +81,8 @@ public class PlatformProxyConnectionProblemConsumerTests {
         log.info("unavailableResourcesWithEnoughResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughResourcesTest(unavailableResourcesRoutingKey,
-                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
 
         log.info("unavailableResourcesWithEnoughResourcesTest FINISHED!");
     }
@@ -86,7 +92,8 @@ public class PlatformProxyConnectionProblemConsumerTests {
         log.info("unavailableResourcesWithNotEnoughResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.problematicResourceMessageWithNotEnoughResourcesTest(unavailableResourcesRoutingKey,
-                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
 
         log.info("unavailableResourcesWithNotEnoughResourcesTest FINISHED!");
     }
@@ -96,7 +103,8 @@ public class PlatformProxyConnectionProblemConsumerTests {
         log.info("unavailableResourcesWithEnoughStoredOnlyResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughStoredOnlyResourcesTest(unavailableResourcesRoutingKey,
-                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener, resourceManagerExchangeName);
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
 
         log.info("unavailableResourcesWithEnoughStoredOnlyResourcesTest FINISHED!");
     }
