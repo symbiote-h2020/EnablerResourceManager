@@ -50,6 +50,9 @@ public class UpdateTaskConsumer extends DefaultConsumer {
     @Value("${rabbit.exchange.enablerPlatformProxy.name}")
     private String platformProxyExchange;
 
+    @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStartRequested}")
+    private String platformProxyAcquisitionStartRequestedRoutingKey;
+
     @Value("${rabbit.routingKey.enablerPlatformProxy.taskUpdated}")
     private String platformProxyTaskUpdatedKey;
 
@@ -92,7 +95,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         ResourceManagerAcquisitionStartResponse response  = new ResourceManagerAcquisitionStartResponse();
         ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = new ArrayList<>();
         ArrayList<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList = new ArrayList<>();
-        ArrayList<PlatformProxyTaskInfo> platformProxyUpdateRequestArrayList = new ArrayList<>();
+        ArrayList<PlatformProxyTaskInfo> platformProxyUpdateRequestList = new ArrayList<>();
         CancelTaskRequest cancelTaskRequest = new CancelTaskRequest();
         cancelTaskRequest.setTaskIdList(new ArrayList<>());
 
@@ -243,14 +246,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                     // Check if informPlatformProxy changed value
                     if (storedTaskInfo.getInformPlatformProxy() != updatedTaskInfo.getInformPlatformProxy()) {
-                        if (updatedTaskInfo.getInformPlatformProxy()) {
-                            // send StartAcquisitionRequest
-
-                        }
-                        else {
-                            // send CancelTaskRequest
-                            cancelTaskRequest.getTaskIdList().add(updatedTaskInfo.getTaskId());
-                        }
+                        processPlatformProxyTransition(updatedTaskInfo, platformProxyAcquisitionStartRequestList,
+                                cancelTaskRequest);
                     }
                     else if (updatedTaskInfo.getInformPlatformProxy() && informPlatformProxy &&
                             (!updatedTaskInfo.getQueryInterval().equals(storedTaskInfo.getQueryInterval()) ||
@@ -260,23 +257,12 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                                             updatedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS))) {
 
                         PlatformProxyUpdateRequest updateRequest = new PlatformProxyUpdateRequest();
-                        platformProxyResourceInfoList = new ArrayList<>();
-
                         updateRequest.setTaskId(updatedTaskInfo.getTaskId());
                         updateRequest.setEnablerLogicName(updatedTaskInfo.getEnablerLogicName());
                         updateRequest.setQueryInterval_ms(new IntervalFormatter(updatedTaskInfo.getQueryInterval())
                                 .getMillis());
-
-                        for (Map.Entry<String, String> entry : updatedTaskInfo.getResourceUrls().entrySet()) {
-                            PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
-                            platformProxyResourceInfo.setResourceId(entry.getKey());
-                            platformProxyResourceInfo.setAccessURL(entry.getValue());
-                            platformProxyResourceInfoList.add(platformProxyResourceInfo);
-                        }
-                        updateRequest.setResources(platformProxyResourceInfoList);
-
-
-                        platformProxyUpdateRequestArrayList.add(updateRequest);
+                        updateRequest.setResources(createPlatformProxyResourceInfoList(updatedTaskInfo));
+                        platformProxyUpdateRequestList.add(updateRequest);
                     }
 
 
@@ -292,12 +278,11 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
                             .queryAndProcessSearchResponse(queryUrl, taskInfoRequest, false);
 
+                    // Reply to Enabler Logic
                     if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
                         resourceManagerTaskInfoResponseList.add(
                                 newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse());
-                    if (newQueryAndProcessSearchResponseResult.getPlatformProxyTaskInfo() != null)
-                        platformProxyUpdateRequestArrayList.add(
-                                newQueryAndProcessSearchResponseResult.getPlatformProxyTaskInfo());
+
 
                     // Store the taskInfo
                     TaskInfo taskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
@@ -305,13 +290,12 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                     // Inform Platform Proxy depending on the informPlatformProxy transition
                     if (storedTaskInfo.getInformPlatformProxy() != taskInfo.getInformPlatformProxy()) {
-                        if (taskInfo.getInformPlatformProxy()) {
-                            // send StartAcquisitionRequest
-                        }
-                        else {
-                            // send CancelTaskRequest
-                            cancelTaskRequest.getTaskIdList().add(taskInfo.getTaskId());
-                        }
+                        processPlatformProxyTransition(taskInfo, platformProxyAcquisitionStartRequestList,
+                                cancelTaskRequest);
+                    } else if (newQueryAndProcessSearchResponseResult.getPlatformProxyTaskInfo() != null) {
+                        // send UpdateTaskRequest
+                        platformProxyUpdateRequestList.add(
+                                newQueryAndProcessSearchResponseResult.getPlatformProxyTaskInfo());
                     }
                 }
             }
@@ -325,9 +309,15 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         return m;
                     });
 
+            // Sending requests to PlatformProxy about startAcquisition tasks
+            for (PlatformProxyTaskInfo req : platformProxyAcquisitionStartRequestList) {
+                log.info("Sending startAcquisition request to Platform Proxy for task " + req.getTaskId());
+                rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
+            }
+
             // Sending requests to PlatformProxy about updated tasks
-            for (PlatformProxyTaskInfo req : platformProxyUpdateRequestArrayList) {
-                log.info("Sending request to Platform Proxy for task " + req.getTaskId());
+            for (PlatformProxyTaskInfo req : platformProxyUpdateRequestList) {
+                log.info("Sending update request to Platform Proxy for task " + req.getTaskId());
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyTaskUpdatedKey, req);
             }
 
@@ -351,4 +341,36 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     return m;
                 });
     }
+
+    private List<PlatformProxyResourceInfo> createPlatformProxyResourceInfoList(TaskInfo taskInfo) {
+        List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : taskInfo.getResourceUrls().entrySet()) {
+            PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+            platformProxyResourceInfo.setResourceId(entry.getKey());
+            platformProxyResourceInfo.setAccessURL(entry.getValue());
+            platformProxyResourceInfoList.add(platformProxyResourceInfo);
+        }
+        return platformProxyResourceInfoList;
+    }
+
+    private void processPlatformProxyTransition(TaskInfo taskInfo, List<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList,
+                      CancelTaskRequest cancelTaskRequest) {
+        if (taskInfo.getInformPlatformProxy()) {
+            // send StartAcquisitionRequest
+            PlatformProxyAcquisitionStartRequest startRequest = new PlatformProxyAcquisitionStartRequest();
+
+            startRequest.setTaskId(taskInfo.getTaskId());
+            startRequest.setEnablerLogicName(taskInfo.getEnablerLogicName());
+            startRequest.setQueryInterval_ms(new IntervalFormatter(taskInfo.getQueryInterval())
+                    .getMillis());
+            startRequest.setResources(createPlatformProxyResourceInfoList(taskInfo));
+            platformProxyAcquisitionStartRequestList.add(startRequest);
+        }
+        else {
+            // send CancelTaskRequest
+            cancelTaskRequest.getTaskIdList().add(taskInfo.getTaskId());
+        }
+    }
 }
+

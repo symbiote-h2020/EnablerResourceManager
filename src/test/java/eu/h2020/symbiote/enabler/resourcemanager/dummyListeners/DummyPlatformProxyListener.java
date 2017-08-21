@@ -77,7 +77,7 @@ public class DummyPlatformProxyListener {
 
         try {
             String responseInString = mapper.writeValueAsString(request);
-            log.info("PlatformProxyListener received request: " + responseInString);
+            log.info("PlatformProxyListener startAcquisition request: " + responseInString);
             log.info("requestReceivedByListener.size() = " + startAcquisitionRequestsReceivedByListener.size());
 
             if (request.getResources() != null) {

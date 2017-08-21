@@ -350,7 +350,6 @@ public class UpdateTaskConsumerTests {
         assertEquals("62", resultRef.get().getResources().get(5).getResourceIds().get(1));
 
         while(dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 3) {
-            log.info("updateAcquisitionRequestsReceived.size(): " + dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
             TimeUnit.MILLISECONDS.sleep(100);
         }
         // Added extra delay to make sure that the message is handled
@@ -611,7 +610,6 @@ public class UpdateTaskConsumerTests {
         assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
 
         while(dummyPlatformProxyListener.cancelTaskRequestsReceived() < 1) {
-            log.info("updateAcquisitionRequestsReceived.size(): " + dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
             TimeUnit.MILLISECONDS.sleep(100);
         }
         // Added extra delay to make sure that the message is handled
@@ -629,6 +627,168 @@ public class UpdateTaskConsumerTests {
         assertEquals("2", cancelTaskRequestsReceivedByListener.get(0).getTaskIdList().get(1));
 
         log.info("updateTaskWithInformPlatformProxyBecomingFalseTest FINISHED!");
+    }
+
+    @Test
+    public void updateTaskWithInformPlatformProxyBecomingTrueTest() throws Exception {
+        // In this test, the value of informPlatformProxy changes from false to true
+
+        log.info("updateTaskWithInformPlatformProxyBecomingTrueTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
+
+        TaskInfo task1 = new TaskInfo();
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .locationName("Zurich")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .shouldRank(true)
+                .build();
+
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
+        task1.setTaskId("1");
+        task1.setMinNoResources(2);
+        task1.setCoreQueryRequest(coreQueryRequest);
+        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
+        task1.setQueryInterval("P0-0-0T0:0:0.06");
+        task1.setAllowCaching(true);
+        task1.setCachingInterval("P0-0-0T0:0:1");
+        task1.setInformPlatformProxy(false);
+        task1.setStoredResourceIds(Arrays.asList("3", "4"));
+        task1.setEnablerLogicName("enablerLogic");
+        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+        task1.setResourceUrls(resourceUrls1);
+        taskInfoRepository.save(task1);
+
+        Map<String, String> resourceUrls2 = new HashMap<>();
+        resourceUrls2.put("21", symbIoTeCoreUrl + "/Sensors('21')");
+        resourceUrls2.put("22", symbIoTeCoreUrl + "/Sensors('22')");
+        TaskInfo task2 = new TaskInfo(task1);
+        task2.setTaskId("2");
+        task2.setResourceIds(Arrays.asList("21", "22"));
+        task2.setResourceUrls(resourceUrls2);
+        taskInfoRepository.save(task2);
+
+        // This task should reach Platform Proxy and inform it for new resources
+        TaskInfo updatedTask1 = new TaskInfo(task1);
+        updatedTask1.getCoreQueryRequest().setLocation_name("Paris");
+        updatedTask1.setInformPlatformProxy(true);
+
+        // This task should not reach Platform Proxy, because InformPlatformProxy == false
+        TaskInfo updatedTask2 = new TaskInfo(task2);
+        updatedTask2.setInformPlatformProxy(true);
+
+        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+                new ResourceManagerTaskInfoRequest(updatedTask2)));
+
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("updateTaskWithInformPlatformProxyBecomingFalseTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        TaskInfo storedTaskInfo1 = taskInfoRepository.findByTaskId("1");
+        TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
+
+        // Both tasks change their informPlatformProxy field
+        assertEquals(false, task1.equals(storedTaskInfo1));
+        assertEquals(false, task2.equals(storedTaskInfo2));
+
+        // Only updatedTask1.equals(storedTaskInfo1) should be false, because it has modified resources
+        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
+        assertEquals(true, updatedTask2.equals(storedTaskInfo2));
+
+        // Test what is stored in the database
+        assertEquals(2, storedTaskInfo1.getResourceIds().size());
+        assertEquals(1, storedTaskInfo1.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
+        assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
+        assertEquals("resource3", storedTaskInfo1.getStoredResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo1.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo1.getResourceUrls().get("resource2"));
+
+        assertEquals(2, storedTaskInfo2.getResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals("21", storedTaskInfo2.getResourceIds().get(0));
+        assertEquals("22", storedTaskInfo2.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo2.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo2.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('21')", storedTaskInfo2.getResourceUrls().get("21"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('22')", storedTaskInfo2.getResourceUrls().get("22"));
+
+        // Test what Enabler Logic receives
+        assertEquals(2, resultRef.get().getResources().size());
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
+
+        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 2) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        // Test what Platform Proxy receives
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(2, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
+
+        for (PlatformProxyAcquisitionStartRequest request : startAcquisitionRequestsReceivedByListener) {
+
+            log.info("id = " + request.getTaskId());
+
+            if (request.getTaskId().equals("1")) {
+                Map<String, String> resourcesMap = new HashMap<>();
+                resourcesMap.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+                resourcesMap.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
+                assertEquals(2, request.getResources().size());
+                assertEquals(resourcesMap.get(request.getResources().get(0).getResourceId()),
+                        request.getResources().get(0).getAccessURL());
+                assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
+                        request.getResources().get(1).getAccessURL());
+                continue;
+            }
+
+            if (request.getTaskId().equals("2")) {
+                Map<String, String> resourcesMap = new HashMap<>();
+                resourcesMap.put("21", symbIoTeCoreUrl + "/Sensors('21')");
+                resourcesMap.put("22", symbIoTeCoreUrl + "/Sensors('22')");
+
+                assertEquals(2, request.getResources().size());
+                assertEquals(resourcesMap.get(request.getResources().get(0).getResourceId()),
+                        request.getResources().get(0).getAccessURL());
+                assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
+                        request.getResources().get(1).getAccessURL());
+                continue;
+            }
+
+            fail("The code should not reach here, because no other tasks should be received by the platform proxy");
+        }
+
+        log.info("updateTaskWithInformPlatformProxyBecomingTrueTest FINISHED!");
     }
 
     @Test
