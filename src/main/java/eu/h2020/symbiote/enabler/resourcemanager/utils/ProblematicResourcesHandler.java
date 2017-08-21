@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
@@ -130,30 +129,14 @@ public final class ProblematicResourcesHandler {
                 List<String> newResourceIds = new ArrayList<>();
                 Map<String, String> newResourceUrls = new HashMap<>();
 
-                QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult;
-                List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
-
                 while (newResourceIds.size() != noNewResourcesNeeded &&
                         taskInfo.getStoredResourceIds().size() != 0) {
                     String candidateResourceId = taskInfo.getStoredResourceIds().get(0);
-                    String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
+                    String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
 
-                    queryAndProcessSearchResponseResult =
-                            searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfo, true);
-
-                    if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
-                            ResourceManagerTaskInfoResponseStatus.SUCCESS) {
-
+                    if (candidateResourceUrl != null) {
                         newResourceIds.add(candidateResourceId);
-                        newResourceUrls.put(candidateResourceId, queryAndProcessSearchResponseResult.
-                                getTaskInfo().getResourceUrls().get(candidateResourceId));
-
-                        if (taskInfo.getInformPlatformProxy() &&
-                                queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
-                                        ResourceManagerTaskInfoResponseStatus.SUCCESS) {
-                            platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
-                                    getPlatformProxyTaskInfo().getResources());
-                        }
+                        newResourceUrls.put(candidateResourceId, candidateResourceUrl);
                     }
 
                     //ToDo: add it to another list if CRAM does not respond with a url

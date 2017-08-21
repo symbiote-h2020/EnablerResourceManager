@@ -147,9 +147,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                             log.debug("AllowCaching changed value from false to true");
 
                             // Acquire resources
-                            String queryUrl = searchHelper.buildRequestUrl(updatedTaskInfo);
                             QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
-                                    .queryAndProcessSearchResponse(queryUrl, updatedTaskInfo, false);
+                                    .queryAndProcessSearchResponse(updatedTaskInfo);
 
                             TaskInfo newTaskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
                             updatedTaskInfo.setStoredResourceIds(new ArrayList<>());
@@ -188,22 +187,16 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                             while (newResourceUrls.size() != noNewResourcesNeeded &&
                                     updatedTaskInfo.getStoredResourceIds().size() != 0) {
                                 String candidateResourceId = updatedTaskInfo.getStoredResourceIds().get(0);
-                                String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
+                                String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
 
-                                queryAndProcessSearchResponseResult =
-                                        searchHelper.queryAndProcessSearchResponse(queryUrl, updatedTaskInfo, true);
+                                if (candidateResourceUrl != null) {
+                                    newResourceUrls.put(candidateResourceId, candidateResourceUrl);
 
-                                if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
-                                        ResourceManagerTaskInfoResponseStatus.SUCCESS) {
-                                    newResourceUrls.put(candidateResourceId, queryAndProcessSearchResponseResult.
-                                            getTaskInfo().getResourceUrls().get(candidateResourceId));
-                                }
+                                    PlatformProxyResourceInfo candidatePlatformProxyResourceInfo = new PlatformProxyResourceInfo();
+                                    candidatePlatformProxyResourceInfo.setResourceId(candidateResourceId);
+                                    candidatePlatformProxyResourceInfo.setAccessURL(candidateResourceUrl);
 
-                                if (updatedTaskInfo.getInformPlatformProxy() &&
-                                        queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
-                                                ResourceManagerTaskInfoResponseStatus.SUCCESS) {
-                                    platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
-                                            getPlatformProxyTaskInfo().getResources());
+                                    platformProxyResourceInfoList.add(candidatePlatformProxyResourceInfo);
                                 }
 
                                 //ToDo: add it to another list if CRAM does not respond with a url
@@ -274,9 +267,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     // Always request ranked results
                     taskInfoRequest.getCoreQueryRequest().setShould_rank(true);
 
-                    String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
                     QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
-                            .queryAndProcessSearchResponse(queryUrl, taskInfoRequest, false);
+                            .queryAndProcessSearchResponse(taskInfoRequest);
 
                     // Reply to Enabler Logic
                     if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)

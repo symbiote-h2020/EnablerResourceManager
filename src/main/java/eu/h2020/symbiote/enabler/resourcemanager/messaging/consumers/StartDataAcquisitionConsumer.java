@@ -99,9 +99,8 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 taskInfoRequest.getCoreQueryRequest().setShould_rank(true);
 
                 // Perform the request
-                String queryUrl = searchHelper.buildRequestUrl(taskInfoRequest);
                 QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
-                        .queryAndProcessSearchResponse(queryUrl, taskInfoRequest, false);
+                        .queryAndProcessSearchResponse(taskInfoRequest);
 
                 if (newQueryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse() != null)
                     resourceManagerTaskInfoResponseList.add(

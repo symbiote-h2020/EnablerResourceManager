@@ -55,28 +55,48 @@ public class SearchHelper {
         this.securityManager = securityManager;
     }
 
-    public String buildRequestUrl(ResourceManagerTaskInfoRequest taskInfoRequest) {
-        // Building the query url for each task
-        String url = taskInfoRequest.getCoreQueryRequest().buildQuery(symbIoTeCoreUrl);
-        log.info("url= " + url);
+    public String querySingleResource (String resourceId)  {
 
-        return url;
+        ObjectMapper mapper = new ObjectMapper();
+
+        // Query the core for each task
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
+
+        QueryResponse queryResponse = null;
+
+        // FIX ME: Consider Connection timeouts or errors
+        try {
+            ResponseEntity<QueryResponse> queryResponseEntity = restTemplate.exchange(
+                    buildRequestUrl(resourceId), HttpMethod.GET, entity, QueryResponse.class);
+
+            try {
+                log.info("SymbIoTe Core Response: " + mapper.writeValueAsString(queryResponseEntity));
+            } catch (JsonProcessingException e) {
+                log.info(e);
+            }
+
+            queryResponse = queryResponseEntity.getBody();
+            if (queryResponse.getResources().size() == 1) {
+                TaskResponseToComponents taskResponseToComponents = getUrlsFromCram(queryResponse.getResources().get(0));
+
+                if (taskResponseToComponents.getPlatformProxyResourceInfoList().size() == 1)
+                    return taskResponseToComponents.getPlatformProxyResourceInfoList().get(0).getAccessURL();
+                else
+                    return null;
+
+            } else
+                return null;
+
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            log.info(e.toString());
+            return null;
+        }
     }
 
-    public String buildRequestUrl(String resourceId){
-        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
-                .id(resourceId)
-                .shouldRank(true)
-                .build();
-        String url = coreQueryRequest.buildQuery(symbIoTeCoreUrl);
-        log.info("url= " + url);
-
-        return url;
-    }
-
-    public QueryAndProcessSearchResponseResult queryAndProcessSearchResponse (String queryUrl,
-                                                                              ResourceManagerTaskInfoRequest taskInfoRequest,
-                                                                              Boolean singleResourceQuery)  {
+    public QueryAndProcessSearchResponseResult queryAndProcessSearchResponse (ResourceManagerTaskInfoRequest taskInfoRequest)  {
 
         ObjectMapper mapper = new ObjectMapper();
 
@@ -88,14 +108,13 @@ public class SearchHelper {
         HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
 
         ResourceManagerTaskInfoResponse taskInfoResponse = new ResourceManagerTaskInfoResponse(taskInfoRequest);
-        PlatformProxyTaskInfo requestToPlatformProxy = new PlatformProxyTaskInfo();
         QueryResponse queryResponse = null;
         TaskResponseToComponents taskResponseToComponents = null;
 
         // FIX ME: Consider Connection timeouts or errors
         try {
             ResponseEntity<QueryResponse> queryResponseEntity = restTemplate.exchange(
-                    queryUrl, HttpMethod.GET, entity, QueryResponse.class);
+                    buildRequestUrl(taskInfoRequest), HttpMethod.GET, entity, QueryResponse.class);
 
             try {
                 log.info("SymbIoTe Core Response: " + mapper.writeValueAsString(queryResponseEntity));
@@ -108,15 +127,16 @@ public class SearchHelper {
 
             // Finalizing task response to EnablerLogic
             taskInfoResponse.setResourceIds(taskResponseToComponents.getResourceIdsForEnablerLogic());
-            if ((taskInfoResponse.getResourceIds().size() >= taskInfoResponse.getMinNoResources()) ||
-                    (singleResourceQuery && taskInfoResponse.getResourceIds().size() == 1))
+            if (taskInfoResponse.getResourceIds().size() >= taskInfoResponse.getMinNoResources())
                 taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-            else if (!singleResourceQuery)
+            else
                 taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
 
             // Finallizing request to PlatformProxy
             if (taskInfoResponse.getInformPlatformProxy() &&
                     taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+                PlatformProxyTaskInfo requestToPlatformProxy = new PlatformProxyTaskInfo();
+
                 requestToPlatformProxy.setTaskId(taskInfoResponse.getTaskId());
                 requestToPlatformProxy.setQueryInterval_ms(new IntervalFormatter(taskInfoResponse.getQueryInterval()).getMillis());
                 requestToPlatformProxy.setEnablerLogicName(taskInfoResponse.getEnablerLogicName());
@@ -204,5 +224,24 @@ public class SearchHelper {
         }
 
         return taskResponseToComponents;
+    }
+
+    private String buildRequestUrl(ResourceManagerTaskInfoRequest taskInfoRequest) {
+        // Building the query url for each task
+        String url = taskInfoRequest.getCoreQueryRequest().buildQuery(symbIoTeCoreUrl);
+        log.info("url= " + url);
+
+        return url;
+    }
+
+    private String buildRequestUrl(String resourceId){
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .id(resourceId)
+                .shouldRank(true)
+                .build();
+        String url = coreQueryRequest.buildQuery(symbIoTeCoreUrl);
+        log.info("url= " + url);
+
+        return url;
     }
 }
