@@ -75,21 +75,32 @@ public class EnablerLogicWrongDataConsumerTests {
     }
 
     @Test
-    public void wrongDataResourcesWithEnoughResourcesTest() throws Exception {
-        log.info("wrongDataResourcesWithEnoughResourcesTest STARTED!");
+    public void wrongDataResourcesWithReplaceableResourcesTest() throws Exception {
+        log.info("wrongDataResourcesWithReplaceableResourcesTest STARTED!");
 
-        ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughResourcesTest(wrongDataRoutingKey,
+        ProblematicResourcesTestHelper.enoughReplaceableResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
-        log.info("wrongDataResourcesWithEnoughResourcesTest FINISHED!");
+        log.info("wrongDataResourcesWithReplaceableResourcesTest FINISHED!");
+    }
+
+    @Test
+    public void wrongDataResourcesWithEnoughRemainingResourcesTest() throws Exception {
+        log.info("wrongDataResourcesWithEnoughRemainingResourcesTest STARTED!");
+
+        ProblematicResourcesTestHelper.enoughRemainingResourcesTest(wrongDataRoutingKey,
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
+
+        log.info("wrongDataResourcesWithEnoughRemainingResourcesTest FINISHED!");
     }
 
     @Test
     public void wrongDataResourcesWithNotEnoughResourcesTest() throws Exception {
         log.info("wrongDataResourcesWithNotEnoughResourcesTest STARTED!");
 
-        ProblematicResourcesTestHelper.problematicResourceMessageWithNotEnoughResourcesTest(wrongDataRoutingKey,
+        ProblematicResourcesTestHelper.notEnoughResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
@@ -100,7 +111,7 @@ public class EnablerLogicWrongDataConsumerTests {
     public void wrongDataResourcesWithEnoughStoredOnlyResourcesTest() throws Exception {
         log.info("wrongDataResourcesWithEnoughStoredOnlyResourcesTest STARTED!");
 
-        ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughStoredOnlyResourcesTest(wrongDataRoutingKey,
+        ProblematicResourcesTestHelper.enoughStoredOnlyResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 

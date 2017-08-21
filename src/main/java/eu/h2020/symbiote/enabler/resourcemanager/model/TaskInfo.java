@@ -82,6 +82,18 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
         }
     }
 
+    public List<PlatformProxyResourceInfo> createPlatformProxyResourceInfoList() {
+        List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : getResourceUrls().entrySet()) {
+            PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+            platformProxyResourceInfo.setResourceId(entry.getKey());
+            platformProxyResourceInfo.setAccessURL(entry.getValue());
+            platformProxyResourceInfoList.add(platformProxyResourceInfo);
+        }
+        return platformProxyResourceInfoList;
+    }
+
     @Override
     public boolean equals(Object o) {
         // self check

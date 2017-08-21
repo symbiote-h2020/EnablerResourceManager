@@ -11,19 +11,13 @@ import java.util.List;
 public class ProblematicResourcesHandlerResult {
     private ProblematicResourcesHandlerStatus status;
     private TaskInfo taskInfo;
-    private List<PlatformProxyResourceInfo> platformProxyResourceInfoList;
-    private List<String> newResources;
     private NotEnoughResourcesAvailable notEnoughResourcesAvailable;
 
     public ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus status, TaskInfo taskInfo,
-                                             List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
-                                             NotEnoughResourcesAvailable notEnoughResourcesAvailable,
-                                             List<String> newResources) {
+                                             NotEnoughResourcesAvailable notEnoughResourcesAvailable) {
         this.status = status;
         this.taskInfo = taskInfo;
-        this.platformProxyResourceInfoList = platformProxyResourceInfoList;
         this.notEnoughResourcesAvailable = notEnoughResourcesAvailable;
-        this.newResources = newResources;
     }
 
     public ProblematicResourcesHandlerStatus getStatus() { return status; }
@@ -32,33 +26,28 @@ public class ProblematicResourcesHandlerResult {
     public TaskInfo getTaskInfo() { return taskInfo; }
     public void setTaskInfo(TaskInfo taskInfo) { this.taskInfo = taskInfo; }
 
-    public List<PlatformProxyResourceInfo> getPlatformProxyResourceInfoList() {return platformProxyResourceInfoList; }
-    public void setPlatformProxyResourceInfoList(List<PlatformProxyResourceInfo> platformProxyResourceInfoList) {
-        this.platformProxyResourceInfoList = platformProxyResourceInfoList;
-    }
-
-    public List<String> getNewResources() { return newResources; }
-    public void setNewResources(List<String> newResources) { this.newResources = newResources; }
-
     public NotEnoughResourcesAvailable getNotEnoughResourcesAvailable() { return notEnoughResourcesAvailable; }
     public void setNotEnoughResourcesAvailable(NotEnoughResourcesAvailable notEnoughResourcesAvailable) {
         this.notEnoughResourcesAvailable = notEnoughResourcesAvailable;
     }
 
-    public static ProblematicResourcesHandlerResult resourcesReplacedSuccessfully(TaskInfo taskInfo,
-                                                                            List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
-                                                                            List<String> newResourceIds) {
+    public static ProblematicResourcesHandlerResult resourcesReplacedSuccessfully(TaskInfo taskInfo) {
         return new ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY,
-                taskInfo, platformProxyResourceInfoList, null, newResourceIds);
+                taskInfo,null);
+    }
+
+    public static ProblematicResourcesHandlerResult enoughResources(TaskInfo taskInfo) {
+        return new ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus.ENOUGH_RESOURCES,
+                taskInfo, null);
     }
 
     public static ProblematicResourcesHandlerResult notEnoughResources(TaskInfo taskInfo,
                                                                        NotEnoughResourcesAvailable notEnoughResourcesAvailable) {
-        return new ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus.NOT_ENOUGH_RESOURCES, taskInfo, null, notEnoughResourcesAvailable, null);
+        return new ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus.NOT_ENOUGH_RESOURCES, taskInfo, notEnoughResourcesAvailable);
     }
 
     public static ProblematicResourcesHandlerResult unknownMessage() {
-        return new ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus.UNKNOWN, null, null, null, null);
+        return new ProblematicResourcesHandlerResult(ProblematicResourcesHandlerStatus.UNKNOWN, null, null);
     }
 
 }

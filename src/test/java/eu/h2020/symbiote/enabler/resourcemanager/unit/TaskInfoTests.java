@@ -18,12 +18,10 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by vasgl on 7/17/2017.
@@ -281,6 +279,45 @@ public class TaskInfoTests {
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals("http://2.com", taskInfo.getResourceUrls().get("2"));
 
+    }
+
+    @Test
+    public void createPlatformProxyResourceInfoListTest() {
+        TaskInfo taskInfo = new TaskInfo();
+        Map<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", "http://1.com");
+        resourceUrls.put("2", "http://2.com");
+
+        taskInfo.setResourceIds(new ArrayList<>(Arrays.asList("1", "2")));
+        taskInfo.setResourceUrls(resourceUrls);
+
+        List<PlatformProxyResourceInfo> platformProxyResourceInfoList = taskInfo.createPlatformProxyResourceInfoList();
+
+        assertEquals(2, platformProxyResourceInfoList.size());
+
+        boolean foundResource1 = false;
+        boolean foundResource2 = false;
+
+        for (PlatformProxyResourceInfo resourceInfo : platformProxyResourceInfoList) {
+            log.info("Resource id = " + resourceInfo.getResourceId());
+
+            if (resourceInfo.getResourceId().equals("1")) {
+                assertEquals("http://1.com", resourceInfo.getAccessURL());
+                foundResource1 = true;
+                continue;
+            }
+
+            if (resourceInfo.getResourceId().equals("2")) {
+                assertEquals("http://2.com", resourceInfo.getAccessURL());
+                foundResource2 = true;
+                continue;
+            }
+
+            fail("The code should not reach here, because no other resources should be present");
+        }
+
+        assertEquals(true, foundResource1);
+        assertEquals(true, foundResource2);
     }
 
     @Test

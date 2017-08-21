@@ -362,15 +362,20 @@ public class UpdateTaskConsumerTests {
         assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
 
+        boolean foundTask1 = false;
+        boolean foundTask5 = false;
+        boolean foundTask6 = false;
+        
         for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
 
-            log.info("id = " + request.getTaskId());
+            log.info("Task id = " + request.getTaskId());
 
             if (request.getTaskId().equals("1")) {
                 assertEquals("resource1", request.getResources().get(0).getResourceId());
                 assertEquals("resource2", request.getResources().get(1).getResourceId());
                 assertEquals("enablerLogic", request.getEnablerLogicName());
                 assertEquals(60, (long) request.getQueryInterval_ms());
+                foundTask1 = true;
                 continue;
             }
 
@@ -385,6 +390,7 @@ public class UpdateTaskConsumerTests {
                 assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
                         request.getResources().get(1).getAccessURL());
                 assertEquals(60, (long) request.getQueryInterval_ms());
+                foundTask5 = true;
                 continue;
             }
 
@@ -399,11 +405,16 @@ public class UpdateTaskConsumerTests {
                 assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
                         request.getResources().get(1).getAccessURL());
                 assertEquals(100, (long) request.getQueryInterval_ms());
+                foundTask6 = true;
                 continue;
             }
 
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
+
+        assertEquals(true, foundTask1);
+        assertEquals(true, foundTask5);
+        assertEquals(true, foundTask6);
 
         log.info("updateTaskTest FINISHED!");
     }
@@ -755,9 +766,12 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
 
+        boolean foundTask1 = false;
+        boolean foundTask2 = false;
+        
         for (PlatformProxyAcquisitionStartRequest request : startAcquisitionRequestsReceivedByListener) {
 
-            log.info("id = " + request.getTaskId());
+            log.info("Task id = " + request.getTaskId());
 
             if (request.getTaskId().equals("1")) {
                 Map<String, String> resourcesMap = new HashMap<>();
@@ -769,6 +783,7 @@ public class UpdateTaskConsumerTests {
                         request.getResources().get(0).getAccessURL());
                 assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
                         request.getResources().get(1).getAccessURL());
+                foundTask1 = true;
                 continue;
             }
 
@@ -782,12 +797,16 @@ public class UpdateTaskConsumerTests {
                         request.getResources().get(0).getAccessURL());
                 assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
                         request.getResources().get(1).getAccessURL());
+                foundTask2 = true;
                 continue;
             }
 
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
+        assertEquals(true, foundTask1);
+        assertEquals(true, foundTask2);
+        
         log.info("updateTaskWithInformPlatformProxyBecomingTrueTest FINISHED!");
     }
 
@@ -1002,25 +1021,33 @@ public class UpdateTaskConsumerTests {
         assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
 
+        boolean foundTask1 = false;
+        boolean foundTask4 = false;
+        
         for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
 
-            log.info("id = " + request.getTaskId());
+            log.info("Task id = " + request.getTaskId());
 
             if (request.getTaskId().equals("1")) {
                 assertEquals("resource1", request.getResources().get(0).getResourceId());
                 assertEquals("resource2", request.getResources().get(1).getResourceId());
+                foundTask1 = true;
                 continue;
             }
 
             if (request.getTaskId().equals("4")) {
                 assertEquals("resource1", request.getResources().get(0).getResourceId());
                 assertEquals("resource2", request.getResources().get(1).getResourceId());
+                foundTask4 = true;
                 continue;
             }
 
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
+        assertEquals(true, foundTask1);
+        assertEquals(true, foundTask4);
+        
         log.info("updateTaskWithAllowCachingBecomingFalseTest FINISHED!");
     }
 
@@ -1261,9 +1288,12 @@ public class UpdateTaskConsumerTests {
         assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
 
+        boolean foundTask2 = false;
+        boolean foundTask5 = false;
+        
         for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
 
-            log.info("id = " + request.getTaskId());
+            log.info("Task id = " + request.getTaskId());
 
             if (request.getTaskId().equals("2")) {
                 Map<String, String> resourcesMap = new HashMap<>();
@@ -1278,6 +1308,7 @@ public class UpdateTaskConsumerTests {
                         request.getResources().get(1).getAccessURL());
                 assertEquals(resourcesMap.get(request.getResources().get(2).getResourceId()),
                         request.getResources().get(2).getAccessURL());
+                foundTask2 = true;
                 continue;
             }
 
@@ -1292,12 +1323,16 @@ public class UpdateTaskConsumerTests {
                         request.getResources().get(0).getAccessURL());
                 assertEquals(resourcesMap.get(request.getResources().get(1).getResourceId()),
                         request.getResources().get(1).getAccessURL());
+                foundTask5 = true;
                 continue;
             }
 
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
+        assertEquals(true, foundTask2);
+        assertEquals(true, foundTask5);
+        
         log.info("changeInMinNoResourcesTest FINISHED!");
     }
 

@@ -74,44 +74,29 @@ public final class ProblematicResourcesHandler {
                     ProblematicResourcesHandlerResult problematicResourcesHandlerResult =
                             replaceProblematicResourcesIfTaskExists(problematicResourcesInfo, taskInfo);
 
-                    TaskInfo newTaskInfo = problematicResourcesHandlerResult.getTaskInfo();
-                    taskInfoRepository.save(newTaskInfo);
+                    if (problematicResourcesHandlerResult.getStatus() != ProblematicResourcesHandlerStatus.UNKNOWN) {
+                        TaskInfo newTaskInfo = problematicResourcesHandlerResult.getTaskInfo();
+                        taskInfoRepository.save(newTaskInfo);
 
-                    if (problematicResourcesHandlerResult.getStatus() ==
-                            ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY) {
+                        if (problematicResourcesHandlerResult.getStatus() ==
+                                ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY) {
 
-                        // Inform Platform Proxy
-                        if (taskInfo.getInformPlatformProxy()) {
+                            log.info("There were enough resources to replace the problematic ones for task " + newTaskInfo.getTaskId());
+                            informComponents(newTaskInfo);
+                        } else if (problematicResourcesHandlerResult.getStatus() == ProblematicResourcesHandlerStatus.ENOUGH_RESOURCES) {
 
-                            PlatformProxyUpdateRequest platformProxyUpdateRequest = new PlatformProxyUpdateRequest();
-                            platformProxyUpdateRequest.setTaskId(newTaskInfo.getTaskId());
-                            platformProxyUpdateRequest.setQueryInterval_ms(new IntervalFormatter(newTaskInfo
-                                    .getQueryInterval()).getMillis());
-                            platformProxyUpdateRequest.setEnablerLogicName(newTaskInfo.getEnablerLogicName());
-                            platformProxyUpdateRequest.setResources(problematicResourcesHandlerResult
-                                    .getPlatformProxyResourceInfoList());
+                            log.info("There were enough remaining resources to replace the problematic ones for task " + newTaskInfo.getTaskId());
+                            informComponents(newTaskInfo);
+                        } else if (problematicResourcesHandlerResult.getStatus() == ProblematicResourcesHandlerStatus.NOT_ENOUGH_RESOURCES) {
+                            log.info("There were NOT enough resources to replace the problematic ones for task " + newTaskInfo.getTaskId());
 
+                            // Inform Enabler Logic that not enough resources are available
+                            String specificEnablerLogicNotEnoughResourcesKey = genericEnablerLogicNotEnoughResourcesKey +
+                                    "." + newTaskInfo.getEnablerLogicName();
 
-                            // Sending requests to PlatformProxy about the new resource ids of the task
-                            rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyTaskUpdatedKey,
-                                    platformProxyUpdateRequest);
+                            rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicNotEnoughResourcesKey,
+                                    problematicResourcesHandlerResult.getNotEnoughResourcesAvailable());
                         }
-
-                        // Inform Enabler Logic about the new resource ids of the task
-                        ResourcesUpdated resourcesUpdated = new ResourcesUpdated(newTaskInfo.getTaskId(),
-                                problematicResourcesHandlerResult.getNewResources());
-                        String specificEnablerLogicResourcesUpdatedKey = genericEnablerLogicResourcesUpdatedKey + "." +
-                                newTaskInfo.getEnablerLogicName();
-                        rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicResourcesUpdatedKey,
-                                resourcesUpdated);
-                    } else if (problematicResourcesHandlerResult.getStatus() == ProblematicResourcesHandlerStatus.NOT_ENOUGH_RESOURCES) {
-
-                        // Inform Enabler Logic that not enough resources are available
-                        String specificEnablerLogicNotEnoughResourcesKey = genericEnablerLogicNotEnoughResourcesKey +
-                                "." + taskInfo.getEnablerLogicName();
-
-                        rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicNotEnoughResourcesKey,
-                                problematicResourcesHandlerResult.getNotEnoughResourcesAvailable());
                     }
                 }
             }
@@ -139,59 +124,95 @@ public final class ProblematicResourcesHandler {
         Integer noNewResourcesNeeded = taskInfo.getMinNoResources() - taskInfo.getResourceIds().size() +
                 problematicResourcesInfo.getProblematicResourceIds().size();
 
-        if (taskInfo.getAllowCaching()) {
+        if (noNewResourcesNeeded > 0) {
+            if (taskInfo.getAllowCaching()) {
 
-            List<String> newResourceIds = new ArrayList<>();
-            Map<String, String> newResourceUrls = new HashMap<>();
+                List<String> newResourceIds = new ArrayList<>();
+                Map<String, String> newResourceUrls = new HashMap<>();
 
-            QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
-            List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
+                QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult;
+                List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
 
-            while (newResourceIds.size() != noNewResourcesNeeded &&
-                    taskInfo.getStoredResourceIds().size() != 0) {
-                String candidateResourceId = taskInfo.getStoredResourceIds().get(0);
-                String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
+                while (newResourceIds.size() != noNewResourcesNeeded &&
+                        taskInfo.getStoredResourceIds().size() != 0) {
+                    String candidateResourceId = taskInfo.getStoredResourceIds().get(0);
+                    String queryUrl = searchHelper.buildRequestUrl(candidateResourceId);
 
-                queryAndProcessSearchResponseResult =
-                        searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfo, true);
+                    queryAndProcessSearchResponseResult =
+                            searchHelper.queryAndProcessSearchResponse(queryUrl, taskInfo, true);
 
-                if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
-                        ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+                    if (queryAndProcessSearchResponseResult.getTaskInfo().getStatus() ==
+                            ResourceManagerTaskInfoResponseStatus.SUCCESS) {
 
-                    newResourceIds.add(candidateResourceId);
-                    newResourceUrls.put(candidateResourceId, queryAndProcessSearchResponseResult.
-                            getTaskInfo().getResourceUrls().get(candidateResourceId));
+                        newResourceIds.add(candidateResourceId);
+                        newResourceUrls.put(candidateResourceId, queryAndProcessSearchResponseResult.
+                                getTaskInfo().getResourceUrls().get(candidateResourceId));
 
-                    if (taskInfo.getInformPlatformProxy() &&
-                            queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
-                                    ResourceManagerTaskInfoResponseStatus.SUCCESS) {
-                        platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
-                                getPlatformProxyTaskInfo().getResources());
+                        if (taskInfo.getInformPlatformProxy() &&
+                                queryAndProcessSearchResponseResult.getResourceManagerTaskInfoResponse().getStatus() ==
+                                        ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+                            platformProxyResourceInfoList.addAll(queryAndProcessSearchResponseResult.
+                                    getPlatformProxyTaskInfo().getResources());
+                        }
                     }
+
+                    //ToDo: add it to another list if CRAM does not respond with a url
+                    taskInfo.getStoredResourceIds().remove(0);
                 }
 
-                //ToDo: add it to another list if CRAM does not respond with a url
-                taskInfo.getStoredResourceIds().remove(0);
-            }
+                // ToDo: add it to another list, not just remove it
+                taskInfo.deleteResourceIds(problematicResourcesInfo.getProblematicResourceIds());
+                taskInfo.addResourceIds(newResourceUrls);
 
-            // ToDo: add it to another list, not just remove it
+                if (newResourceIds.size() == noNewResourcesNeeded) {
+                    return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(taskInfo);
+                } else {
+                    log.info("Not enough resources are available.");
+
+                    taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
+                    NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
+                            taskInfo.getResourceIds().size());
+
+                    return ProblematicResourcesHandlerResult.notEnoughResources(taskInfo,notEnoughResourcesAvailable);
+                }
+            }
+        } else {
             taskInfo.deleteResourceIds(problematicResourcesInfo.getProblematicResourceIds());
-            taskInfo.addResourceIds(newResourceUrls);
 
-            if (newResourceIds.size() == noNewResourcesNeeded) {
-                return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(taskInfo, platformProxyResourceInfoList, newResourceIds);
-            } else {
-                log.info("Not enough resources are available.");
-
-                taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
-                NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
-                        taskInfo.getResourceIds().size());
-
-                return ProblematicResourcesHandlerResult.notEnoughResources(taskInfo,notEnoughResourcesAvailable);
-            }
+            log.info("The remaining resources of task " + taskId + " are enough: minNoResources = " +
+                    taskInfo.getMinNoResources() + ", acquired resources = " + taskInfo.getResourceIds().size());
+            return ProblematicResourcesHandlerResult.enoughResources(taskInfo);
         }
 
+
+        // ToDo: Remove when implement behavior for allowCaching == false
         return ProblematicResourcesHandlerResult.unknownMessage();
+    }
+
+    private void informComponents(TaskInfo taskInfo) {
+        // Inform Platform Proxy
+        if (taskInfo.getInformPlatformProxy()) {
+
+            PlatformProxyUpdateRequest platformProxyUpdateRequest = new PlatformProxyUpdateRequest();
+            platformProxyUpdateRequest.setTaskId(taskInfo.getTaskId());
+            platformProxyUpdateRequest.setQueryInterval_ms(new IntervalFormatter(taskInfo
+                    .getQueryInterval()).getMillis());
+            platformProxyUpdateRequest.setEnablerLogicName(taskInfo.getEnablerLogicName());
+            platformProxyUpdateRequest.setResources(taskInfo.createPlatformProxyResourceInfoList());
+
+
+            // Sending requests to PlatformProxy about the new resource ids of the task
+            rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyTaskUpdatedKey,
+                    platformProxyUpdateRequest);
+        }
+
+        // Inform Enabler Logic about the new resource ids of the task
+        ResourcesUpdated resourcesUpdated = new ResourcesUpdated(taskInfo.getTaskId(),
+                taskInfo.getResourceIds());
+        String specificEnablerLogicResourcesUpdatedKey = genericEnablerLogicResourcesUpdatedKey + "." +
+                taskInfo.getEnablerLogicName();
+        rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicResourcesUpdatedKey,
+                resourcesUpdated);
     }
 
 

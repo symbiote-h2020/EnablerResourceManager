@@ -261,7 +261,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         updateRequest.setEnablerLogicName(updatedTaskInfo.getEnablerLogicName());
                         updateRequest.setQueryInterval_ms(new IntervalFormatter(updatedTaskInfo.getQueryInterval())
                                 .getMillis());
-                        updateRequest.setResources(createPlatformProxyResourceInfoList(updatedTaskInfo));
+                        updateRequest.setResources(updatedTaskInfo.createPlatformProxyResourceInfoList());
                         platformProxyUpdateRequestList.add(updateRequest);
                     }
 
@@ -342,18 +342,6 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 });
     }
 
-    private List<PlatformProxyResourceInfo> createPlatformProxyResourceInfoList(TaskInfo taskInfo) {
-        List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
-
-        for (Map.Entry<String, String> entry : taskInfo.getResourceUrls().entrySet()) {
-            PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
-            platformProxyResourceInfo.setResourceId(entry.getKey());
-            platformProxyResourceInfo.setAccessURL(entry.getValue());
-            platformProxyResourceInfoList.add(platformProxyResourceInfo);
-        }
-        return platformProxyResourceInfoList;
-    }
-
     private void processPlatformProxyTransition(TaskInfo taskInfo, List<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList,
                       CancelTaskRequest cancelTaskRequest) {
         if (taskInfo.getInformPlatformProxy()) {
@@ -364,7 +352,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             startRequest.setEnablerLogicName(taskInfo.getEnablerLogicName());
             startRequest.setQueryInterval_ms(new IntervalFormatter(taskInfo.getQueryInterval())
                     .getMillis());
-            startRequest.setResources(createPlatformProxyResourceInfoList(taskInfo));
+            startRequest.setResources(taskInfo.createPlatformProxyResourceInfoList());
             platformProxyAcquisitionStartRequestList.add(startRequest);
         }
         else {

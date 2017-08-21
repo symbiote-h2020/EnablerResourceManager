@@ -77,21 +77,32 @@ public class PlatformProxyConnectionProblemConsumerTests {
     }
 
     @Test
-    public void unavailableResourcesWithEnoughResourcesTest() throws Exception {
-        log.info("unavailableResourcesWithEnoughResourcesTest STARTED!");
+    public void unavailableResourcesWithReplaceableResourcesTest() throws Exception {
+        log.info("unavailableResourcesWithReplaceableResourcesTest STARTED!");
 
-        ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughResourcesTest(unavailableResourcesRoutingKey,
+        ProblematicResourcesTestHelper.enoughReplaceableResourcesTest(unavailableResourcesRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
-        log.info("unavailableResourcesWithEnoughResourcesTest FINISHED!");
+        log.info("unavailableResourcesWithReplaceableResourcesTest FINISHED!");
+    }
+
+    @Test
+    public void unavailableResourcesWithEnoughRemainingResourcesTest() throws Exception {
+        log.info("unavailableResourcesWithEnoughRemainingResourcesTest STARTED!");
+
+        ProblematicResourcesTestHelper.enoughRemainingResourcesTest(unavailableResourcesRoutingKey,
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
+
+        log.info("unavailableResourcesWithEnoughRemainingResourcesTest FINISHED!");
     }
 
     @Test
     public void unavailableResourcesWithNotEnoughResourcesTest() throws Exception {
         log.info("unavailableResourcesWithNotEnoughResourcesTest STARTED!");
 
-        ProblematicResourcesTestHelper.problematicResourceMessageWithNotEnoughResourcesTest(unavailableResourcesRoutingKey,
+        ProblematicResourcesTestHelper.notEnoughResourcesTest(unavailableResourcesRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
@@ -102,7 +113,7 @@ public class PlatformProxyConnectionProblemConsumerTests {
     public void unavailableResourcesWithEnoughStoredOnlyResourcesTest() throws Exception {
         log.info("unavailableResourcesWithEnoughStoredOnlyResourcesTest STARTED!");
 
-        ProblematicResourcesTestHelper.problematicResourceMessageWithEnoughStoredOnlyResourcesTest(unavailableResourcesRoutingKey,
+        ProblematicResourcesTestHelper.enoughStoredOnlyResourcesTest(unavailableResourcesRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
