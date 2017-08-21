@@ -22,37 +22,27 @@ public final class TestHelper {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
         ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
 
-        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
         CoreQueryRequest coreQueryRequest1 = new CoreQueryRequest.Builder()
                 .locationName("Paris")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
 
-        request1.setTaskId("1");
-        request1.setMinNoResources(2);
-        request1.setCoreQueryRequest(coreQueryRequest1);
-        request1.setQueryInterval("P0-0-0T0:0:0.06");
-        request1.setInformPlatformProxy(true);
-        request1.setAllowCaching(false);
-        request1.setCachingInterval("P0-0-0T0:0:1");
-        request1.setEnablerLogicName("enablerLogicName");
+        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest("1", 2,
+                coreQueryRequest1, "P0-0-0T0:0:0.06", false, "P0-0-0T0:0:1",
+                true, "enablerLogicName", null);
+
         resources.add(request1);
 
         if (noTasks > 1) {
-            ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest();
             CoreQueryRequest coreQueryRequest2 = new CoreQueryRequest.Builder()
                     .locationName("Athens")
                     .observedProperty(Arrays.asList("air quality"))
                     .build();
 
-            request2.setTaskId("2");
-            request2.setMinNoResources(1);
-            request2.setCoreQueryRequest(coreQueryRequest2);
-            request2.setQueryInterval("P0-0-0T0:0:0.06");
-            request2.setInformPlatformProxy(true);
-            request2.setAllowCaching(false);
-            request2.setCachingInterval("P0-0-0T0:0:1");
-            request2.setEnablerLogicName("enablerLogicName2");
+            ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest("2", 1,
+                    coreQueryRequest2, "P0-0-0T0:0:0.06", false, "P0-0-0T0:0:1",
+                    true, "enablerLogicName2", null);
+
             resources.add(request2);
         }
 
@@ -63,23 +53,18 @@ public final class TestHelper {
     public static ResourceManagerAcquisitionStartRequest createBadQueryToResourceManager() {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
         ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
-        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+
         CoreQueryRequest coreQueryRequest1 = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
 
-        request1.setTaskId("1");
-        request1.setMinNoResources(2);
-        request1.setCoreQueryRequest(coreQueryRequest1);
-        request1.setQueryInterval("P0-0-0T0:0:0.06");
-        request1.setInformPlatformProxy(true);
-        request1.setAllowCaching(false);
-        request1.setCachingInterval("P0-0-0T0:0:1");
-        request1.setEnablerLogicName("enablerLogicName");
+        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest("1", 2,
+                coreQueryRequest1, "P0-0-0T0:0:0.06", false, "P0-0-0T0:0:1",
+                true, "enablerLogicName", null);
+
         resources.add(request1);
         request.setResources(resources);
-
         return request;
     }
 

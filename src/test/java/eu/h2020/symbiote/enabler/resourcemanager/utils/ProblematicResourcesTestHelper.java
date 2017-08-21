@@ -40,24 +40,18 @@ public class ProblematicResourcesTestHelper {
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<ResourcesUpdated> updateRequestsReceivedByEnablerLogic;
 
+        List<String> resourceIds = new ArrayList(Arrays.asList("1", "2", "3"));
+        List<String> storedResourceIds = new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8"));
+
         Map<String, String> resourceUrls = new HashMap<>();
         resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
-        TaskInfo taskInfo = new TaskInfo();
-        taskInfo.setTaskId("task1");
-        taskInfo.setMinNoResources(5);
-        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
-        taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
-        taskInfo.setAllowCaching(true);
-        taskInfo.setCachingInterval("P0-0-0T0:0:0.1");
-        taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
-        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
-        taskInfo.setInformPlatformProxy(true);
-        taskInfo.setEnablerLogicName("testEnablerLogic");
-        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        taskInfo.setResourceUrls(resourceUrls);
+        TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
+                true, "P0-0-0T0:0:0.1", true,
+                "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -182,24 +176,18 @@ public class ProblematicResourcesTestHelper {
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<ResourcesUpdated> updateRequestsReceivedByEnablerLogic;
 
+        List<String> resourceIds = new ArrayList(Arrays.asList("1", "2", "3"));
+        List<String> storedResourceIds = new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8"));
+
         Map<String, String> resourceUrls = new HashMap<>();
         resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
-        TaskInfo taskInfo = new TaskInfo();
-        taskInfo.setTaskId("task1");
-        taskInfo.setMinNoResources(1);
-        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
-        taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
-        taskInfo.setAllowCaching(true);
-        taskInfo.setCachingInterval("P0-0-0T0:0:0.1");
-        taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
-        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
-        taskInfo.setInformPlatformProxy(true);
-        taskInfo.setEnablerLogicName("testEnablerLogic");
-        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        taskInfo.setResourceUrls(resourceUrls);
+        TaskInfo taskInfo = new TaskInfo("task1", 1, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
+                true, "P0-0-0T0:0:0.1", true,
+                "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -271,24 +259,18 @@ public class ProblematicResourcesTestHelper {
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
 
+        List<String> resourceIds = new ArrayList(Arrays.asList("1", "2", "3"));
+        List<String> storedResourceIds = new ArrayList(Arrays.asList("4", "5", "badCRAMrespose"));
+
         Map<String, String> resourceUrls = new HashMap<>();
         resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
-        TaskInfo taskInfo = new TaskInfo();
-        taskInfo.setTaskId("task1");
-        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
-        taskInfo.setMinNoResources(5);
-        taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
-        taskInfo.setAllowCaching(true);
-        taskInfo.setCachingInterval("P0-0-0T0:0:0.1");
-        taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
-        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "badCRAMrespose")));
-        taskInfo.setInformPlatformProxy(true);
-        taskInfo.setEnablerLogicName("testEnablerLogic");
-        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        taskInfo.setResourceUrls(resourceUrls);
+        TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
+                true, "P0-0-0T0:0:0.1", true,
+                "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -351,24 +333,18 @@ public class ProblematicResourcesTestHelper {
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
 
+        List<String> resourceIds = new ArrayList(Arrays.asList("1", "2", "3"));
+        List<String> storedResourceIds = new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl"));
+
         Map<String, String> resourceUrls = new HashMap<>();
         resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
-        TaskInfo taskInfo = new TaskInfo();
-        taskInfo.setTaskId("task1");
-        taskInfo.setMinNoResources(5);
-        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
-        taskInfo.setQueryInterval("P0-0-0T0:0:0.1");
-        taskInfo.setAllowCaching(true);
-        taskInfo.setCachingInterval("P0-0-0T0:0:0.1");
-        taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
-        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl")));
-        taskInfo.setInformPlatformProxy(true);
-        taskInfo.setEnablerLogicName("testEnablerLogic");
-        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        taskInfo.setResourceUrls(resourceUrls);
+        TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
+                true, "P0-0-0T0:0:0.1", true,
+                "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();

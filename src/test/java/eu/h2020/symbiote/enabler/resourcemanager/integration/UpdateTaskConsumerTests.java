@@ -107,29 +107,23 @@ public class UpdateTaskConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
-        TaskInfo task1 = new TaskInfo();
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .shouldRank(true)
                 .build();
 
+        List<String> resourceIds = Arrays.asList("resource1", "resource2");
+        List<String> storedResourceIds = Arrays.asList("3", "4");
+
         Map<String, String> resourceUrls1 = new HashMap<>();
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
-        task1.setTaskId("1");
-        task1.setMinNoResources(2);
-        task1.setCoreQueryRequest(coreQueryRequest);
-        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
-        task1.setQueryInterval("P0-0-0T0:0:0.06");
-        task1.setAllowCaching(true);
-        task1.setCachingInterval("P0-0-0T0:0:1");
-        task1.setInformPlatformProxy(true);
-        task1.setStoredResourceIds(Arrays.asList("3", "4"));
-        task1.setEnablerLogicName("enablerLogic");
-        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        task1.setResourceUrls(resourceUrls1);
+        TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
+                true, "P0-0-0T0:0:1", true,
+                "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -516,29 +510,23 @@ public class UpdateTaskConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         List<CancelTaskRequest> cancelTaskRequestsReceivedByListener;
 
-        TaskInfo task1 = new TaskInfo();
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .shouldRank(true)
                 .build();
 
+        List<String> resourceIds = Arrays.asList("resource1", "resource2");
+        List<String> storedResourceIds = Arrays.asList("3", "4");
+
         Map<String, String> resourceUrls1 = new HashMap<>();
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
-        task1.setTaskId("1");
-        task1.setMinNoResources(2);
-        task1.setCoreQueryRequest(coreQueryRequest);
-        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
-        task1.setQueryInterval("P0-0-0T0:0:0.06");
-        task1.setAllowCaching(true);
-        task1.setCachingInterval("P0-0-0T0:0:1");
-        task1.setInformPlatformProxy(true);
-        task1.setStoredResourceIds(Arrays.asList("3", "4"));
-        task1.setEnablerLogicName("enablerLogic");
-        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        task1.setResourceUrls(resourceUrls1);
+        TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
+                true, "P0-0-0T0:0:1", true,
+                "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -649,29 +637,23 @@ public class UpdateTaskConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
-        TaskInfo task1 = new TaskInfo();
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .shouldRank(true)
                 .build();
 
+        List<String> resourceIds = Arrays.asList("resource1", "resource2");
+        List<String> storedResourceIds = Arrays.asList("3", "4");
+
         Map<String, String> resourceUrls1 = new HashMap<>();
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
-        task1.setTaskId("1");
-        task1.setMinNoResources(2);
-        task1.setCoreQueryRequest(coreQueryRequest);
-        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
-        task1.setQueryInterval("P0-0-0T0:0:0.06");
-        task1.setAllowCaching(true);
-        task1.setCachingInterval("P0-0-0T0:0:1");
-        task1.setInformPlatformProxy(false);
-        task1.setStoredResourceIds(Arrays.asList("3", "4"));
-        task1.setEnablerLogicName("enablerLogic");
-        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        task1.setResourceUrls(resourceUrls1);
+        TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
+                true, "P0-0-0T0:0:1", false,
+                "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -818,29 +800,23 @@ public class UpdateTaskConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
-        TaskInfo task1 = new TaskInfo();
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .shouldRank(true)
                 .build();
 
+        List<String> resourceIds = Arrays.asList("resource1", "resource2");
+        List<String> storedResourceIds = Arrays.asList("3", "4");
+
         Map<String, String> resourceUrls1 = new HashMap<>();
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
-        task1.setTaskId("1");
-        task1.setMinNoResources(2);
-        task1.setCoreQueryRequest(coreQueryRequest);
-        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
-        task1.setQueryInterval("P0-0-0T0:0:0.06");
-        task1.setAllowCaching(true);
-        task1.setCachingInterval("P0-0-0T0:0:1");
-        task1.setInformPlatformProxy(true);
-        task1.setStoredResourceIds(Arrays.asList("3", "4"));
-        task1.setEnablerLogicName("enablerLogic");
-        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        task1.setResourceUrls(resourceUrls1);
+        TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
+                true, "P0-0-0T0:0:1", true,
+                "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -1059,29 +1035,23 @@ public class UpdateTaskConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
-        TaskInfo task1 = new TaskInfo();
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Paris")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .shouldRank(true)
                 .build();
 
+        List<String> resourceIds = Arrays.asList("resource1", "resource2");
+        List<String> storedResourceIds = Arrays.asList("3", "4");
+
         Map<String, String> resourceUrls1 = new HashMap<>();
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
-        task1.setTaskId("1");
-        task1.setMinNoResources(2);
-        task1.setCoreQueryRequest(coreQueryRequest);
-        task1.setResourceIds(Arrays.asList("resource1", "resource2"));
-        task1.setQueryInterval("P0-0-0T0:0:0.06");
-        task1.setAllowCaching(true);
-        task1.setCachingInterval("P0-0-0T0:0:1");
-        task1.setInformPlatformProxy(true);
-        task1.setStoredResourceIds(Arrays.asList("3", "4"));
-        task1.setEnablerLogicName("enablerLogic");
-        task1.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        task1.setResourceUrls(resourceUrls1);
+        TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
+                true, "P0-0-0T0:0:1", true,
+                "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();

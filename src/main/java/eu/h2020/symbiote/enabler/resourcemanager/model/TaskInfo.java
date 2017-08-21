@@ -2,6 +2,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.model;
 
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
@@ -15,13 +16,23 @@ import java.util.*;
 public class TaskInfo extends ResourceManagerTaskInfoResponse {
 
     private List<String> storedResourceIds;
-    private Map<String, String>
-            resourceUrls;
+    private Map<String, String> resourceUrls;
 
     public TaskInfo() {
         setResourceIds(new ArrayList<>());
         storedResourceIds = new ArrayList<>();
         resourceUrls = new HashMap<>();
+    }
+
+    public TaskInfo(String taskId, Integer minNoResources, CoreQueryRequest coreQueryRequest,
+                    String queryInterval, Boolean allowCaching, String cachingInterval,
+                    Boolean informPlatformProxy, String enablerLogicName, String sparqlQuery,
+                    List<String> resourceIds, ResourceManagerTaskInfoResponseStatus status,
+                    List<String> storedResourceIds, Map<String, String>  resourceUrls) {
+        super(taskId, minNoResources, coreQueryRequest, queryInterval, allowCaching, cachingInterval,
+                informPlatformProxy, enablerLogicName, sparqlQuery, resourceIds, status);
+        setStoredResourceIds(storedResourceIds);
+        setResourceUrls(resourceUrls);
     }
 
     public TaskInfo (ResourceManagerTaskInfoRequest resourceManagerTaskInfoRequest) {
@@ -108,18 +119,10 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
         if (!(o instanceof TaskInfo))
             return false;
 
+        ResourceManagerTaskInfoResponse response = (ResourceManagerTaskInfoResponse) o;
         TaskInfo taskInfo = (TaskInfo) o;
         // field comparison
-        return Objects.equals(this.getTaskId(), taskInfo.getTaskId())
-                && Objects.equals(this.getMinNoResources(), taskInfo.getMinNoResources())
-                && Objects.equals(this.getCoreQueryRequest(), taskInfo.getCoreQueryRequest())
-                && Objects.equals(this.getQueryInterval(), taskInfo.getQueryInterval())
-                && Objects.equals(this.getAllowCaching(), taskInfo.getAllowCaching())
-                && Objects.equals(this.getCachingInterval(), taskInfo.getCachingInterval())
-                && Objects.equals(this.getInformPlatformProxy(), taskInfo.getInformPlatformProxy())
-                && Objects.equals(this.getEnablerLogicName(), taskInfo.getEnablerLogicName())
-                && Objects.equals(this.getResourceIds(), taskInfo.getResourceIds())
-                && Objects.equals(this.getStatus(), taskInfo.getStatus())
+        return super.equals(response)
                 && Objects.equals(this.getStoredResourceIds(), taskInfo.getStoredResourceIds())
                 && Objects.equals(this.getResourceUrls(), taskInfo.getResourceUrls());
     }

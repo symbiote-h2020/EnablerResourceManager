@@ -24,10 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -61,24 +58,18 @@ public class ProblematicResourcesHandlerTests {
     public void replaceProblematicResourcesEnoughResourcesAvailableTest() {
         log.info("replaceProblematicResourcesEnoughResourcesAvailableTest STARTED!");
 
+        List<String> resourceIds = new ArrayList(Arrays.asList("1", "2", "3"));
+        List<String> storedResourceIds = new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8"));
+
         Map<String, String> resourceUrls = new HashMap<>();
         resourceUrls.put("1", symbIoTeCoreUrl + "/Sensors('1')");
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
-        TaskInfo taskInfo = new TaskInfo();
-        taskInfo.setTaskId("task1");
-        taskInfo.setMinNoResources(5);
-        taskInfo.setCoreQueryRequest(new CoreQueryRequest());
-        taskInfo.setQueryInterval("P0-0-0T0:0:1");
-        taskInfo.setAllowCaching(true);
-        taskInfo.setInformPlatformProxy(false);
-        taskInfo.setCachingInterval("P0-0-0T0:0:1");
-        taskInfo.setEnablerLogicName("TestEnablerLogic");
-        taskInfo.setResourceIds(new ArrayList(Arrays.asList("1", "2", "3")));
-        taskInfo.setStoredResourceIds(new ArrayList(Arrays.asList("4", "5", "6", "badCRAMrespose", "noCRAMurl", "7", "8")));
-        taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-        taskInfo.setResourceUrls(resourceUrls);
+        TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(),
+                "P0-0-0T0:0:1", true, "P0-0-0T0:0:1", false,
+                "TestEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
         problematicResourcesInfo.setTaskId("task1");
