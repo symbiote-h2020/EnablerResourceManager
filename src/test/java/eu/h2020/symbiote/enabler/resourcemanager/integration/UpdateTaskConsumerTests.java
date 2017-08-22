@@ -332,6 +332,14 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().get(4).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(5).getResourceIds().size());
 
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(3).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(4).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(5).getStatus());
+
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
         assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
@@ -552,7 +560,7 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
 
-//        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
@@ -789,6 +797,10 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
 
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
+
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
         assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
@@ -915,6 +927,10 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().size());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
 
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
@@ -1102,7 +1118,6 @@ public class UpdateTaskConsumerTests {
         assertEquals(false, updatedTask3.equals(storedTaskInfo3));
         assertEquals(false, updatedTask4.equals(storedTaskInfo4));
 
-
         // Test if the stored resources were cleared in the first 2 tasks
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
         assertEquals(0, storedTaskInfo1.getStoredResourceIds().size());
@@ -1158,6 +1173,12 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
         assertEquals(3, resultRef.get().getResources().get(2).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(3).getResourceIds().size());
+
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(3).getStatus());
 
         assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
@@ -1403,6 +1424,7 @@ public class UpdateTaskConsumerTests {
 
         // Test what Enabler Logic receives
         assertEquals(5, resultRef.get().getResources().size());
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.PARTIAL_SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(3, resultRef.get().getResources().get(1).getResourceIds().size());

@@ -301,6 +301,31 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 }
             }
 
+            // Sending response to EnablerLogic
+            int noSuccessfulTasks = 0;
+            int noFailedTasks = 0;
+
+            response.setResources(resourceManagerTaskInfoResponseList);
+
+            for (ResourceManagerTaskInfoResponse taskInfoResponse : response.getResources()) {
+                if (taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS)
+                    noSuccessfulTasks++;
+                else
+                    noFailedTasks++;
+            }
+
+            if (noFailedTasks == 0) {
+                log.info("ALL the updateTask requests were successful!");
+                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.SUCCESS);
+            } else if (noSuccessfulTasks == 0){
+                log.info("NONE of the updateTask requests were successful");
+                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED);
+            } else if (noSuccessfulTasks < response.getResources().size()) {
+                log.info("Only " + noSuccessfulTasks + " of the " + response.getResources().size()
+                        + " updateTask requests were successful.");
+                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.PARTIAL_SUCCESS);
+            }
+
 
             // Sending response to EnablerLogic
             response.setResources(resourceManagerTaskInfoResponseList);
