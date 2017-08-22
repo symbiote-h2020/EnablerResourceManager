@@ -331,7 +331,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             response.setResources(resourceManagerTaskInfoResponseList);
             rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
                     m -> {
-                        m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
                         return m;
                     });
 
@@ -363,7 +363,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         wrongIntervalFormatResponse.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL);
         rabbitTemplate.convertAndSend(properties.getReplyTo(), wrongIntervalFormatResponse,
                 m -> {
-                    m.getMessageProperties().setCorrelationIdString(properties.getCorrelationId());
+                    m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
                     return m;
                 });
     }
