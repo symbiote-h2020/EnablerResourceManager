@@ -9,6 +9,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
+import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
@@ -107,10 +108,14 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             // Process each task request
             for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getResources()) {
                 TaskInfo storedTaskInfo = taskInfoRepository.findByTaskId(taskInfoRequest.getTaskId());
+                CoreQueryRequest coreQueryRequest = taskInfoRequest.getCoreQueryRequest();
+                SparqlQueryRequest sparqlQueryRequest = taskInfoRequest.getSparqlQueryRequest();
 
                 // ToDO: Check if Task exists
-                if (taskInfoRequest.getCoreQueryRequest() == null ||
-                        taskInfoRequest.getCoreQueryRequest().equals(storedTaskInfo.getCoreQueryRequest())){
+                if ((sparqlQueryRequest == null && (storedTaskInfo.getSparqlQueryRequest() != null ||
+                        (storedTaskInfo.getSparqlQueryRequest() == null &&
+                                (coreQueryRequest == null || coreQueryRequest.equals(storedTaskInfo.getCoreQueryRequest()))))) ||
+                        (sparqlQueryRequest != null && sparqlQueryRequest.equals(storedTaskInfo.getSparqlQueryRequest()))) {
 
                     log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " did not change.");
 
@@ -140,6 +145,11 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     updatedTaskInfo.setResourceIds(new ArrayList<>(storedTaskInfo.getResourceIds()));
                     updatedTaskInfo.setStoredResourceIds(new ArrayList<>(storedTaskInfo.getStoredResourceIds()));
                     updatedTaskInfo.setResourceUrls(new HashMap<>(storedTaskInfo.getResourceUrls()));
+                    if (storedTaskInfo.getSparqlQueryRequest() != null)
+                        updatedTaskInfo.setSparqlQueryRequest(new SparqlQueryRequest(storedTaskInfo.getSparqlQueryRequest()));
+                    else
+                        updatedTaskInfo.setSparqlQueryRequest(null);
+
 
                     // Check if allowCaching changed value
                     if (storedTaskInfo.getAllowCaching() != updatedTaskInfo.getAllowCaching()) {
@@ -182,7 +192,6 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         if (updatedTaskInfo.getAllowCaching()) {
 
                             Map<String, String> newResourceUrls = new HashMap<>();
-                            QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = null;
 
                             while (newResourceUrls.size() != noNewResourcesNeeded &&
                                     updatedTaskInfo.getStoredResourceIds().size() != 0) {

@@ -131,10 +131,10 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             }
 
             if (noFailedTasks == 0) {
-                log.info("All the task requests were successful!");
+                log.info("ALL the task requests were successful!");
                 response.setStatus(ResourceManagerAcquisitionStartResponseStatus.SUCCESS);
             } else if (noSuccessfulTasks == 0){
-                log.info("All the task requests were successful");
+                log.info("NONE of the task requests were successful");
                 response.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED);
             } else if (noSuccessfulTasks < response.getResources().size()) {
                 log.info("Only " + noSuccessfulTasks + " of the " + response.getResources().size()

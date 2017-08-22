@@ -2,6 +2,8 @@ package eu.h2020.symbiote.enabler.resourcemanager.unit;
 
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
+import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
@@ -326,19 +328,25 @@ public class TaskInfoTests {
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
+
+        SparqlQueryRequest sparqlQueryRequest = new SparqlQueryRequest("taskInfo1",
+                SparqlQueryOutputFormat.COUNT);
+
         ArrayList<String> resourceIds = new ArrayList<>();
         resourceIds.add("1");
         resourceIds.add("2");
+
         ArrayList<String> storedResourceIds = new ArrayList<>();
         storedResourceIds.add("3");
         storedResourceIds.add("4");
+
         Map<String, String> resourceUrls = new HashMap<>();
         resourceUrls.put("1", "http://1.com");
         resourceUrls.put("2", "http://2.com");
 
         TaskInfo taskInfo1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
                 true, "P0-0-0T0:0:1", true,
-                "TestEnablerLogic", "sparqlQuery", resourceIds,
+                "TestEnablerLogic", sparqlQueryRequest, resourceIds,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
 
         TaskInfo taskInfo2 = new TaskInfo(taskInfo1);
@@ -392,10 +400,16 @@ public class TaskInfoTests {
         taskInfo2.setEnablerLogicName(taskInfo1.getEnablerLogicName());
         assertEquals(true, taskInfo1.equals(taskInfo2));
 
-        taskInfo2.setSparqlQuery("newSparqlQuery");
-        assertEquals("sparqlQuery", taskInfo1.getSparqlQuery());
+        taskInfo2.getSparqlQueryRequest().setSparqlQuery("taskInfo2");
+        assertEquals("taskInfo1", taskInfo1.getSparqlQueryRequest().getSparqlQuery());
         assertEquals(false, taskInfo1.equals(taskInfo2));
-        taskInfo2.setSparqlQuery(taskInfo1.getSparqlQuery());
+        taskInfo2.getSparqlQueryRequest().setSparqlQuery(taskInfo1.getSparqlQueryRequest().getSparqlQuery());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
+
+        taskInfo2.getSparqlQueryRequest().setOutputFormat(SparqlQueryOutputFormat.CSV);
+        assertEquals(SparqlQueryOutputFormat.COUNT, taskInfo1.getSparqlQueryRequest().getOutputFormat());
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.getSparqlQueryRequest().setOutputFormat(taskInfo1.getSparqlQueryRequest().getOutputFormat());
         assertEquals(true, taskInfo1.equals(taskInfo2));
 
         taskInfo2.getResourceIds().add("3");

@@ -2,6 +2,8 @@ package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
+import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
@@ -144,7 +146,7 @@ public class StartDataAcquisitionConsumerTests {
         assertEquals(2, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
         assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
 
-        if (startAcquisitionRequestsReceivedByListener.get(0).getResources().size() == 2) {
+        if (startAcquisitionRequestsReceivedByListener.get(0).getTaskId().equals("1")) {
             assertEquals("resource1", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
             assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(1).getResourceId());
             assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(0).getResourceId());
@@ -162,7 +164,7 @@ public class StartDataAcquisitionConsumerTests {
         // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
-        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
@@ -172,11 +174,107 @@ public class StartDataAcquisitionConsumerTests {
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(1, taskInfo.getResourceIds().size());
-        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
+        assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
         log.info("resourceManagerGetResourceDetailsTest FINISHED!");
+    }
+
+    @Test
+    public void resourceManagerGetSparqlResourceDetailsTest() throws Exception {
+        log.info("resourceManagerGetSparqlResourceDetailsTest STARTED!");
+
+        // ToDo: add default field value in TaskInfo
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
+
+        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        SparqlQueryRequest sparqlQueryRequest1 = new SparqlQueryRequest("Paris",
+                SparqlQueryOutputFormat.COUNT);
+        SparqlQueryRequest sparqlQueryRequest2 = new SparqlQueryRequest("Athens",
+                SparqlQueryOutputFormat.COUNT);
+        query.getResources().get(0).setSparqlQueryRequest(sparqlQueryRequest1);
+        query.getResources().get(1).setSparqlQueryRequest(sparqlQueryRequest2);
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("resourceManagerGetSparqlResourceDetailsTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        String responseInString = mapper.writeValueAsString(resultRef.get().getResources());
+        log.info("Response String: " + responseInString);
+
+        // Test what Enabler Logic receives
+        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
+        assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
+
+        assertEquals("sparqlResource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("sparqlResource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("sparqlResource4", resultRef.get().getResources().get(1).getResourceIds().get(0));
+
+        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 2) {
+            log.info("startAcquisitionRequestsReceivedByListener.size(): " + dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Platform Proxy receives
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+
+        assertEquals(2, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+
+        if (startAcquisitionRequestsReceivedByListener.get(0).getTaskId().equals("1")) {
+            assertEquals("sparqlResource1", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+            assertEquals("sparqlResource2", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(1).getResourceId());
+            assertEquals("sparqlResource4", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(0).getResourceId());
+            assertEquals("enablerLogicName", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
+            assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(1).getEnablerLogicName());
+
+        } else {
+            assertEquals("sparqlResource1", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(0).getResourceId());
+            assertEquals("sparqlResource2", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(1).getResourceId());
+            assertEquals("sparqlResource4", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+            assertEquals("enablerLogicName", startAcquisitionRequestsReceivedByListener.get(1).getEnablerLogicName());
+            assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
+        }
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
+        assertEquals(2, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("sparqlResource1", taskInfo.getResourceIds().get(0));
+        assertEquals("sparqlResource2", taskInfo.getResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('sparqlResource1')", taskInfo.getResourceUrls().get("sparqlResource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('sparqlResource2')", taskInfo.getResourceUrls().get("sparqlResource2"));
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
+        assertEquals(1, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("sparqlResource4", taskInfo.getResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('sparqlResource4')", taskInfo.getResourceUrls().get("sparqlResource4"));
+
+        log.info("resourceManagerGetSparqlResourceDetailsTest FINISHED!");
     }
 
     // @Test

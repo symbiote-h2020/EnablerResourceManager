@@ -2,6 +2,8 @@ package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
+import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
@@ -409,6 +411,190 @@ public class UpdateTaskConsumerTests {
         assertEquals(true, foundTask1);
         assertEquals(true, foundTask5);
         assertEquals(true, foundTask6);
+
+        log.info("updateTaskTest FINISHED!");
+    }
+
+    @Test
+    public void updateSparqlQueryTest() throws Exception {
+        // In this test, we update the sparqlQueryRequest
+
+        log.info("updateTaskTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
+
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .locationName("Zurich")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .shouldRank(true)
+                .build();
+
+        SparqlQueryRequest sparqlQueryRequest = new SparqlQueryRequest("Zurich",
+                SparqlQueryOutputFormat.COUNT);
+                List<String> resourceIds = Arrays.asList("resource1", "resource2");
+        List<String> storedResourceIds = Arrays.asList("3", "4");
+
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
+        TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
+                true, "P0-0-0T0:0:1", true,
+                "enablerLogic", sparqlQueryRequest, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+        taskInfoRepository.save(task1);
+
+        Map<String, String> resourceUrls2 = new HashMap<>();
+        resourceUrls2.put("21", symbIoTeCoreUrl + "/Sensors('21')");
+        resourceUrls2.put("22", symbIoTeCoreUrl + "/Sensors('22')");
+        TaskInfo task2 = new TaskInfo(task1);
+        task2.setTaskId("2");
+        task2.setResourceIds(Arrays.asList("21", "22"));
+        task2.setResourceUrls(resourceUrls2);
+        taskInfoRepository.save(task2);
+
+        Map<String, String> resourceUrls3 = new HashMap<>();
+        resourceUrls3.put("31", symbIoTeCoreUrl + "/Sensors('31')");
+        resourceUrls3.put("32", symbIoTeCoreUrl + "/Sensors('32')");
+        TaskInfo task3 = new TaskInfo(task1);
+        task3.setTaskId("3");
+        task3.setResourceIds(Arrays.asList("31", "32"));
+        task3.setResourceUrls(resourceUrls3);
+        taskInfoRepository.save(task3);
+
+        // This task should not reach Platform Proxy, since there are no changes
+        TaskInfo updatedTask1 = new TaskInfo(task1);
+        updatedTask1.getCoreQueryRequest().setLocation_name("Paris");
+        updatedTask1.setSparqlQueryRequest(null);
+
+        // This task should reach Platform Proxy and inform it for new values
+        TaskInfo updatedTask2 = new TaskInfo(task2);
+        updatedTask2.getCoreQueryRequest().setLocation_name("Athens");
+        updatedTask2.getSparqlQueryRequest().setSparqlQuery("Paris");
+
+        // This task should not reach Platform Proxy, since there is a sparqlQueryRequest stored
+        TaskInfo updatedTask3 = new TaskInfo(task3);
+        updatedTask3.getCoreQueryRequest().setLocation_name("Athens");
+        updatedTask3.setSparqlQueryRequest(sparqlQueryRequest);
+
+        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+                new ResourceManagerTaskInfoRequest(updatedTask2),
+                new ResourceManagerTaskInfoRequest(updatedTask3)));
+
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCallbackCustom("updateTaskTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        TaskInfo storedTaskInfo1 = taskInfoRepository.findByTaskId("1");
+        TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
+        TaskInfo storedTaskInfo3 = taskInfoRepository.findByTaskId("3");
+
+        // In the 1st and 3rd tasks nothing changes, since the sparqlQuery which is set does not change so the coreQueryRequest
+        // is set into that of the storedTaskInfo. In the 2nd case, the sparqlQuery changes.
+        assertEquals(true, task1.equals(storedTaskInfo1));
+        assertEquals(false, task2.equals(storedTaskInfo2));
+        assertEquals(true, task3.equals(storedTaskInfo3));
+
+        // In the 1st and 3rd cases the coreQueryRequest is different. In the 2nd case the resources change.
+        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
+        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
+        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
+
+
+        // Test what is stored in the database
+        assertEquals(2, storedTaskInfo1.getResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
+        assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo1.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo1.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo1.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo1.getResourceUrls().get("resource2"));
+
+        assertEquals(2, storedTaskInfo2.getResourceIds().size());
+        assertEquals(1, storedTaskInfo2.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals("sparqlResource1", storedTaskInfo2.getResourceIds().get(0));
+        assertEquals("sparqlResource2", storedTaskInfo2.getResourceIds().get(1));
+        assertEquals("sparqlResource3", storedTaskInfo2.getStoredResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('sparqlResource1')", storedTaskInfo2.getResourceUrls().get("sparqlResource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('sparqlResource2')", storedTaskInfo2.getResourceUrls().get("sparqlResource2"));
+
+        assertEquals(2, storedTaskInfo3.getResourceIds().size());
+        assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
+        assertEquals(2, storedTaskInfo3.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo3.getStatus());
+        assertEquals("31", storedTaskInfo3.getResourceIds().get(0));
+        assertEquals("32", storedTaskInfo3.getResourceIds().get(1));
+        assertEquals("3", storedTaskInfo3.getStoredResourceIds().get(0));
+        assertEquals("4", storedTaskInfo3.getStoredResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('31')", storedTaskInfo3.getResourceUrls().get("31"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('32')", storedTaskInfo3.getResourceUrls().get("32"));
+
+        // Test what Enabler Logic receives
+        assertEquals(3, resultRef.get().getResources().size());
+        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+
+//        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
+
+
+        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
+        assertEquals("sparqlResource1", resultRef.get().getResources().get(1).getResourceIds().get(0));
+        assertEquals("sparqlResource2", resultRef.get().getResources().get(1).getResourceIds().get(1));
+        assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
+        assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
+
+        while(dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 1) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        // Test what Platform Proxy receives
+        taskUpdateRequestsReceivedByListener = dummyPlatformProxyListener.getUpdateAcquisitionRequestsReceivedByListener();
+
+        assertEquals(1, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.cancelTaskRequestsReceived());
+
+        boolean foundTask2 = false;
+
+        for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
+
+            log.info("Task id = " + request.getTaskId());
+
+            if (request.getTaskId().equals("2")) {
+                assertEquals("sparqlResource1", request.getResources().get(0).getResourceId());
+                assertEquals("sparqlResource2", request.getResources().get(1).getResourceId());
+                foundTask2 = true;
+                continue;
+            }
+
+            fail("The code should not reach here, because no other tasks should be received by the platform proxy");
+        }
+
+        assertEquals(true, foundTask2);
 
         log.info("updateTaskTest FINISHED!");
     }

@@ -3,6 +3,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.util.IntervalFormatter;
 import org.apache.commons.logging.Log;
@@ -56,19 +57,17 @@ public class SearchHelper {
     }
 
     public String querySingleResource (String resourceId)  {
+        // Query the core for a single resource
 
         ObjectMapper mapper = new ObjectMapper();
 
-        // Query the core for each task
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
-
-        QueryResponse queryResponse = null;
-
-        // FIX ME: Consider Connection timeouts or errors
+        // ToDo: Consider Connection timeouts or errors
         try {
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
+
             ResponseEntity<QueryResponse> queryResponseEntity = restTemplate.exchange(
                     buildRequestUrl(resourceId), HttpMethod.GET, entity, QueryResponse.class);
 
@@ -78,7 +77,10 @@ public class SearchHelper {
                 log.info(e);
             }
 
-            queryResponse = queryResponseEntity.getBody();
+            QueryResponse queryResponse = queryResponseEntity.getBody();
+            if (queryResponse == null)
+                return null;
+
             if (queryResponse.getResources().size() == 1) {
                 TaskResponseToComponents taskResponseToComponents = getUrlsFromCram(queryResponse.getResources().get(0));
 
@@ -97,24 +99,36 @@ public class SearchHelper {
     }
 
     public QueryAndProcessSearchResponseResult queryAndProcessSearchResponse (ResourceManagerTaskInfoRequest taskInfoRequest)  {
+        // Query the core for each task
 
         ObjectMapper mapper = new ObjectMapper();
-
-        // Query the core for each task
         QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = new QueryAndProcessSearchResponseResult();
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
-
         ResourceManagerTaskInfoResponse taskInfoResponse = new ResourceManagerTaskInfoResponse(taskInfoRequest);
         QueryResponse queryResponse = null;
         TaskResponseToComponents taskResponseToComponents = null;
 
-        // FIX ME: Consider Connection timeouts or errors
+        // ToDo: Consider Connection timeouts or errors
         try {
-            ResponseEntity<QueryResponse> queryResponseEntity = restTemplate.exchange(
-                    buildRequestUrl(taskInfoRequest), HttpMethod.GET, entity, QueryResponse.class);
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<QueryResponse> queryResponseEntity;
+            SparqlQueryRequest sparqlQueryRequest = taskInfoRequest.getSparqlQueryRequest();
+
+            if (sparqlQueryRequest == null) {
+                HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
+                queryResponseEntity = restTemplate.exchange(
+                        buildRequestUrl(taskInfoRequest), HttpMethod.GET, entity, QueryResponse.class);
+            }
+            else {
+                Token token = securityManager.requestCoreToken();
+                log.info("Core Token acquired: " + token);
+
+                httpHeaders.set(AAMConstants.TOKEN_HEADER_NAME, token.getToken());
+                HttpEntity<SparqlQueryRequest> entity = new HttpEntity<>(sparqlQueryRequest, httpHeaders);
+                queryResponseEntity = restTemplate.exchange(
+                        buildRequestUrl(taskInfoRequest), HttpMethod.POST, entity, QueryResponse.class);
+            }
 
             try {
                 log.info("SymbIoTe Core Response: " + mapper.writeValueAsString(queryResponseEntity));
@@ -146,7 +160,7 @@ public class SearchHelper {
                 queryAndProcessSearchResponseResult.setPlatformProxyTaskInfo(requestToPlatformProxy);
 
             }
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
+        } catch (SecurityException | HttpClientErrorException | HttpServerErrorException e) {
             log.info(e.toString());
             taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.FAILED);
         }
@@ -228,8 +242,16 @@ public class SearchHelper {
 
     private String buildRequestUrl(ResourceManagerTaskInfoRequest taskInfoRequest) {
         // Building the query url for each task
-        String url = taskInfoRequest.getCoreQueryRequest().buildQuery(symbIoTeCoreUrl);
-        log.info("url= " + url);
+        String url;
+        SparqlQueryRequest sparqlQueryRequest = taskInfoRequest.getSparqlQueryRequest();
+
+        if (sparqlQueryRequest == null || sparqlQueryRequest.getSparqlQuery() == null ||
+                sparqlQueryRequest.getOutputFormat() == null)
+            url = taskInfoRequest.getCoreQueryRequest().buildQuery(symbIoTeCoreUrl);
+        else
+            url = symbIoTeCoreUrl + "/sparqlQuery";
+
+        log.info("url = " + url);
 
         return url;
     }

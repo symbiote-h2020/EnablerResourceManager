@@ -2,6 +2,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.model;
 
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
@@ -26,7 +27,7 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
 
     public TaskInfo(String taskId, Integer minNoResources, CoreQueryRequest coreQueryRequest,
                     String queryInterval, Boolean allowCaching, String cachingInterval,
-                    Boolean informPlatformProxy, String enablerLogicName, String sparqlQuery,
+                    Boolean informPlatformProxy, String enablerLogicName, SparqlQueryRequest sparqlQuery,
                     List<String> resourceIds, ResourceManagerTaskInfoResponseStatus status,
                     List<String> storedResourceIds, Map<String, String>  resourceUrls) {
         super(taskId, minNoResources, coreQueryRequest, queryInterval, allowCaching, cachingInterval,
