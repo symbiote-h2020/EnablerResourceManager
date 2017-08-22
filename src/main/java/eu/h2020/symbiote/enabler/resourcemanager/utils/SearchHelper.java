@@ -103,9 +103,12 @@ public class SearchHelper {
 
         ObjectMapper mapper = new ObjectMapper();
         QueryAndProcessSearchResponseResult queryAndProcessSearchResponseResult = new QueryAndProcessSearchResponseResult();
-        ResourceManagerTaskInfoResponse taskInfoResponse = new ResourceManagerTaskInfoResponse(taskInfoRequest);
         QueryResponse queryResponse = null;
         TaskResponseToComponents taskResponseToComponents = null;
+
+        // Always request ranked results
+        taskInfoRequest.getCoreQueryRequest().setShould_rank(true);
+        ResourceManagerTaskInfoResponse taskInfoResponse = new ResourceManagerTaskInfoResponse(taskInfoRequest);
 
         // ToDo: Consider Connection timeouts or errors
         try {

@@ -75,47 +75,69 @@ public class EnablerLogicWrongDataConsumerTests {
     }
 
     @Test
-    public void wrongDataResourcesWithReplaceableResourcesTest() throws Exception {
-        log.info("wrongDataResourcesWithReplaceableResourcesTest STARTED!");
+    public void enoughReplaceableResourcesTest() throws Exception {
+        log.info("enoughReplaceableResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.enoughReplaceableResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
-        log.info("wrongDataResourcesWithReplaceableResourcesTest FINISHED!");
+        log.info("enoughReplaceableResourcesTest FINISHED!");
     }
 
     @Test
-    public void wrongDataResourcesWithEnoughRemainingResourcesTest() throws Exception {
-        log.info("wrongDataResourcesWithEnoughRemainingResourcesTest STARTED!");
+    public void enoughReplaceableResourcesNoCachingTest() throws Exception {
+        log.info("enoughReplaceableResourcesNoCachingTest STARTED!");
+
+        ProblematicResourcesTestHelper.enoughReplaceableResourcesNoCachingTest(wrongDataRoutingKey,
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
+
+        log.info("enoughReplaceableResourcesNoCachingTest FINISHED!");
+    }
+
+    @Test
+    public void enoughRemainingResourcesTest() throws Exception {
+        log.info("enoughRemainingResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.enoughRemainingResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
-        log.info("wrongDataResourcesWithEnoughRemainingResourcesTest FINISHED!");
+        log.info("enoughRemainingResourcesTest FINISHED!");
     }
 
     @Test
-    public void wrongDataResourcesWithNotEnoughResourcesTest() throws Exception {
-        log.info("wrongDataResourcesWithNotEnoughResourcesTest STARTED!");
+    public void notEnoughResourcesTest() throws Exception {
+        log.info("notEnoughResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.notEnoughResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
-        log.info("wrongDataResourcesWithNotEnoughResourcesTest FINISHED!");
+        log.info("notEnoughResourcesTest FINISHED!");
     }
 
     @Test
-    public void wrongDataResourcesWithEnoughStoredOnlyResourcesTest() throws Exception {
-        log.info("wrongDataResourcesWithEnoughStoredOnlyResourcesTest STARTED!");
+    public void notEnoughResourcesNoCachingTest() throws Exception {
+        log.info("notEnoughResourcesNoCachingTest STARTED!");
+
+        ProblematicResourcesTestHelper.notEnoughResourcesNoCachingTest(wrongDataRoutingKey,
+                taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
+                resourceManagerExchangeName, symbIoTeCoreUrl);
+
+        log.info("notEnoughResourcesNoCachingTest FINISHED!");
+    }
+
+    @Test
+    public void enoughStoredOnlyResourcesTest() throws Exception {
+        log.info("enoughStoredOnlyResourcesTest STARTED!");
 
         ProblematicResourcesTestHelper.enoughStoredOnlyResourcesTest(wrongDataRoutingKey,
                 taskInfoRepository, rabbitTemplate, dummyPlatformProxyListener, dummyEnablerLogicListener,
                 resourceManagerExchangeName, symbIoTeCoreUrl);
 
-        log.info("wrongDataResourcesWithEnoughStoredOnlyResourcesTest FINISHED!");
+        log.info("enoughStoredOnlyResourcesTest FINISHED!");
     }
 
 }

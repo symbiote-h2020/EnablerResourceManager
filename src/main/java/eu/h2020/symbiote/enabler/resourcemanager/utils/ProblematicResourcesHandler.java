@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.enabler.messaging.model.*;
+import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
@@ -23,7 +24,6 @@ import org.springframework.util.Assert;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -125,17 +125,16 @@ public final class ProblematicResourcesHandler {
 
         if (noNewResourcesNeeded > 0) {
             if (taskInfo.getAllowCaching()) {
+                log.debug("Task " + taskInfo.getTaskId() + " has allowCaching = TRUE");
 
-                List<String> newResourceIds = new ArrayList<>();
                 Map<String, String> newResourceUrls = new HashMap<>();
 
-                while (newResourceIds.size() != noNewResourcesNeeded &&
+                while (newResourceUrls.size() != noNewResourcesNeeded &&
                         taskInfo.getStoredResourceIds().size() != 0) {
                     String candidateResourceId = taskInfo.getStoredResourceIds().get(0);
                     String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
 
                     if (candidateResourceUrl != null) {
-                        newResourceIds.add(candidateResourceId);
                         newResourceUrls.put(candidateResourceId, candidateResourceUrl);
                     }
 
@@ -147,12 +146,38 @@ public final class ProblematicResourcesHandler {
                 taskInfo.deleteResourceIds(problematicResourcesInfo.getProblematicResourceIds());
                 taskInfo.addResourceIds(newResourceUrls);
 
-                if (newResourceIds.size() == noNewResourcesNeeded) {
+                if (newResourceUrls.size() == noNewResourcesNeeded) {
                     return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(taskInfo);
                 } else {
                     log.info("Not enough resources are available.");
 
                     taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
+                    NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
+                            taskInfo.getResourceIds().size());
+
+                    return ProblematicResourcesHandlerResult.notEnoughResources(taskInfo,notEnoughResourcesAvailable);
+                }
+            } else {
+                log.debug("Task " + taskInfo.getTaskId() + " has allowCaching = FALSE");
+
+                // Perform the request
+                QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
+                        .queryAndProcessSearchResponse(taskInfo);
+
+                // Store the taskInfo
+                TaskInfo newTaskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
+                if (newTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS) {
+                    // Return the newTaskInfo
+                    return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(newTaskInfo);
+                } else {
+                    // Return the old taskInfo, after removing the problematic resources
+                    taskInfo.deleteResourceIds(problematicResourcesInfo.getProblematicResourceIds());
+
+                    // Make sure that storeResourceIds is empty
+                    taskInfo.setStoredResourceIds(new ArrayList<>());
+
+                    taskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
+
                     NotEnoughResourcesAvailable notEnoughResourcesAvailable = new NotEnoughResourcesAvailable(taskInfo.getTaskId(),
                             taskInfo.getResourceIds().size());
 
@@ -169,7 +194,7 @@ public final class ProblematicResourcesHandler {
 
 
         // ToDo: Remove when implement behavior for allowCaching == false
-        return ProblematicResourcesHandlerResult.unknownMessage();
+        // return ProblematicResourcesHandlerResult.unknownMessage();
     }
 
     private void informComponents(TaskInfo taskInfo) {

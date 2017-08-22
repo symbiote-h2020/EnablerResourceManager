@@ -17,7 +17,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -94,9 +93,6 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
             // Process each task request
             for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getResources()) {
-
-                // Always request ranked results
-                taskInfoRequest.getCoreQueryRequest().setShould_rank(true);
 
                 // Perform the request
                 QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
