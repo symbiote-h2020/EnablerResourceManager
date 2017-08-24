@@ -2,24 +2,15 @@ package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
-import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
-import eu.h2020.symbiote.core.internal.CoreQueryRequest;
-import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
-import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.CancelTaskConsumer;
-import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCallbackCustom;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
-import javafx.concurrent.Task;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -33,6 +24,17 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
+import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
+import eu.h2020.symbiote.enabler.messaging.model.*;
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCallbackCustom;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
 
 import java.lang.reflect.Field;
 import java.util.*;
