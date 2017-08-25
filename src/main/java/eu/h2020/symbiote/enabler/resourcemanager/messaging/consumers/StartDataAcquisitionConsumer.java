@@ -18,6 +18,8 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -128,14 +130,14 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
             if (noFailedTasks == 0) {
                 log.info("ALL the task requests were successful!");
-                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.SUCCESS);
+                response.setStatus(ResourceManagerTasksStatus.SUCCESS);
             } else if (noSuccessfulTasks == 0){
                 log.info("NONE of the task requests were successful");
-                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED);
+                response.setStatus(ResourceManagerTasksStatus.FAILED);
             } else if (noSuccessfulTasks < response.getResources().size()) {
                 log.info("Only " + noSuccessfulTasks + " of the " + response.getResources().size()
                         + " task requests were successful.");
-                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.PARTIAL_SUCCESS);
+                response.setStatus(ResourceManagerTasksStatus.PARTIAL_SUCCESS);
             }
 
             rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
@@ -150,20 +152,22 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
             }
         } catch (JsonParseException | JsonMappingException e) {
-            log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
-        } catch (IllegalArgumentException e) {
-            log.info("Interval Wrong Format: " + e.toString());
+            log.error("Error occurred during deserializing ResourceManagerUpdateRequest", e);
 
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+
+            if (sw.toString().contains(IllegalArgumentException.class.getName() + ": Invalid format:")) {
+                log.info("Nested exception: " + IllegalArgumentException.class.getName());
+
+                ResourceManagerAcquisitionStartResponse wrongIntervalFormatResponse = new ResourceManagerAcquisitionStartResponse();
+                wrongIntervalFormatResponse.setStatus(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL);
+                rabbitTemplate.convertAndSend(properties.getReplyTo(), wrongIntervalFormatResponse,
+                        m -> {
+                            m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                            return m;
+                        });
+            }
         }
-
-        ResourceManagerAcquisitionStartResponse wrongIntervalFormatResponse = new ResourceManagerAcquisitionStartResponse();
-        wrongIntervalFormatResponse.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL);
-        rabbitTemplate.convertAndSend(properties.getReplyTo(), wrongIntervalFormatResponse,
-                m -> {
-                    m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
-                    return m;
-                });
-
-
     }
 }

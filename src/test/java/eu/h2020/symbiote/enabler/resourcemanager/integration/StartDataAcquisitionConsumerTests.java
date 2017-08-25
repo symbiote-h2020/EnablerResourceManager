@@ -10,7 +10,7 @@ import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogi
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCallbackCustom;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureAcquisitionStartCallback;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
 
 import org.junit.After;
@@ -111,7 +111,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("resourceManagerGetResourceDetailsTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetResourceDetailsTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -123,7 +123,7 @@ public class StartDataAcquisitionConsumerTests {
         log.info("Response String: " + responseInString);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
@@ -205,7 +205,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("resourceManagerGetSparqlResourceDetailsTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetSparqlResourceDetailsTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -217,7 +217,7 @@ public class StartDataAcquisitionConsumerTests {
         log.info("Response String: " + responseInString);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
@@ -305,7 +305,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("resourceManagerGetResourceDetailsNoResponseTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetResourceDetailsNoResponseTest", resultRef));
 
         while(!future.isDone()) {
             log.info("Sleeping!!!!!!");
@@ -327,7 +327,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("resourceManagerGetResourceDetailsBadRequestTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetResourceDetailsBadRequestTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -336,7 +336,7 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.FAILED, resultRef.get().getStatus());
         assertEquals(0, resultRef.get().getResources().get(0).getResourceIds().size());
 
         // Test what Platform Proxy receives
@@ -366,7 +366,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("notSendingToPlatformProxyTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("notSendingToPlatformProxyTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -375,7 +375,7 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
@@ -433,7 +433,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("allowCachingTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -442,7 +442,7 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(1, resultRef.get().getResources().get(1).getResourceIds().size());
@@ -496,7 +496,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("allowCachingTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -505,7 +505,7 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.PARTIAL_SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.PARTIAL_SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
@@ -569,7 +569,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("allowCachingTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -578,7 +578,7 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -612,7 +612,7 @@ public class StartDataAcquisitionConsumerTests {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("allowCachingTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -621,7 +621,7 @@ public class StartDataAcquisitionConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
 
         TimeUnit.MILLISECONDS.sleep(500);
 

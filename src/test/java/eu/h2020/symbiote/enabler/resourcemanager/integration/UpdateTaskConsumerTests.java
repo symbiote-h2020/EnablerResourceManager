@@ -33,7 +33,7 @@ import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogi
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCallbackCustom;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureUpdateCallback;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
 
 import java.lang.reflect.Field;
@@ -108,7 +108,7 @@ public class UpdateTaskConsumerTests {
 
         log.info("updateTaskTest STARTED!");
 
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -213,7 +213,7 @@ public class UpdateTaskConsumerTests {
         TaskInfo updatedTask6 = new TaskInfo(task6);
         updatedTask6.setQueryInterval("P0-0-0T0:0:0.1");
 
-        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3),
@@ -223,11 +223,11 @@ public class UpdateTaskConsumerTests {
 
 
         log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+        RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("updateTaskTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("updateTaskTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -334,7 +334,7 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().get(4).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(5).getResourceIds().size());
 
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
@@ -431,7 +431,7 @@ public class UpdateTaskConsumerTests {
 
         log.info("updateTaskTest STARTED!");
 
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -488,18 +488,18 @@ public class UpdateTaskConsumerTests {
         updatedTask3.getCoreQueryRequest().setLocation_name("Athens");
         updatedTask3.setSparqlQueryRequest(sparqlQueryRequest);
 
-        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3)));
 
 
         log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+        RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("updateTaskTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("updateTaskTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -562,7 +562,7 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
 
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
@@ -613,19 +613,19 @@ public class UpdateTaskConsumerTests {
     public void wrongQueryIntervalFormatUpdateTest() throws Exception {
         log.info("wrongQueryIntervalFormatUpdateTest STARTED!");
 
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
 
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerUpdateRequest query = TestHelper.createValidUpdateQueryToResourceManager(2);
         Field queryIntervalField = query.getResources().get(1).getClass().getDeclaredField("queryInterval");
         queryIntervalField.setAccessible(true);
         queryIntervalField.set(query.getResources().get(1), "10s");
 
         log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+        RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("wrongQueryIntervalFormatUpdateTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("wrongQueryIntervalFormatUpdateTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -634,7 +634,7 @@ public class UpdateTaskConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -657,19 +657,19 @@ public class UpdateTaskConsumerTests {
     public void wrongCacheIntervalFormatUpdateTest() throws Exception {
         log.info("wrongCacheIntervalFormatUpdateTest STARTED!");
 
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
 
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerUpdateRequest query = TestHelper.createValidUpdateQueryToResourceManager(2);
         Field cachingIntervalField = query.getResources().get(1).getClass().getDeclaredField("cachingInterval");
         cachingIntervalField.setAccessible(true);
         cachingIntervalField.set(query.getResources().get(1), "10s");
 
         log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+        RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("wrongCacheIntervalFormatUpdateTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("wrongCacheIntervalFormatUpdateTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -678,7 +678,7 @@ public class UpdateTaskConsumerTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Test what Enabler Logic receives
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -703,7 +703,7 @@ public class UpdateTaskConsumerTests {
 
         log.info("updateTaskWithInformPlatformProxyBecomingFalseTest STARTED!");
 
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
         List<CancelTaskRequest> cancelTaskRequestsReceivedByListener;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -743,17 +743,17 @@ public class UpdateTaskConsumerTests {
         TaskInfo updatedTask2 = new TaskInfo(task2);
         updatedTask2.setInformPlatformProxy(false);
 
-        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2)));
 
 
         log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+        RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("updateTaskWithInformPlatformProxyBecomingFalseTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("updateTaskWithInformPlatformProxyBecomingFalseTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -799,7 +799,7 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
 
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
 
@@ -834,7 +834,7 @@ public class UpdateTaskConsumerTests {
 
         log.info("updateTaskWithInformPlatformProxyBecomingTrueTest STARTED!");
 
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -874,17 +874,17 @@ public class UpdateTaskConsumerTests {
         TaskInfo updatedTask2 = new TaskInfo(task2);
         updatedTask2.setInformPlatformProxy(true);
 
-        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2)));
 
 
         log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+        RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("updateTaskWithInformPlatformProxyBecomingFalseTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("updateTaskWithInformPlatformProxyBecomingFalseTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -930,7 +930,7 @@ public class UpdateTaskConsumerTests {
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
 
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
 
@@ -1001,7 +1001,7 @@ public class UpdateTaskConsumerTests {
 
         log.info("updateTaskWithAllowCachingBecomingFalseTest STARTED!");
 
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -1081,7 +1081,7 @@ public class UpdateTaskConsumerTests {
         updatedTask4.setAllowCaching(true);
         updatedTask4.getCoreQueryRequest().setLocation_name("Paris");
 
-        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3),
@@ -1089,11 +1089,11 @@ public class UpdateTaskConsumerTests {
 
 
         log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+        RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("updateTaskWithAllowCachingBecomingFalseTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("updateTaskWithAllowCachingBecomingFalseTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -1176,7 +1176,7 @@ public class UpdateTaskConsumerTests {
         assertEquals(3, resultRef.get().getResources().get(2).getResourceIds().size());
         assertEquals(2, resultRef.get().getResources().get(3).getResourceIds().size());
 
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
@@ -1241,7 +1241,7 @@ public class UpdateTaskConsumerTests {
 
         log.info("changeInMinNoResourcesTest STARTED!");
 
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -1323,7 +1323,7 @@ public class UpdateTaskConsumerTests {
         TaskInfo updatedTask5 = new TaskInfo(task5);
         updatedTask5.setMinNoResources(2);
 
-        ResourceManagerAcquisitionStartRequest req = new ResourceManagerAcquisitionStartRequest();
+        ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
         req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3),
@@ -1332,11 +1332,11 @@ public class UpdateTaskConsumerTests {
 
 
         log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+        RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureCallbackCustom("changeInMinNoResourcesTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("changeInMinNoResourcesTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -1426,7 +1426,7 @@ public class UpdateTaskConsumerTests {
 
         // Test what Enabler Logic receives
         assertEquals(5, resultRef.get().getResources().size());
-        assertEquals(ResourceManagerAcquisitionStartResponseStatus.PARTIAL_SUCCESS, resultRef.get().getStatus());
+        assertEquals(ResourceManagerTasksStatus.PARTIAL_SUCCESS, resultRef.get().getStatus());
         assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
         assertEquals(3, resultRef.get().getResources().get(1).getResourceIds().size());

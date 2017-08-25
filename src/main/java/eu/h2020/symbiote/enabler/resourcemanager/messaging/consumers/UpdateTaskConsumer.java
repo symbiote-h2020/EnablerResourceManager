@@ -27,6 +27,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -93,7 +95,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
         ObjectMapper mapper = new ObjectMapper();
         String requestInString = new String(body, "UTF-8");
-        ResourceManagerAcquisitionStartResponse response  = new ResourceManagerAcquisitionStartResponse();
+        ResourceManagerUpdateResponse response  = new ResourceManagerUpdateResponse();
         ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = new ArrayList<>();
         ArrayList<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList = new ArrayList<>();
         ArrayList<PlatformProxyTaskInfo> platformProxyUpdateRequestList = new ArrayList<>();
@@ -103,7 +105,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         log.info("Received UpdateTask request : " + requestInString);
 
         try {
-            ResourceManagerAcquisitionStartRequest request  = mapper.readValue(requestInString, ResourceManagerAcquisitionStartRequest.class);
+            ResourceManagerUpdateRequest request  = mapper.readValue(requestInString, ResourceManagerUpdateRequest.class);
 
             // Process each task request
             for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getResources()) {
@@ -316,14 +318,14 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
             if (noFailedTasks == 0) {
                 log.info("ALL the updateTask requests were successful!");
-                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.SUCCESS);
+                response.setStatus(ResourceManagerTasksStatus.SUCCESS);
             } else if (noSuccessfulTasks == 0){
                 log.info("NONE of the updateTask requests were successful");
-                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED);
+                response.setStatus(ResourceManagerTasksStatus.FAILED);
             } else if (noSuccessfulTasks < response.getResources().size()) {
                 log.info("Only " + noSuccessfulTasks + " of the " + response.getResources().size()
                         + " updateTask requests were successful.");
-                response.setStatus(ResourceManagerAcquisitionStartResponseStatus.PARTIAL_SUCCESS);
+                response.setStatus(ResourceManagerTasksStatus.PARTIAL_SUCCESS);
             }
 
 
@@ -354,18 +356,22 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
-        } catch (IllegalArgumentException e) {
-            log.info("Interval Wrong Format: " + e.toString());
 
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+
+            if (sw.toString().contains(IllegalArgumentException.class.getName() + ": Invalid format:")) {
+                log.info("Nested exception: " + IllegalArgumentException.class.getName());
+
+                ResourceManagerUpdateResponse wrongIntervalFormatResponse = new ResourceManagerUpdateResponse();
+                wrongIntervalFormatResponse.setStatus(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL);
+                rabbitTemplate.convertAndSend(properties.getReplyTo(), wrongIntervalFormatResponse,
+                        m -> {
+                            m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                            return m;
+                        });
+            }
         }
-
-        ResourceManagerAcquisitionStartResponse wrongIntervalFormatResponse = new ResourceManagerAcquisitionStartResponse();
-        wrongIntervalFormatResponse.setStatus(ResourceManagerAcquisitionStartResponseStatus.FAILED_WRONG_FORMAT_INTERVAL);
-        rabbitTemplate.convertAndSend(properties.getReplyTo(), wrongIntervalFormatResponse,
-                m -> {
-                    m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
-                    return m;
-                });
     }
 
     private void processPlatformProxyTransition(TaskInfo taskInfo, List<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList,

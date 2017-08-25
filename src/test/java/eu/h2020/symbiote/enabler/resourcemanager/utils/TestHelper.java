@@ -4,6 +4,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.utils;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
+import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerUpdateRequest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +49,12 @@ public final class TestHelper {
 
         request.setResources(resources);
         return request;
+    }
+
+    public static ResourceManagerUpdateRequest createValidUpdateQueryToResourceManager(int noTasks) {
+        ResourceManagerUpdateRequest updateRequest = new ResourceManagerUpdateRequest();
+        updateRequest.setResources(createValidQueryToResourceManager(noTasks).getResources());
+        return updateRequest;
     }
 
     public static ResourceManagerAcquisitionStartRequest createBadQueryToResourceManager() {
