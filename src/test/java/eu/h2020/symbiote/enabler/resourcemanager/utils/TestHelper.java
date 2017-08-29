@@ -47,13 +47,13 @@ public final class TestHelper {
             resources.add(request2);
         }
 
-        request.setResources(resources);
+        request.setTasks(resources);
         return request;
     }
 
     public static ResourceManagerUpdateRequest createValidUpdateQueryToResourceManager(int noTasks) {
         ResourceManagerUpdateRequest updateRequest = new ResourceManagerUpdateRequest();
-        updateRequest.setResources(createValidQueryToResourceManager(noTasks).getResources());
+        updateRequest.setTasks(createValidQueryToResourceManager(noTasks).getTasks());
         return updateRequest;
     }
 
@@ -71,7 +71,7 @@ public final class TestHelper {
                 true, "enablerLogicName", null);
 
         resources.add(request1);
-        request.setResources(resources);
+        request.setTasks(resources);
         return request;
     }
 

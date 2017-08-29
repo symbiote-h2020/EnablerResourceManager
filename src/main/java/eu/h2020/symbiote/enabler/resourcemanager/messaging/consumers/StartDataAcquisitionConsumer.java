@@ -94,7 +94,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
             ResourceManagerAcquisitionStartRequest request  = mapper.readValue(requestInString, ResourceManagerAcquisitionStartRequest.class);
 
             // Process each task request
-            for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getResources()) {
+            for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getTasks()) {
 
                 // Perform the request
                 QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
@@ -116,28 +116,37 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
 
             // Sending response to EnablerLogic
-            int noSuccessfulTasks = 0;
-            int noFailedTasks = 0;
+            ArrayList<String> failedTasks = new ArrayList<>();
 
-            response.setResources(resourceManagerTaskInfoResponseList);
+            response.setTasks(resourceManagerTaskInfoResponseList);
 
-            for (ResourceManagerTaskInfoResponse taskInfoResponse : response.getResources()) {
-                if (taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS)
-                    noSuccessfulTasks++;
-                else
-                    noFailedTasks++;
+            for (ResourceManagerTaskInfoResponse taskInfoResponse : response.getTasks()) {
+                if (taskInfoResponse.getStatus() != ResourceManagerTaskInfoResponseStatus.SUCCESS)
+                    failedTasks.add(taskInfoResponse.getTaskId());
             }
 
-            if (noFailedTasks == 0) {
-                log.info("ALL the task requests were successful!");
+            if (failedTasks.size() == 0) {
+                String message = "ALL the task requests were successful!";
+                log.info(message);
                 response.setStatus(ResourceManagerTasksStatus.SUCCESS);
-            } else if (noSuccessfulTasks == 0){
-                log.info("NONE of the task requests were successful");
+                response.setMessage(message);
+            } else if (failedTasks.size() == response.getTasks().size()){
+                String message = "NONE of the task requests were successful";
+                log.info(message);
                 response.setStatus(ResourceManagerTasksStatus.FAILED);
-            } else if (noSuccessfulTasks < response.getResources().size()) {
-                log.info("Only " + noSuccessfulTasks + " of the " + response.getResources().size()
-                        + " task requests were successful.");
+                response.setMessage(message);
+            } else if (failedTasks.size() < response.getTasks().size()) {
+                String message = "Failed tasks id : [";
+
+                for (String id : failedTasks) {
+                    message += id + ", ";
+                }
+                message = message.substring(0, message.length() - 2);
+                message += "]";
+
+                log.info(message);
                 response.setStatus(ResourceManagerTasksStatus.PARTIAL_SUCCESS);
+                response.setMessage(message);
             }
 
             rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
@@ -154,20 +163,25 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing ResourceManagerUpdateRequest", e);
 
+            ResourceManagerAcquisitionStartResponse errorResponse = new ResourceManagerAcquisitionStartResponse();
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
 
             if (sw.toString().contains(IllegalArgumentException.class.getName() + ": Invalid format:")) {
                 log.info("Nested exception: " + IllegalArgumentException.class.getName());
+                errorResponse.setStatus(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL);
+                errorResponse.setMessage(IllegalArgumentException.class.getName() + ": " + e.getMessage());
 
-                ResourceManagerAcquisitionStartResponse wrongIntervalFormatResponse = new ResourceManagerAcquisitionStartResponse();
-                wrongIntervalFormatResponse.setStatus(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL);
-                rabbitTemplate.convertAndSend(properties.getReplyTo(), wrongIntervalFormatResponse,
-                        m -> {
-                            m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
-                            return m;
-                        });
+            } else {
+                errorResponse.setStatus(ResourceManagerTasksStatus.FAILED);
+                errorResponse.setMessage(e.toString());
             }
+
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
         }
     }
 }

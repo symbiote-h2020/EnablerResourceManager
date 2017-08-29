@@ -214,7 +214,7 @@ public class UpdateTaskConsumerTests {
         updatedTask6.setQueryInterval("P0-0-0T0:0:0.1");
 
         ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
-        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+        req.setTasks(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3),
                 new ResourceManagerTaskInfoRequest(updatedTask4),
@@ -326,34 +326,35 @@ public class UpdateTaskConsumerTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('62')", storedTaskInfo6.getResourceUrls().get("62"));
 
         // Test what Enabler Logic receives
-        assertEquals(6, resultRef.get().getResources().size());
-        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(2).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(3).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(4).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(5).getResourceIds().size());
+        assertEquals(6, resultRef.get().getTasks().size());
+        assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(2).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(3).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(4).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(5).getResourceIds().size());
 
         assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(3).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(4).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(5).getStatus());
+        assertEquals("ALL the update task requests were successful!", resultRef.get().getMessage());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(2).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(3).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(4).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(5).getStatus());
 
-        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
-        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
-        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
-        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
-        assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
-        assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
-        assertEquals("41", resultRef.get().getResources().get(3).getResourceIds().get(0));
-        assertEquals("42", resultRef.get().getResources().get(3).getResourceIds().get(1));
-        assertEquals("51", resultRef.get().getResources().get(4).getResourceIds().get(0));
-        assertEquals("52", resultRef.get().getResources().get(4).getResourceIds().get(1));
-        assertEquals("61", resultRef.get().getResources().get(5).getResourceIds().get(0));
-        assertEquals("62", resultRef.get().getResources().get(5).getResourceIds().get(1));
+        assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getTasks().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getTasks().get(1).getResourceIds().get(1));
+        assertEquals("31", resultRef.get().getTasks().get(2).getResourceIds().get(0));
+        assertEquals("32", resultRef.get().getTasks().get(2).getResourceIds().get(1));
+        assertEquals("41", resultRef.get().getTasks().get(3).getResourceIds().get(0));
+        assertEquals("42", resultRef.get().getTasks().get(3).getResourceIds().get(1));
+        assertEquals("51", resultRef.get().getTasks().get(4).getResourceIds().get(0));
+        assertEquals("52", resultRef.get().getTasks().get(4).getResourceIds().get(1));
+        assertEquals("61", resultRef.get().getTasks().get(5).getResourceIds().get(0));
+        assertEquals("62", resultRef.get().getTasks().get(5).getResourceIds().get(1));
 
         while(dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 3) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -489,7 +490,7 @@ public class UpdateTaskConsumerTests {
         updatedTask3.setSparqlQueryRequest(sparqlQueryRequest);
 
         ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
-        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+        req.setTasks(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3)));
 
@@ -557,23 +558,24 @@ public class UpdateTaskConsumerTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('32')", storedTaskInfo3.getResourceUrls().get("32"));
 
         // Test what Enabler Logic receives
-        assertEquals(3, resultRef.get().getResources().size());
-        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(3, resultRef.get().getTasks().size());
+        assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
 
         assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
+        assertEquals("ALL the update task requests were successful!", resultRef.get().getMessage());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(2).getStatus());
 
 
-        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
-        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
-        assertEquals("sparqlResource1", resultRef.get().getResources().get(1).getResourceIds().get(0));
-        assertEquals("sparqlResource2", resultRef.get().getResources().get(1).getResourceIds().get(1));
-        assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
-        assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
+        assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
+        assertEquals("sparqlResource1", resultRef.get().getTasks().get(1).getResourceIds().get(0));
+        assertEquals("sparqlResource2", resultRef.get().getTasks().get(1).getResourceIds().get(1));
+        assertEquals("31", resultRef.get().getTasks().get(2).getResourceIds().get(0));
+        assertEquals("32", resultRef.get().getTasks().get(2).getResourceIds().get(1));
 
         while(dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 1) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -616,9 +618,9 @@ public class UpdateTaskConsumerTests {
         final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
 
         ResourceManagerUpdateRequest query = TestHelper.createValidUpdateQueryToResourceManager(2);
-        Field queryIntervalField = query.getResources().get(1).getClass().getDeclaredField("queryInterval");
+        Field queryIntervalField = query.getTasks().get(1).getClass().getDeclaredField("queryInterval");
         queryIntervalField.setAccessible(true);
-        queryIntervalField.set(query.getResources().get(1), "10s");
+        queryIntervalField.set(query.getTasks().get(1), "10s");
 
         log.info("Before sending the message");
         RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
@@ -635,6 +637,8 @@ public class UpdateTaskConsumerTests {
 
         // Test what Enabler Logic receives
         assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+        assertEquals(true,
+                resultRef.get().getMessage().contains(IllegalArgumentException.class.getName() + ": Invalid format:"));
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -660,9 +664,9 @@ public class UpdateTaskConsumerTests {
         final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
 
         ResourceManagerUpdateRequest query = TestHelper.createValidUpdateQueryToResourceManager(2);
-        Field cachingIntervalField = query.getResources().get(1).getClass().getDeclaredField("cachingInterval");
+        Field cachingIntervalField = query.getTasks().get(1).getClass().getDeclaredField("cachingInterval");
         cachingIntervalField.setAccessible(true);
-        cachingIntervalField.set(query.getResources().get(1), "10s");
+        cachingIntervalField.set(query.getTasks().get(1), "10s");
 
         log.info("Before sending the message");
         RabbitConverterFuture<ResourceManagerUpdateResponse> future = asyncRabbitTemplate
@@ -679,6 +683,8 @@ public class UpdateTaskConsumerTests {
 
         // Test what Enabler Logic receives
         assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+        assertEquals(true,
+                resultRef.get().getMessage().contains(IllegalArgumentException.class.getName() + ": Invalid format:"));
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -744,7 +750,7 @@ public class UpdateTaskConsumerTests {
         updatedTask2.setInformPlatformProxy(false);
 
         ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
-        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+        req.setTasks(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2)));
 
 
@@ -795,18 +801,19 @@ public class UpdateTaskConsumerTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('22')", storedTaskInfo2.getResourceUrls().get("22"));
 
         // Test what Enabler Logic receives
-        assertEquals(2, resultRef.get().getResources().size());
-        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().size());
+        assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
 
         assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
+        assertEquals("ALL the update task requests were successful!", resultRef.get().getMessage());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
 
-        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
-        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
-        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
-        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
+        assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getTasks().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getTasks().get(1).getResourceIds().get(1));
 
         while(dummyPlatformProxyListener.cancelTaskRequestsReceived() < 1) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -875,7 +882,7 @@ public class UpdateTaskConsumerTests {
         updatedTask2.setInformPlatformProxy(true);
 
         ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
-        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+        req.setTasks(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2)));
 
 
@@ -926,18 +933,19 @@ public class UpdateTaskConsumerTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('22')", storedTaskInfo2.getResourceUrls().get("22"));
 
         // Test what Enabler Logic receives
-        assertEquals(2, resultRef.get().getResources().size());
-        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().size());
+        assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
 
         assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
+        assertEquals("ALL the update task requests were successful!", resultRef.get().getMessage());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
 
-        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
-        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
-        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
-        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
+        assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getTasks().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getTasks().get(1).getResourceIds().get(1));
 
         while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 2) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -1082,7 +1090,7 @@ public class UpdateTaskConsumerTests {
         updatedTask4.getCoreQueryRequest().setLocation_name("Paris");
 
         ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
-        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+        req.setTasks(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3),
                 new ResourceManagerTaskInfoRequest(updatedTask4)));
@@ -1170,27 +1178,28 @@ public class UpdateTaskConsumerTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo4.getResourceUrls().get("resource2"));
 
         // Test what Enabler Logic receives
-        assertEquals(4, resultRef.get().getResources().size());
-        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(1).getResourceIds().size());
-        assertEquals(3, resultRef.get().getResources().get(2).getResourceIds().size());
-        assertEquals(2, resultRef.get().getResources().get(3).getResourceIds().size());
+        assertEquals(4, resultRef.get().getTasks().size());
+        assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
+        assertEquals(3, resultRef.get().getTasks().get(2).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(3).getResourceIds().size());
 
         assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(2).getStatus());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(3).getStatus());
+        assertEquals("ALL the update task requests were successful!", resultRef.get().getMessage());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(2).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(3).getStatus());
 
-        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
-        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
-        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
-        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
-        assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
-        assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
-        assertEquals("resource1", resultRef.get().getResources().get(2).getResourceIds().get(2));
-        assertEquals("resource1", resultRef.get().getResources().get(3).getResourceIds().get(0));
-        assertEquals("resource2", resultRef.get().getResources().get(3).getResourceIds().get(1));
+        assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getTasks().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getTasks().get(1).getResourceIds().get(1));
+        assertEquals("31", resultRef.get().getTasks().get(2).getResourceIds().get(0));
+        assertEquals("32", resultRef.get().getTasks().get(2).getResourceIds().get(1));
+        assertEquals("resource1", resultRef.get().getTasks().get(2).getResourceIds().get(2));
+        assertEquals("resource1", resultRef.get().getTasks().get(3).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(3).getResourceIds().get(1));
 
         while (dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 2) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -1324,7 +1333,7 @@ public class UpdateTaskConsumerTests {
         updatedTask5.setMinNoResources(2);
 
         ResourceManagerUpdateRequest req = new ResourceManagerUpdateRequest();
-        req.setResources(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
+        req.setTasks(Arrays.asList(new ResourceManagerTaskInfoRequest(updatedTask1),
                 new ResourceManagerTaskInfoRequest(updatedTask2),
                 new ResourceManagerTaskInfoRequest(updatedTask3),
                 new ResourceManagerTaskInfoRequest(updatedTask4),
@@ -1425,34 +1434,35 @@ public class UpdateTaskConsumerTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('52')", storedTaskInfo5.getResourceUrls().get("52"));
 
         // Test what Enabler Logic receives
-        assertEquals(5, resultRef.get().getResources().size());
+        assertEquals(5, resultRef.get().getTasks().size());
         assertEquals(ResourceManagerTasksStatus.PARTIAL_SUCCESS, resultRef.get().getStatus());
-        assertEquals(2, resultRef.get().getResources().get(0).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(0).getStatus());
-        assertEquals(3, resultRef.get().getResources().get(1).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(1).getStatus());
-        assertEquals(4, resultRef.get().getResources().get(2).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(2).getStatus());
-        assertEquals(4, resultRef.get().getResources().get(3).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getResources().get(3).getStatus());
-        assertEquals(2, resultRef.get().getResources().get(4).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getResources().get(4).getStatus());
+        assertEquals("Failed update tasks id : [3, 4]", resultRef.get().getMessage());
+        assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals(3, resultRef.get().getTasks().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals(4, resultRef.get().getTasks().get(2).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getTasks().get(2).getStatus());
+        assertEquals(4, resultRef.get().getTasks().get(3).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getTasks().get(3).getStatus());
+        assertEquals(2, resultRef.get().getTasks().get(4).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(4).getStatus());
 
-        assertEquals("resource1", resultRef.get().getResources().get(0).getResourceIds().get(0));
-        assertEquals("resource2", resultRef.get().getResources().get(0).getResourceIds().get(1));
-        assertEquals("21", resultRef.get().getResources().get(1).getResourceIds().get(0));
-        assertEquals("22", resultRef.get().getResources().get(1).getResourceIds().get(1));
-        assertEquals("3", resultRef.get().getResources().get(1).getResourceIds().get(2));
-        assertEquals("31", resultRef.get().getResources().get(2).getResourceIds().get(0));
-        assertEquals("32", resultRef.get().getResources().get(2).getResourceIds().get(1));
-        assertEquals("3", resultRef.get().getResources().get(2).getResourceIds().get(2));
-        assertEquals("4", resultRef.get().getResources().get(2).getResourceIds().get(3));
-        assertEquals("41", resultRef.get().getResources().get(3).getResourceIds().get(0));
-        assertEquals("42", resultRef.get().getResources().get(3).getResourceIds().get(1));
-        assertEquals("3", resultRef.get().getResources().get(3).getResourceIds().get(2));
-        assertEquals("4", resultRef.get().getResources().get(3).getResourceIds().get(3));
-        assertEquals("51", resultRef.get().getResources().get(4).getResourceIds().get(0));
-        assertEquals("52", resultRef.get().getResources().get(4).getResourceIds().get(1));
+        assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
+        assertEquals("21", resultRef.get().getTasks().get(1).getResourceIds().get(0));
+        assertEquals("22", resultRef.get().getTasks().get(1).getResourceIds().get(1));
+        assertEquals("3", resultRef.get().getTasks().get(1).getResourceIds().get(2));
+        assertEquals("31", resultRef.get().getTasks().get(2).getResourceIds().get(0));
+        assertEquals("32", resultRef.get().getTasks().get(2).getResourceIds().get(1));
+        assertEquals("3", resultRef.get().getTasks().get(2).getResourceIds().get(2));
+        assertEquals("4", resultRef.get().getTasks().get(2).getResourceIds().get(3));
+        assertEquals("41", resultRef.get().getTasks().get(3).getResourceIds().get(0));
+        assertEquals("42", resultRef.get().getTasks().get(3).getResourceIds().get(1));
+        assertEquals("3", resultRef.get().getTasks().get(3).getResourceIds().get(2));
+        assertEquals("4", resultRef.get().getTasks().get(3).getResourceIds().get(3));
+        assertEquals("51", resultRef.get().getTasks().get(4).getResourceIds().get(0));
+        assertEquals("52", resultRef.get().getTasks().get(4).getResourceIds().get(1));
 
         while (dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 2) {
             TimeUnit.MILLISECONDS.sleep(100);
