@@ -10,6 +10,7 @@ import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformPro
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCancelCallback;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +19,8 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 
@@ -55,7 +58,7 @@ public class CancelTaskConsumerTests {
             .getLogger(CancelTaskConsumerTests.class);
 
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private AsyncRabbitTemplate asyncRabbitTemplate;
 
     @Autowired
     private TaskInfoRepository taskInfoRepository;
@@ -94,9 +97,104 @@ public class CancelTaskConsumerTests {
     }
 
     @Test
-    public void cancelTaskTest() throws Exception {
-        log.info("cancelTaskTest STARTED!");
+    public void successfulCancelTaskTest() throws Exception {
+        log.info("successfulCancelTaskTest STARTED!");
 
+        final AtomicReference<CancelTaskResponse> resultRef = new AtomicReference<>();
+        List<CancelTaskRequest> cancelTaskRequestArrayList = null;
+
+        CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
+                .locationName("Zurich")
+                .observedProperty(Arrays.asList("temperature", "humidity"))
+                .build();
+
+        List<String> resourceIds = Arrays.asList("1", "2");
+        List<String> storedResourceIds = Arrays.asList("3", "4");
+
+        Map<String, String> resourceUrls1 = new HashMap<>();
+        resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
+        resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
+
+        TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
+                true, "P0-0-0T0:0:1", true,
+                "TestEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+        taskInfoRepository.save(task1);
+
+        TaskInfo task2 = new TaskInfo(task1);
+        task2.setTaskId("2");
+        task2.setInformPlatformProxy(false);
+        taskInfoRepository.save(task2);
+
+        TaskInfo task3 = new TaskInfo(task1);
+        task3.setTaskId("3");
+        taskInfoRepository.save(task3);
+
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(2, taskInfo.getResourceIds().size());
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(false, taskInfo.getInformPlatformProxy());
+
+        taskInfo = taskInfoRepository.findByTaskId("3");
+        assertEquals(true, taskInfo.getInformPlatformProxy());
+
+        CancelTaskRequest cancelTaskRequest = new CancelTaskRequest();
+        cancelTaskRequest.setTaskIdList(Arrays.asList("1", "2", "3"));
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<CancelTaskResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, cancelTaskRoutingKey, cancelTaskRequest);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCancelCallback("successfulCancelTaskTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(CancelTaskResponseStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals("ALL tasks were deleted!", resultRef.get().getMessage());
+
+        // Test the database
+        taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("3");
+        assertEquals(null, taskInfo);
+
+        taskInfo = taskInfoRepository.findByTaskId("4");
+        assertEquals(null, taskInfo);
+
+        while (dummyPlatformProxyListener.cancelTaskRequestsReceived() == 0) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+
+        cancelTaskRequestArrayList = dummyPlatformProxyListener.getCancelTaskRequestsReceivedByListener();
+        assertEquals(1, cancelTaskRequestArrayList.size());
+        assertEquals(2, cancelTaskRequestArrayList.get(0).getTaskIdList().size());
+        assertEquals("1", cancelTaskRequestArrayList.get(0).getTaskIdList().get(0));
+        assertEquals("3", cancelTaskRequestArrayList.get(0).getTaskIdList().get(1));
+
+        log.info("successfulCancelTaskTest FINISHED!");
+    }
+
+    @Test
+    public void cancelTaskWithNonExistentTasksTest() throws Exception {
+        log.info("cancelTaskWithNonExistentTasksTest STARTED!");
+
+        final AtomicReference<CancelTaskResponse> resultRef = new AtomicReference<>();
         List<CancelTaskRequest> cancelTaskRequestArrayList = null;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -144,15 +242,23 @@ public class CancelTaskConsumerTests {
         cancelTaskRequest.setTaskIdList(Arrays.asList("1", "2", "3", "4"));
 
         log.info("Before sending the message");
-        rabbitTemplate.convertAndSend(resourceManagerExchangeName, cancelTaskRoutingKey, cancelTaskRequest);
+        RabbitConverterFuture<CancelTaskResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, cancelTaskRoutingKey, cancelTaskRequest);
         log.info("After sending the message");
 
-        while (dummyPlatformProxyListener.cancelTaskRequestsReceived() == 0) {
+        future.addCallback(new ListenableFutureCancelCallback("cancelTaskWithNonExistentTasksTest", resultRef));
+
+        while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
         // Added extra delay to make sure that the message is handled
         TimeUnit.MILLISECONDS.sleep(100);
 
+        // Test what Enabler Logic receives
+        assertEquals(CancelTaskResponseStatus.NOT_ALL_TASKS_EXIST, resultRef.get().getStatus());
+        assertEquals("Non-existent task ids : [3]", resultRef.get().getMessage());
+
+        // Test the database
         taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(null, taskInfo);
 
@@ -165,20 +271,27 @@ public class CancelTaskConsumerTests {
         taskInfo = taskInfoRepository.findByTaskId("4");
         assertEquals(null, taskInfo);
 
-        cancelTaskRequestArrayList = dummyPlatformProxyListener.getCancelTaskRequestsReceivedByListener();
+        while (dummyPlatformProxyListener.cancelTaskRequestsReceived() == 0) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
 
+
+        cancelTaskRequestArrayList = dummyPlatformProxyListener.getCancelTaskRequestsReceivedByListener();
         assertEquals(1, cancelTaskRequestArrayList.size());
         assertEquals(2, cancelTaskRequestArrayList.get(0).getTaskIdList().size());
         assertEquals("1", cancelTaskRequestArrayList.get(0).getTaskIdList().get(0));
         assertEquals("4", cancelTaskRequestArrayList.get(0).getTaskIdList().get(1));
 
-        log.info("cancelTaskTest FINISHED!");
+        log.info("cancelTaskWithNonExistentTasksTest FINISHED!");
     }
 
     @Test
     public void cancelTaskEmptyResponseListTest() throws Exception {
-        log.info("cancelTaskTest STARTED!");
+        log.info("cancelTaskEmptyResponseListTest STARTED!");
 
+        final AtomicReference<CancelTaskResponse> resultRef = new AtomicReference<>();
         List<CancelTaskRequest> cancelTaskRequestArrayList = null;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
@@ -226,11 +339,23 @@ public class CancelTaskConsumerTests {
         cancelTaskRequest.setTaskIdList(Arrays.asList("2", "3"));
 
         log.info("Before sending the message");
-        rabbitTemplate.convertAndSend(resourceManagerExchangeName, cancelTaskRoutingKey, cancelTaskRequest);
+        RabbitConverterFuture<CancelTaskResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, cancelTaskRoutingKey, cancelTaskRequest);
         log.info("After sending the message");
 
-        TimeUnit.MILLISECONDS.sleep(500);
+        future.addCallback(new ListenableFutureCancelCallback("cancelTaskEmptyResponseListTest", resultRef));
 
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(CancelTaskResponseStatus.NOT_ALL_TASKS_EXIST, resultRef.get().getStatus());
+        assertEquals("Non-existent task ids : [3]", resultRef.get().getMessage());
+
+        // Test the database
         taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
 
@@ -246,6 +371,31 @@ public class CancelTaskConsumerTests {
         cancelTaskRequestArrayList = dummyPlatformProxyListener.getCancelTaskRequestsReceivedByListener();
         assertEquals(0, cancelTaskRequestArrayList.size());
 
-        log.info("cancelTaskTest FINISHED!");
+        log.info("cancelTaskEmptyResponseListTest FINISHED!");
+    }
+
+    @Test
+    public void deserializationErrorTest() throws Exception {
+        log.info("deserializationErrorTest STARTED!");
+
+        final AtomicReference<CancelTaskResponse> resultRef = new AtomicReference<>();
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<CancelTaskResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, cancelTaskRoutingKey, new CancelTaskResponse());
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureCancelCallback("deserializationErrorTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(CancelTaskResponseStatus.FAILED, resultRef.get().getStatus());
+
+        log.info("deserializationErrorTest FINISHED!");
     }
 }

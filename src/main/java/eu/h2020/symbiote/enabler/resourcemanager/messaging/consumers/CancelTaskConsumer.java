@@ -8,6 +8,8 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponse;
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponseStatus;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -20,6 +22,7 @@ import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Created by vasgl on 7/18/2017.
@@ -68,6 +71,8 @@ public class CancelTaskConsumer extends DefaultConsumer {
         ObjectMapper mapper = new ObjectMapper();
         String requestInString = new String(body, "UTF-8");
         CancelTaskRequest cancelTaskRequestToPlatformProxy = new CancelTaskRequest();
+        CancelTaskResponse cancelTaskResponse = new CancelTaskResponse();
+        ArrayList<String> nonExistentTasks = new ArrayList<>();
 
         log.info("Received CancelTaskRequest: " + requestInString);
 
@@ -78,16 +83,65 @@ public class CancelTaskConsumer extends DefaultConsumer {
                 TaskInfo taskInfo = taskInfoRepository.findByTaskId(id);
 
                 if (taskInfo != null) {
-                    log.info("Task with id = " + id + " was deleted.");
+                    log.info("The task with id = " + id + " was deleted.");
                     taskInfoRepository.delete(taskInfo);
 
                     if (taskInfo.getInformPlatformProxy())
                         cancelTaskRequestToPlatformProxy.getTaskIdList().add(taskInfo.getTaskId());
+                } else {
+                    log.info("The task with id = " + id + " does not exist.");
+                    nonExistentTasks.add(id);
                 }
             }
         } catch (JsonParseException | JsonMappingException e) {
             log.error("Error occurred during deserializing CancelTaskRequest", e);
+
+            CancelTaskResponse errorResponse = new CancelTaskResponse();
+            errorResponse.setStatus(CancelTaskResponseStatus.FAILED);
+            errorResponse.setMessage(e.toString());
+
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
+        } catch (Exception e) {
+            log.error("Error occurred during deserializing CancelTaskRequest", e);
+
+            CancelTaskResponse errorResponse = new CancelTaskResponse();
+            errorResponse.setStatus(CancelTaskResponseStatus.FAILED);
+            errorResponse.setMessage(e.toString());
+
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
         }
+
+        // Inform Enabler Logic
+        if (nonExistentTasks.size() == 0) {
+            cancelTaskResponse.setStatus(CancelTaskResponseStatus.SUCCESS);
+            cancelTaskResponse.setMessage("ALL tasks were deleted!");
+        } else {
+            String message = "Non-existent task ids : [";
+
+            for (String id : nonExistentTasks) {
+                message += id + ", ";
+            }
+            message = message.substring(0, message.length() - 2);
+            message += "]";
+
+            cancelTaskResponse.setStatus(CancelTaskResponseStatus.NOT_ALL_TASKS_EXIST);
+            cancelTaskResponse.setMessage(message);
+        }
+
+        rabbitTemplate.convertAndSend(properties.getReplyTo(), cancelTaskResponse,
+                m -> {
+                    m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                    return m;
+                });
+
 
         // Inform Platform Proxy
         if (cancelTaskRequestToPlatformProxy.getTaskIdList().size() > 0) {

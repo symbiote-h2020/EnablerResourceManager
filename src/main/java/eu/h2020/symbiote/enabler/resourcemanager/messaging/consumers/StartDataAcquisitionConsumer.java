@@ -161,7 +161,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 rabbitTemplate.convertAndSend(platformProxyExchange, platformProxyAcquisitionStartRequestedRoutingKey, req);
             }
         } catch (JsonParseException | JsonMappingException e) {
-            log.error("Error occurred during deserializing ResourceManagerUpdateRequest", e);
+            log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
 
             ResourceManagerAcquisitionStartResponse errorResponse = new ResourceManagerAcquisitionStartResponse();
             StringWriter sw = new StringWriter();
@@ -176,6 +176,18 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 errorResponse.setStatus(ResourceManagerTasksStatus.FAILED);
                 errorResponse.setMessage(e.toString());
             }
+
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
+        } catch (Exception e) {
+            log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
+
+            ResourceManagerAcquisitionStartResponse errorResponse = new ResourceManagerAcquisitionStartResponse();
+            errorResponse.setStatus(ResourceManagerTasksStatus.FAILED);
+            errorResponse.setMessage(e.toString());
 
             rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
                     m -> {

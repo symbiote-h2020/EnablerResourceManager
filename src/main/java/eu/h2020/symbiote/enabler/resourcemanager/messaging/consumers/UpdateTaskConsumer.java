@@ -337,9 +337,6 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 response.setMessage(message);
             }
 
-
-
-            // Sending response to EnablerLogic
             response.setTasks(resourceManagerTaskInfoResponseList);
             rabbitTemplate.convertAndSend(properties.getReplyTo(), response,
                     m -> {
@@ -379,6 +376,18 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 errorResponse.setStatus(ResourceManagerTasksStatus.FAILED);
                 errorResponse.setMessage(e.toString());
             }
+
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
+        } catch (Exception e) {
+            log.error("Error occurred during deserializing ResourceManagerUpdateRequest", e);
+
+            ResourceManagerAcquisitionStartResponse errorResponse = new ResourceManagerAcquisitionStartResponse();
+            errorResponse.setStatus(ResourceManagerTasksStatus.FAILED);
+            errorResponse.setMessage(e.toString());
 
             rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
                     m -> {
