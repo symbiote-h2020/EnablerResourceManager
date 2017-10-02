@@ -91,8 +91,6 @@ public class PlatformProxyConnectionProblemConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
-        taskInfoRepository.deleteAll();
-
         doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
     }
 

@@ -104,8 +104,6 @@ public class CancelTaskConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
-        taskInfoRepository.deleteAll();
-
     }
 
     @After

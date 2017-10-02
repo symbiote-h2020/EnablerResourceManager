@@ -122,3 +122,8 @@ dependencyCheck {
 
 // including code quality extensions into the build
 check.dependsOn(jacocoTestReport, 'dependencyCheck')
+
+test{
+
+    forkEvery = 1
+}
