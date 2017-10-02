@@ -53,8 +53,13 @@ import static org.mockito.Mockito.doReturn;
         properties = {"eureka.client.enabled=false",
                 "spring.sleuth.enabled=false",
                 "symbiote.core.url=http://localhost:8080",
-                "symbiote.coreaam.url=http://localhost:8080"}
-)
+                "symbiote.coreaam.url=http://localhost:8080",
+                "symbiote.enabler.rm.database=symbiote-enabler-rm-database-utct",
+                "rabbit.queueName.resourceManager.startDataAcquisition=symbIoTe-resourceManager-startDataAcquisition-utct",
+                "rabbit.queueName.resourceManager.cancelTask=symbIoTe-resourceManager-cancelTask-utct",
+                "rabbit.queueName.resourceManager.unavailableResources=symbIoTe-resourceManager-unavailableResources-utct",
+                "rabbit.queueName.resourceManager.wrongData=symbIoTe-resourceManager-wrongData-utct",
+                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-utct"})
 @ContextConfiguration
 @Configuration
 @ComponentScan
@@ -103,6 +108,7 @@ public class UpdateTaskConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
+        taskInfoRepository.deleteAll();
 
         doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
     }
@@ -382,7 +388,7 @@ public class UpdateTaskConsumerTests {
         boolean foundTask1 = false;
         boolean foundTask5 = false;
         boolean foundTask6 = false;
-        
+
         for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
 
             log.info("Task id = " + request.getTaskId());
@@ -972,7 +978,7 @@ public class UpdateTaskConsumerTests {
 
         boolean foundTask1 = false;
         boolean foundTask2 = false;
-        
+
         for (PlatformProxyAcquisitionStartRequest request : startAcquisitionRequestsReceivedByListener) {
 
             log.info("Task id = " + request.getTaskId());
@@ -1010,7 +1016,7 @@ public class UpdateTaskConsumerTests {
 
         assertEquals(true, foundTask1);
         assertEquals(true, foundTask2);
-        
+
         log.info("updateTaskWithInformPlatformProxyBecomingTrueTest FINISHED!");
     }
 
@@ -1227,7 +1233,7 @@ public class UpdateTaskConsumerTests {
 
         boolean foundTask1 = false;
         boolean foundTask4 = false;
-        
+
         for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
 
             log.info("Task id = " + request.getTaskId());
@@ -1251,7 +1257,7 @@ public class UpdateTaskConsumerTests {
 
         assertEquals(true, foundTask1);
         assertEquals(true, foundTask4);
-        
+
         log.info("updateTaskWithAllowCachingBecomingFalseTest FINISHED!");
     }
 
@@ -1490,7 +1496,7 @@ public class UpdateTaskConsumerTests {
 
         boolean foundTask2 = false;
         boolean foundTask5 = false;
-        
+
         for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
 
             log.info("Task id = " + request.getTaskId());
@@ -1532,7 +1538,7 @@ public class UpdateTaskConsumerTests {
 
         assertEquals(true, foundTask2);
         assertEquals(true, foundTask5);
-        
+
         log.info("changeInMinNoResourcesTest FINISHED!");
     }
 

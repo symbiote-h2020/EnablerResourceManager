@@ -66,7 +66,7 @@ public class DummyPlatformProxyListener {
 
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(value = "symbIoTe-pl-acquisitionStartRequested", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
-                    autoDelete = "${rabbit.exchange.enablerPlatformProxy.autodelete}", exclusive = "true"),
+                    autoDelete = "true", exclusive = "false"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
                     internal = "${rabbit.exchange.enablerPlatformProxy.internal}", type = "${rabbit.exchange.enablerPlatformProxy.type}"),
@@ -95,7 +95,7 @@ public class DummyPlatformProxyListener {
 
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(value = "symbIoTe-pl-cancelTasks", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
-                    autoDelete = "${rabbit.exchange.enablerPlatformProxy.autodelete}", exclusive = "true"),
+                    autoDelete = "true", exclusive = "false"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
                     internal = "${rabbit.exchange.enablerPlatformProxy.internal}", type = "${rabbit.exchange.enablerPlatformProxy.type}"),
@@ -123,7 +123,7 @@ public class DummyPlatformProxyListener {
 
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(value = "symbIoTe-pl-acquisitionUpdateRequested", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
-                    autoDelete = "${rabbit.exchange.enablerPlatformProxy.autodelete}", exclusive = "true"),
+                    autoDelete = "true", exclusive = "false"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
                     internal = "${rabbit.exchange.enablerPlatformProxy.internal}", type = "${rabbit.exchange.enablerPlatformProxy.type}"),

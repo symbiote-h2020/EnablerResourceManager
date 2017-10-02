@@ -9,10 +9,11 @@ import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
+import eu.h2020.symbiote.enabler.resourcemanager.model.ScheduledTaskInfoUpdate;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskResponseToComponents;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
-import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
 import eu.h2020.symbiote.util.IntervalFormatter;
 
 import org.apache.commons.logging.Log;
@@ -28,8 +29,10 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
 
 /**
  * Created by vasgl on 7/20/2017.
@@ -42,10 +45,13 @@ public class SearchHelper {
     private String symbIoTeCoreUrl;
     private RestTemplate restTemplate;
     private AuthorizationManager authorizationManager;
+    private Timer timer;
+    private Map<String, ScheduledTaskInfoUpdate> scheduledTaskInfoUpdateMap = new HashMap<>();
+    private TaskInfoRepository taskInfoRepository;
 
     @Autowired
     private SearchHelper(@Qualifier("symbIoTeCoreUrl") String symbIoTeCoreUrl, RestTemplate restTemplate,
-                         AuthorizationManager authorizationManager) {
+                         AuthorizationManager authorizationManager, TaskInfoRepository taskInfoRepository) {
 
         Assert.notNull(symbIoTeCoreUrl,"symbIoTeCoreUrl can not be null!");
         this.symbIoTeCoreUrl = symbIoTeCoreUrl;
@@ -55,6 +61,14 @@ public class SearchHelper {
 
         Assert.notNull(authorizationManager,"AuthorizationManager can not be null!");
         this.authorizationManager = authorizationManager;
+
+        Assert.notNull(taskInfoRepository,"TaskInfoRepository can not be null!");
+        this.taskInfoRepository = taskInfoRepository;
+
+        this.timer = new Timer();
+        startTimer();
+
+        loadTaskInfo();
     }
 
     public String querySingleResource (String resourceId)  {
@@ -168,8 +182,11 @@ public class SearchHelper {
         }
 
         TaskInfo taskInfo = new TaskInfo(taskInfoResponse);
-        if (taskInfoRequest.getAllowCaching())
+        if (taskInfoRequest.getAllowCaching()) {
             taskInfo.calculateStoredResourceIds(queryResponse);
+            configureTaskTimer(taskInfo);
+        }
+
         if (taskResponseToComponents != null &&
                 (taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS ||
                 taskInfoResponse.getStatus() == ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES))
@@ -179,6 +196,63 @@ public class SearchHelper {
         queryAndProcessSearchResponseResult.setTaskInfo(taskInfo);
 
         return queryAndProcessSearchResponseResult;
+    }
+
+    public void restartTimer() {
+        cancelTimer();
+        startTimer();
+    }
+
+    public void startTimer() {
+        timer = new Timer();
+    }
+
+    public void cancelTimer() {
+        timer.cancel();
+        timer.purge();
+
+        for (Map.Entry<String, ScheduledTaskInfoUpdate> entry : scheduledTaskInfoUpdateMap.entrySet()) {
+            entry.getValue().cancel();
+            scheduledTaskInfoUpdateMap.remove(entry.getKey());
+        }
+    }
+
+    public void configureTaskTimer(TaskInfo taskInfo) {
+        ScheduledTaskInfoUpdate oldScheduledTaskInfoUpdate = scheduledTaskInfoUpdateMap.get(taskInfo.getTaskId());
+        if (oldScheduledTaskInfoUpdate != null) {
+            oldScheduledTaskInfoUpdate.cancel();
+            scheduledTaskInfoUpdateMap.remove(taskInfo.getTaskId());
+        }
+
+        ScheduledTaskInfoUpdate newScheduledTaskInfoUpdate = new ScheduledTaskInfoUpdate(taskInfoRepository,
+                this, taskInfo);
+        long delay = new IntervalFormatter(taskInfo.getCachingInterval()).getMillis();
+        timer.schedule(newScheduledTaskInfoUpdate, delay);
+
+        scheduledTaskInfoUpdateMap.put(taskInfo.getTaskId(), newScheduledTaskInfoUpdate);
+    }
+
+    public void removeTaskTimer(String taskInfoId) {
+        if (scheduledTaskInfoUpdateMap.get(taskInfoId) != null) {
+            scheduledTaskInfoUpdateMap.get(taskInfoId).cancel();
+            scheduledTaskInfoUpdateMap.remove(taskInfoId);
+        }
+    }
+
+    private void loadTaskInfo() {
+
+    }
+
+
+    public Timer getTimer() { return timer; }
+    public void setTimer(Timer timer) { this.timer = timer; }
+
+    public Map<String, ScheduledTaskInfoUpdate> getScheduledTaskInfoUpdateMap() {
+        return scheduledTaskInfoUpdateMap;
+    }
+
+    public void setScheduledTaskInfoUpdateMap(Map<String, ScheduledTaskInfoUpdate> scheduledTaskInfoUpdateMap) {
+        this.scheduledTaskInfoUpdateMap = scheduledTaskInfoUpdateMap;
     }
 
     private TaskResponseToComponents processSearchResponse(QueryResponse queryResponse, ResourceManagerTaskInfoRequest taskInfoRequest) {

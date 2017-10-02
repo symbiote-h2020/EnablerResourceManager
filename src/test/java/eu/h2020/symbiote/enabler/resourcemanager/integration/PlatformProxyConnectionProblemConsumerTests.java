@@ -39,8 +39,13 @@ import static org.mockito.Mockito.doReturn;
         properties = {"eureka.client.enabled=false",
                 "spring.sleuth.enabled=false",
                 "symbiote.core.url=http://localhost:8080",
-                "symbiote.coreaam.url=http://localhost:8080"}
-)
+                "symbiote.coreaam.url=http://localhost:8080",
+                "symbiote.enabler.rm.database=symbiote-enabler-rm-database-ppcpct",
+                "rabbit.queueName.resourceManager.startDataAcquisition=symbIoTe-resourceManager-startDataAcquisition-ppcpct",
+                "rabbit.queueName.resourceManager.cancelTask=symbIoTe-resourceManager-cancelTask-ppcpct",
+                "rabbit.queueName.resourceManager.unavailableResources=symbIoTe-resourceManager-unavailableResources-ppcpct",
+                "rabbit.queueName.resourceManager.wrongData=symbIoTe-resourceManager-wrongData-ppcpct",
+                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-ppcpct"})
 @ContextConfiguration
 @Configuration
 @ComponentScan
@@ -81,6 +86,7 @@ public class PlatformProxyConnectionProblemConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
+        taskInfoRepository.deleteAll();
 
         doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
     }

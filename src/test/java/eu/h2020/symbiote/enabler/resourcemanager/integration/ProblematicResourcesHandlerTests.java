@@ -36,8 +36,13 @@ import static org.junit.Assert.assertEquals;
         properties = {"eureka.client.enabled=false",
                 "spring.sleuth.enabled=false",
                 "symbiote.core.url=http://localhost:8080",
-                "symbiote.coreaam.url=http://localhost:8080"}
-)
+                "symbiote.coreaam.url=http://localhost:8080",
+                "symbiote.enabler.rm.database=symbiote-enabler-rm-database-prht",
+                "rabbit.queueName.resourceManager.startDataAcquisition=symbIoTe-resourceManager-startDataAcquisition-prht",
+                "rabbit.queueName.resourceManager.cancelTask=symbIoTe-resourceManager-cancelTask-prht",
+                "rabbit.queueName.resourceManager.unavailableResources=symbIoTe-resourceManager-unavailableResources-prht",
+                "rabbit.queueName.resourceManager.wrongData=symbIoTe-resourceManager-wrongData-prht",
+                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-prht"})
 @ContextConfiguration
 @Configuration
 @ComponentScan

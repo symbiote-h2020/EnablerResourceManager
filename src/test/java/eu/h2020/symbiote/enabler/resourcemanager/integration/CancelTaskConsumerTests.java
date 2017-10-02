@@ -50,8 +50,13 @@ import static org.junit.Assert.assertEquals;
         properties = {"eureka.client.enabled=false",
                 "spring.sleuth.enabled=false",
                 "symbiote.core.url=http://localhost:8080",
-                "symbiote.coreaam.url=http://localhost:8080"}
-)
+                "symbiote.coreaam.url=http://localhost:8080",
+                "symbiote.enabler.rm.database=symbiote-enabler-rm-database-ctct",
+                "rabbit.queueName.resourceManager.startDataAcquisition=symbIoTe-resourceManager-startDataAcquisition-ctct",
+                "rabbit.queueName.resourceManager.cancelTask=symbIoTe-resourceManager-cancelTask-ctct",
+                "rabbit.queueName.resourceManager.unavailableResources=symbIoTe-resourceManager-unavailableResources-ctct",
+                "rabbit.queueName.resourceManager.wrongData=symbIoTe-resourceManager-wrongData-ctct",
+                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-ctct"})
 @ContextConfiguration
 @Configuration
 @ComponentScan
@@ -94,6 +99,8 @@ public class CancelTaskConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
+        taskInfoRepository.deleteAll();
+
     }
 
     @After

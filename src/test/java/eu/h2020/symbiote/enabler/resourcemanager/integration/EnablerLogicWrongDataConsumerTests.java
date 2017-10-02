@@ -33,8 +33,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
         properties = {"eureka.client.enabled=false",
                 "spring.sleuth.enabled=false",
                 "symbiote.core.url=http://localhost:8080",
-                "symbiote.coreaam.url=http://localhost:8080"}
-)
+                "symbiote.coreaam.url=http://localhost:8080",
+                "symbiote.enabler.rm.database=symbiote-enabler-rm-database-enwdct",
+                "rabbit.queueName.resourceManager.startDataAcquisition=symbIoTe-resourceManager-startDataAcquisition-enwdct",
+                "rabbit.queueName.resourceManager.cancelTask=symbIoTe-resourceManager-cancelTask-enwdct",
+                "rabbit.queueName.resourceManager.unavailableResources=symbIoTe-resourceManager-unavailableResources-enwdct",
+                "rabbit.queueName.resourceManager.wrongData=symbIoTe-resourceManager-wrongData-enwdct",
+                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-enwdct"})
 @ContextConfiguration
 @Configuration
 @ComponentScan
@@ -72,6 +77,8 @@ public class EnablerLogicWrongDataConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
+        taskInfoRepository.deleteAll();
+
     }
 
     @After
