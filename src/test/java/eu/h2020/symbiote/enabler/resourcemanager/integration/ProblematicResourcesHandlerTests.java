@@ -42,7 +42,12 @@ import static org.junit.Assert.assertEquals;
                 "rabbit.queueName.resourceManager.cancelTask=symbIoTe-resourceManager-cancelTask-prht",
                 "rabbit.queueName.resourceManager.unavailableResources=symbIoTe-resourceManager-unavailableResources-prht",
                 "rabbit.queueName.resourceManager.wrongData=symbIoTe-resourceManager-wrongData-prht",
-                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-prht"})
+                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-prht",
+                "rabbit.queueName.pl.acquisitionStartRequested=symbIoTe-pl-acquisitionStartRequested-prht",
+                "rabbit.queueName.pl.taskUpdated=symbIoTe-pl-taskUpdated-prht",
+                "rabbit.queueName.pl.cancelTasks=symbIoTe-pl-cancelTasks-prht",
+                "rabbit.queueName.el.resourcesUpdated=symbIoTe-el-resourcesUpdated-prht",
+                "rabbit.queueName.el.notEnoughResources=symbIoTe-el-notEnoughResources-prht"})
 @ContextConfiguration
 @Configuration
 @ComponentScan

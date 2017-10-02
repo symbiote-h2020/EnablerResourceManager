@@ -60,7 +60,12 @@ import static org.mockito.Mockito.doReturn;
                 "rabbit.queueName.resourceManager.cancelTask=symbIoTe-resourceManager-cancelTask-sdact",
                 "rabbit.queueName.resourceManager.unavailableResources=symbIoTe-resourceManager-unavailableResources-sdact",
                 "rabbit.queueName.resourceManager.wrongData=symbIoTe-resourceManager-wrongData-sdact",
-                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-sdact"})
+                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-sdact",
+                "rabbit.queueName.pl.acquisitionStartRequested=symbIoTe-pl-acquisitionStartRequested-sdact",
+                "rabbit.queueName.pl.taskUpdated=symbIoTe-pl-taskUpdated-sdact",
+                "rabbit.queueName.pl.cancelTasks=symbIoTe-pl-cancelTasks-sdact",
+                "rabbit.queueName.el.resourcesUpdated=symbIoTe-el-resourcesUpdated-sdact",
+                "rabbit.queueName.el.notEnoughResources=symbIoTe-el-notEnoughResources-sdact"})
 @ContextConfiguration
 @Configuration
 @ComponentScan

@@ -39,7 +39,12 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
                 "rabbit.queueName.resourceManager.cancelTask=symbIoTe-resourceManager-cancelTask-enwdct",
                 "rabbit.queueName.resourceManager.unavailableResources=symbIoTe-resourceManager-unavailableResources-enwdct",
                 "rabbit.queueName.resourceManager.wrongData=symbIoTe-resourceManager-wrongData-enwdct",
-                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-enwdct"})
+                "rabbit.queueName.resourceManager.updateTask=symbIoTe-resourceManager-updateTask-enwdct",
+                "rabbit.queueName.pl.acquisitionStartRequested=symbIoTe-pl-acquisitionStartRequested-enwdct",
+                "rabbit.queueName.pl.taskUpdated=symbIoTe-pl-taskUpdated-enwdct",
+                "rabbit.queueName.pl.cancelTasks=symbIoTe-pl-cancelTasks-enwdct",
+                "rabbit.queueName.el.resourcesUpdated=symbIoTe-el-resourcesUpdated-enwdct",
+                "rabbit.queueName.el.notEnoughResources=symbIoTe-el-notEnoughResources-enwdct"})
 @ContextConfiguration
 @Configuration
 @ComponentScan

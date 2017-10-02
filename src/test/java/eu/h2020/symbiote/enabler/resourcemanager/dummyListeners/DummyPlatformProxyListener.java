@@ -65,8 +65,8 @@ public class DummyPlatformProxyListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "symbIoTe-pl-acquisitionStartRequested", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
-                    autoDelete = "true", exclusive = "false"),
+            value = @Queue(value = "${rabbit.queueName.pl.acquisitionStartRequested}", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
+                    autoDelete = "true", exclusive = "true"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
                     internal = "${rabbit.exchange.enablerPlatformProxy.internal}", type = "${rabbit.exchange.enablerPlatformProxy.type}"),
@@ -94,8 +94,8 @@ public class DummyPlatformProxyListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "symbIoTe-pl-cancelTasks", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
-                    autoDelete = "true", exclusive = "false"),
+            value = @Queue(value = "${rabbit.queueName.pl.taskUpdated}", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
+                    autoDelete = "true", exclusive = "true"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
                     internal = "${rabbit.exchange.enablerPlatformProxy.internal}", type = "${rabbit.exchange.enablerPlatformProxy.type}"),
@@ -122,8 +122,8 @@ public class DummyPlatformProxyListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "symbIoTe-pl-acquisitionUpdateRequested", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
-                    autoDelete = "true", exclusive = "false"),
+            value = @Queue(value = "${rabbit.queueName.pl.cancelTasks}", durable = "${rabbit.exchange.enablerPlatformProxy.durable}",
+                    autoDelete = "true", exclusive = "true"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerPlatformProxy.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerPlatformProxy.durable}", autoDelete  = "${rabbit.exchange.enablerPlatformProxy.autodelete}",
                     internal = "${rabbit.exchange.enablerPlatformProxy.internal}", type = "${rabbit.exchange.enablerPlatformProxy.type}"),
