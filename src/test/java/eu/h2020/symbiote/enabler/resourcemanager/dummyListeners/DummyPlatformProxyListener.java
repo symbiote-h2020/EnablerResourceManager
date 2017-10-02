@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyUpdateRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
+import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyUpdateRequest;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -25,8 +25,8 @@ import java.util.List;
  */
 @Component
 public class DummyPlatformProxyListener {
-    private static Logger log = LoggerFactory
-            .getLogger(DummyPlatformProxyListener.class);
+    private static Log log = LogFactory
+            .getLog(DummyPlatformProxyListener.class);
 
     private List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener = new ArrayList<>();
     private List<PlatformProxyUpdateRequest> updateAcquisitionRequestsReceivedByListener = new ArrayList<>();

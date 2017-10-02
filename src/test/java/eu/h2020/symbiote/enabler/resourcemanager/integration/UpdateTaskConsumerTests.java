@@ -3,13 +3,25 @@ package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
+import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
+import eu.h2020.symbiote.enabler.messaging.model.*;
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureUpdateCallback;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
@@ -22,19 +34,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
-import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
-import eu.h2020.symbiote.core.internal.CoreQueryRequest;
-import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
-import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureUpdateCallback;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -43,6 +45,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT,
@@ -55,10 +59,11 @@ import static org.junit.Assert.fail;
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
+@ActiveProfiles("test")
 public class UpdateTaskConsumerTests {
 
-    private static Logger log = LoggerFactory
-            .getLogger(UpdateTaskConsumerTests.class);
+    private static Log log = LogFactory
+            .getLog(UpdateTaskConsumerTests.class);
 
     @Autowired
     private AsyncRabbitTemplate asyncRabbitTemplate;
@@ -74,6 +79,9 @@ public class UpdateTaskConsumerTests {
 
     @Autowired
     private DummyEnablerLogicListener dummyEnablerLogicListener;
+
+    @Autowired
+    private AuthorizationManager authorizationManager;
 
     @Autowired
     @Qualifier("symbIoTeCoreUrl")
@@ -95,6 +103,8 @@ public class UpdateTaskConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
+
+        doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
     }
 
     @After

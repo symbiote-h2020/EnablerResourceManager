@@ -3,11 +3,14 @@ package eu.h2020.symbiote.enabler.resourcemanager.dummyListeners;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
@@ -134,8 +137,7 @@ public class DummyCoreInterfaceRestListeners {
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/sparqlQuery")
-    public ResponseEntity search(@RequestBody SparqlQueryRequest sparqlQuery,
-                                 @RequestHeader("X-Auth-Token") String token) {
+    public ResponseEntity search(@RequestBody SparqlQueryRequest sparqlQuery) {
 
         log.info("SPARQL Search request");
 
@@ -145,7 +147,7 @@ public class DummyCoreInterfaceRestListeners {
         ObjectMapper mapper = new ObjectMapper();
         QueryResponse response = new QueryResponse();
 
-        if (sparqlQuery != null && sparqlQuery.isValid() && token != null ) {
+        if (sparqlQuery != null && sparqlQuery.isValid()) {
             switch (sparqlQuery.getSparqlQuery()) {
                 case "Paris": {
                     ArrayList<QueryResourceResult> responseResources = new ArrayList<>();
@@ -219,7 +221,7 @@ public class DummyCoreInterfaceRestListeners {
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/resourceUrls")
-    public ResponseEntity getResourceUrls(@RequestParam("id") String resourceId, @RequestHeader("X-Auth-Token") String token) {
+    public ResponseEntity getResourceUrls(@RequestParam("id") String resourceId) {
         
         log.info("Requesting resource url for resource with id: " + resourceId);
 
@@ -227,7 +229,7 @@ public class DummyCoreInterfaceRestListeners {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        if (token != null && !resourceId.equals("badCRAMrespose")) {
+        if (!resourceId.equals("badCRAMrespose")) {
             if (!resourceId.equals("noCRAMurl"))
                 response.put(resourceId, symbIoTeCoreUrl + "/Sensors('" + resourceId + "')");
         } else {

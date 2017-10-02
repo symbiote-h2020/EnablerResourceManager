@@ -2,11 +2,13 @@ package eu.h2020.symbiote.enabler.resourcemanager.dummyListeners;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import eu.h2020.symbiote.enabler.messaging.model.NotEnoughResourcesAvailable;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourcesUpdated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
@@ -21,8 +23,7 @@ import java.util.List;
  */
 @Component
 public class DummyEnablerLogicListener {
-    private static Logger log = LoggerFactory
-            .getLogger(DummyEnablerLogicListener.class);
+    private static Log log = LogFactory.getLog(DummyEnablerLogicListener.class);
 
     private List<ResourcesUpdated> updateResourcesReceivedByListener = new ArrayList<>();
     private List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceivedByListener = new ArrayList<>();

@@ -1,10 +1,7 @@
 package eu.h2020.symbiote.enabler.resourcemanager.model;
 
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyTaskInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
-
-import java.util.ArrayList;
 
 /**
  * Created by vasgl on 7/20/2017.

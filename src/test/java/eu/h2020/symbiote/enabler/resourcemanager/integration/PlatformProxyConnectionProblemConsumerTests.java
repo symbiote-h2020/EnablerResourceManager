@@ -4,15 +4,17 @@ package eu.h2020.symbiote.enabler.resourcemanager.integration;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ProblematicResourcesTestHelper;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,8 +24,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.util.HashMap;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -37,10 +45,11 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
+@ActiveProfiles("test")
 public class PlatformProxyConnectionProblemConsumerTests {
 
-    private static Logger log = LoggerFactory
-            .getLogger(PlatformProxyConnectionProblemConsumerTests.class);
+    private static Log log = LogFactory
+            .getLog(PlatformProxyConnectionProblemConsumerTests.class);
 
     @Autowired
     private TaskInfoRepository taskInfoRepository;
@@ -53,6 +62,9 @@ public class PlatformProxyConnectionProblemConsumerTests {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private AuthorizationManager authorizationManager;
 
     @Autowired
     @Qualifier("symbIoTeCoreUrl")
@@ -69,6 +81,8 @@ public class PlatformProxyConnectionProblemConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
+
+        doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
     }
 
     @After

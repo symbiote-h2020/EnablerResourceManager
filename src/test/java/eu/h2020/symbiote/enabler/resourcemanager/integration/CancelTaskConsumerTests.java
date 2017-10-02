@@ -4,20 +4,23 @@ package eu.h2020.symbiote.enabler.resourcemanager.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
-import eu.h2020.symbiote.enabler.messaging.model.*;
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponse;
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponseStatus;
+import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCancelCallback;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
@@ -29,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -52,10 +56,11 @@ import static org.junit.Assert.assertEquals;
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
+@ActiveProfiles("test")
 public class CancelTaskConsumerTests {
 
-    private static Logger log = LoggerFactory
-            .getLogger(CancelTaskConsumerTests.class);
+    private static Log log = LogFactory
+            .getLog(CancelTaskConsumerTests.class);
 
     @Autowired
     private AsyncRabbitTemplate asyncRabbitTemplate;

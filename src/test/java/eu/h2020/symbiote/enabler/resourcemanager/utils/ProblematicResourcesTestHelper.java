@@ -7,8 +7,9 @@ import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformPro
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.*;
@@ -22,8 +23,8 @@ import static org.junit.Assert.fail;
  */
 public class ProblematicResourcesTestHelper {
 
-    private static Logger log = LoggerFactory
-            .getLogger(ProblematicResourcesTestHelper.class);
+    private static Log log = LogFactory
+            .getLog(ProblematicResourcesTestHelper.class);
 
     private ProblematicResourcesTestHelper() {
         // empty constructor

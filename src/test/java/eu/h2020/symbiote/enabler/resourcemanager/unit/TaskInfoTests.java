@@ -10,13 +10,10 @@ import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-
 import eu.h2020.symbiote.util.IntervalFormatter;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -30,9 +27,6 @@ import static org.junit.Assert.fail;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 public class TaskInfoTests {
-
-    private static Logger log = LoggerFactory
-            .getLogger(TaskInfoTests.class);
 
     @Test
     public void resourceManagerTaskInfoRequestConstructorTest() {
@@ -301,7 +295,6 @@ public class TaskInfoTests {
         boolean foundResource2 = false;
 
         for (PlatformProxyResourceInfo resourceInfo : platformProxyResourceInfoList) {
-            log.info("Resource id = " + resourceInfo.getResourceId());
 
             if (resourceInfo.getResourceId().equals("1")) {
                 assertEquals("http://1.com", resourceInfo.getAccessURL());

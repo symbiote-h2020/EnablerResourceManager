@@ -10,16 +10,17 @@ import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogi
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureAcquisitionStartCallback;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
@@ -31,17 +32,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -55,10 +60,11 @@ import static org.junit.Assert.assertEquals;
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
+@ActiveProfiles("test")
 public class StartDataAcquisitionConsumerTests {
 
-    private static Logger log = LoggerFactory
-            .getLogger(StartDataAcquisitionConsumerTests.class);
+    private static Log log = LogFactory
+            .getLog(StartDataAcquisitionConsumerTests.class);
 
     @Autowired
     private AsyncRabbitTemplate asyncRabbitTemplate;
@@ -71,6 +77,9 @@ public class StartDataAcquisitionConsumerTests {
 
     @Autowired
     private DummyEnablerLogicListener dummyEnablerLogicListener;
+
+    @Autowired
+    private AuthorizationManager authorizationManager;
 
     @Autowired
     @Qualifier("symbIoTeCoreUrl")
@@ -89,6 +98,9 @@ public class StartDataAcquisitionConsumerTests {
     public void setUp() throws Exception {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
+
+        doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
+
     }
 
     @After

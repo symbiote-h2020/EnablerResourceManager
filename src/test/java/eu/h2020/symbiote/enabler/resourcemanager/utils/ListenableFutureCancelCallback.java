@@ -2,9 +2,12 @@ package eu.h2020.symbiote.enabler.resourcemanager.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -16,8 +19,8 @@ import static org.junit.Assert.fail;
  */
 public class ListenableFutureCancelCallback implements ListenableFutureCallback<CancelTaskResponse> {
 
-    private static Logger log = LoggerFactory
-            .getLogger(ListenableFutureCancelCallback.class);
+    private static Log log = LogFactory
+            .getLog(ListenableFutureCancelCallback.class);
 
     private AtomicReference<CancelTaskResponse> resultRef;
     private String test;

@@ -3,17 +3,16 @@ package eu.h2020.symbiote.enabler.resourcemanager.integration;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
+import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ProblematicResourcesHandler;
 
-import org.junit.Before;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,6 +20,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -42,10 +42,11 @@ import static org.junit.Assert.assertEquals;
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
+@ActiveProfiles("test")
 public class ProblematicResourcesHandlerTests {
 
-    private static Logger log = LoggerFactory
-            .getLogger(ProblematicResourcesHandlerTests.class);
+    private static Log log = LogFactory
+            .getLog(ProblematicResourcesHandlerTests.class);
 
     @Autowired
     private ProblematicResourcesHandler problematicResourcesHandler;

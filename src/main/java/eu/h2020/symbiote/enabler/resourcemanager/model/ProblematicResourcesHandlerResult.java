@@ -1,9 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager.model;
 
 import eu.h2020.symbiote.enabler.messaging.model.NotEnoughResourcesAvailable;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
-
-import java.util.List;
 
 /**
  * Created by vasgl on 7/20/2017.

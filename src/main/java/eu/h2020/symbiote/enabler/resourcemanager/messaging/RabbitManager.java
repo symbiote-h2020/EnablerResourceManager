@@ -1,13 +1,16 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
 import com.rabbitmq.client.*;
+
 import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;

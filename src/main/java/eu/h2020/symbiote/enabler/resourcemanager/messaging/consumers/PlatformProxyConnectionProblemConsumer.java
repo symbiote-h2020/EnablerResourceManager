@@ -6,10 +6,11 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ProblematicResourcesHandler;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
