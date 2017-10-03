@@ -44,6 +44,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -440,7 +442,7 @@ public class StartDataAcquisitionConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
 
-        // Cache only the 2nd task
+        // Cache only the 1st task
         query.getTasks().get(0).setAllowCaching(true);
 
         log.info("Before sending the message");
@@ -483,6 +485,7 @@ public class StartDataAcquisitionConsumerTests {
         assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
+        assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get("1"));
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(1, taskInfo.getResourceIds().size());
@@ -491,6 +494,7 @@ public class StartDataAcquisitionConsumerTests {
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
+        assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get("2"));
 
         log.info("allowCachingTest FINISHED!");
     }

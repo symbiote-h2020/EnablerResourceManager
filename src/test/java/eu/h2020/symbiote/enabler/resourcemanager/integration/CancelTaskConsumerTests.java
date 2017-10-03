@@ -8,13 +8,14 @@ import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponseStatus;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.model.ScheduledTaskInfoUpdate;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCancelCallback;
-
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -46,6 +47,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -126,7 +129,7 @@ public class CancelTaskConsumerTests {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true,
+                true, "P0-0-0T1:0:1", true,
                 "TestEnablerLogic", null, resourceIds,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
         taskInfoRepository.save(task1);
@@ -140,6 +143,12 @@ public class CancelTaskConsumerTests {
         task3.setTaskId("3");
         taskInfoRepository.save(task3);
 
+        searchHelper.getScheduledTaskInfoUpdateMap().put(task1.getTaskId(), new ScheduledTaskInfoUpdate(taskInfoRepository,
+                searchHelper, task1));
+        searchHelper.getScheduledTaskInfoUpdateMap().put(task2.getTaskId(), new ScheduledTaskInfoUpdate(taskInfoRepository,
+                searchHelper, task2));
+        searchHelper.getScheduledTaskInfoUpdateMap().put(task3.getTaskId(), new ScheduledTaskInfoUpdate(taskInfoRepository,
+                searchHelper, task3));
 
         // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
@@ -153,6 +162,11 @@ public class CancelTaskConsumerTests {
 
         CancelTaskRequest cancelTaskRequest = new CancelTaskRequest();
         cancelTaskRequest.setTaskIdList(Arrays.asList("1", "2", "3"));
+
+        // Check the stored ScheduledTaskInfoUpdates
+        assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task1.getTaskId()));
+        assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task2.getTaskId()));
+        assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task3.getTaskId()));
 
         log.info("Before sending the message");
         RabbitConverterFuture<CancelTaskResponse> future = asyncRabbitTemplate
@@ -183,6 +197,11 @@ public class CancelTaskConsumerTests {
 
         taskInfo = taskInfoRepository.findByTaskId("4");
         assertEquals(null, taskInfo);
+
+        // Check the stored ScheduledTaskInfoUpdates
+        assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task1.getTaskId()));
+        assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task2.getTaskId()));
+        assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task3.getTaskId()));
 
         while (dummyPlatformProxyListener.cancelTaskRequestsReceived() == 0) {
             TimeUnit.MILLISECONDS.sleep(100);
