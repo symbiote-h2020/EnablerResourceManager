@@ -47,7 +47,7 @@ public class DummyEnablerLogicListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "symbIoTe-el-resourcesUpdated", durable = "true", autoDelete = "true", exclusive = "true"),
+            value = @Queue(value = "${rabbit.queueName.el.resourcesUpdated}", durable = "true", autoDelete = "true", exclusive = "false"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerLogic.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerLogic.durable}", autoDelete  = "${rabbit.exchange.enablerLogic.autodelete}",
                     internal = "${rabbit.exchange.enablerLogic.internal}", type = "${rabbit.exchange.enablerLogic.type}"),
@@ -70,7 +70,7 @@ public class DummyEnablerLogicListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "symbIoTe-el-notEnoughResources", durable = "true", autoDelete = "true", exclusive = "true"),
+            value = @Queue(value = "${rabbit.queueName.el.notEnoughResources}", durable = "true", autoDelete = "true", exclusive = "false"),
             exchange = @Exchange(value = "${rabbit.exchange.enablerLogic.name}", ignoreDeclarationExceptions = "true",
                     durable = "${rabbit.exchange.enablerLogic.durable}", autoDelete  = "${rabbit.exchange.enablerLogic.autodelete}",
                     internal = "${rabbit.exchange.enablerLogic.internal}", type = "${rabbit.exchange.enablerLogic.type}"),

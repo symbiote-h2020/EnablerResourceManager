@@ -1,8 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponse;
@@ -12,15 +10,18 @@ import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogi
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCancelCallback;
+
+import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
@@ -35,6 +36,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,16 +48,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT,
-        properties = {"eureka.client.enabled=false",
-                "spring.sleuth.enabled=false",
-                "symbiote.core.url=http://localhost:8080",
-                "symbiote.coreaam.url=http://localhost:8080"}
-)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ContextConfiguration
 @Configuration
-@ComponentScan
 @EnableAutoConfiguration
+@ComponentScan
 @ActiveProfiles("test")
 public class CancelTaskConsumerTests {
 
@@ -75,6 +72,15 @@ public class CancelTaskConsumerTests {
     private DummyEnablerLogicListener dummyEnablerLogicListener;
 
     @Autowired
+    private AuthorizationManager authorizationManager;
+
+    @Autowired
+    private SearchHelper searchHelper;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
     @Qualifier("symbIoTeCoreUrl")
     private String symbIoTeCoreUrl;
 
@@ -87,18 +93,17 @@ public class CancelTaskConsumerTests {
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionRoutingKey;
 
-    private ObjectMapper mapper = new ObjectMapper();
 
     // Execute the Setup method before the test.
     @Before
     public void setUp() throws Exception {
-        dummyPlatformProxyListener.clearRequestsReceivedByListener();
-        dummyEnablerLogicListener.clearRequestsReceivedByListener();
+        TestHelper.setUp(dummyPlatformProxyListener, dummyEnablerLogicListener, authorizationManager, symbIoTeCoreUrl,
+                searchHelper, restTemplate);
     }
 
     @After
     public void clearSetup() throws Exception {
-        taskInfoRepository.deleteAll();
+        TestHelper.clearSetup(taskInfoRepository);
     }
 
     @Test
@@ -106,7 +111,7 @@ public class CancelTaskConsumerTests {
         log.info("successfulCancelTaskTest STARTED!");
 
         final AtomicReference<CancelTaskResponse> resultRef = new AtomicReference<>();
-        List<CancelTaskRequest> cancelTaskRequestArrayList = null;
+        List<CancelTaskRequest> cancelTaskRequestArrayList;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
@@ -200,7 +205,7 @@ public class CancelTaskConsumerTests {
         log.info("cancelTaskWithNonExistentTasksTest STARTED!");
 
         final AtomicReference<CancelTaskResponse> resultRef = new AtomicReference<>();
-        List<CancelTaskRequest> cancelTaskRequestArrayList = null;
+        List<CancelTaskRequest> cancelTaskRequestArrayList;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")
@@ -297,7 +302,7 @@ public class CancelTaskConsumerTests {
         log.info("cancelTaskEmptyResponseListTest STARTED!");
 
         final AtomicReference<CancelTaskResponse> resultRef = new AtomicReference<>();
-        List<CancelTaskRequest> cancelTaskRequestArrayList = null;
+        List<CancelTaskRequest> cancelTaskRequestArrayList;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Zurich")

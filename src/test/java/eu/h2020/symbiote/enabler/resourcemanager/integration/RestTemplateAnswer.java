@@ -1,52 +1,61 @@
-package eu.h2020.symbiote.enabler.resourcemanager.dummyListeners;
-
+package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.web.bind.annotation.*;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.springframework.http.*;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 
+public class RestTemplateAnswer implements Answer<ResponseEntity> {
 
-/**
- * Dummy REST service mimicking exposed CoreInterface in the Core.
- *
- * @author Vasilis Glykantzis (ICOM)
- */
-@RestController
-@WebAppConfiguration
-public class DummyCoreInterfaceRestListeners {
-    private static final Log log = LogFactory.getLog(DummyCoreInterfaceRestListeners.class);
+    private static Log log = LogFactory
+            .getLog(StartDataAcquisitionConsumerTests.class);
 
-    @Autowired
-    @Qualifier("symbIoTeCoreUrl")
     private String symbIoTeCoreUrl;
 
+    public RestTemplateAnswer(String symbIoTeCoreUrl) {
+        this.symbIoTeCoreUrl = symbIoTeCoreUrl;
+    }
 
-    @RequestMapping(method = RequestMethod.GET, value = "/query")
-    public ResponseEntity search(@RequestParam(value = "location_name", required = false) String location,
-                                 @RequestParam(value = "id", required = false) String id,
-                                 @RequestParam(value = "should_rank") Boolean should_rank) {
-        
-        log.info("Search request");
+    public ResponseEntity<?> answer(InvocationOnMock invocation) {
+        String url = (String) invocation.getArguments()[0];
+        HttpMethod httpMethod = (HttpMethod) invocation.getArguments()[1];
+        HttpEntity httpEntity = (HttpEntity) invocation.getArguments()[2];
+
+        Map<String, String> queryPairs = new HashMap<>();
+
+        String[] pairs = url.substring(url.indexOf('?') + 1).split("&");
+
+        for (String pair : pairs) {
+            String[] values = pair.split("=");
+            if (values.length > 1)
+                queryPairs.put(values[0], values[1]);
+        }
+
+        if (url.contains("/query") && httpMethod == HttpMethod.GET)
+            return search(queryPairs);
+        else if (url.contains("/resourceUrls") && httpMethod == HttpMethod.GET)
+            return getResourceUrls(queryPairs);
+        else if (url.contains("/sparqlQuery") && httpMethod == HttpMethod.POST)
+            return search((SparqlQueryRequest) httpEntity.getBody());
+
+        return new ResponseEntity<>("Request Not Found", HttpStatus.BAD_REQUEST);
+    }
+
+    private ResponseEntity search(Map<String, String> queryPairs) {
+
+        String location = queryPairs.get("location_name");
+        String id = queryPairs.get("id");
+        boolean should_rank = Boolean.parseBoolean(queryPairs.get("should_rank"));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -136,11 +145,7 @@ public class DummyCoreInterfaceRestListeners {
         return new ResponseEntity<>(response, headers, HttpStatus.OK);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "/sparqlQuery")
-    public ResponseEntity search(@RequestBody SparqlQueryRequest sparqlQuery) {
-
-        log.info("SPARQL Search request");
-
+    private ResponseEntity search(SparqlQueryRequest sparqlQuery) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -220,12 +225,10 @@ public class DummyCoreInterfaceRestListeners {
         return new ResponseEntity<>(response, headers, HttpStatus.OK);
     }
 
-    @RequestMapping(method = RequestMethod.GET, value = "/resourceUrls")
-    public ResponseEntity getResourceUrls(@RequestParam("id") String resourceId) {
-        
-        log.info("Requesting resource url for resource with id: " + resourceId);
+    private ResponseEntity getResourceUrls(Map<String, String> queryPairs) {
 
-        HashMap<String, String> response = new HashMap<String, String>();
+        String resourceId = queryPairs.get("id");
+        HashMap<String, String> response = new HashMap<>();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -238,16 +241,4 @@ public class DummyCoreInterfaceRestListeners {
 
         return new ResponseEntity<>(response, headers, HttpStatus.OK);
     }
-
-    static public class DateUtil
-    {
-        public static Date addDays(Date date, int days)
-        {
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(date);
-            cal.add(Calendar.DATE, days); //minus number would decrement the days
-            return cal.getTime();
-        }
-    }
 }
-

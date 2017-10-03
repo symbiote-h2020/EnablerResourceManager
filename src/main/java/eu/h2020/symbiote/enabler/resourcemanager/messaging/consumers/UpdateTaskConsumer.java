@@ -110,6 +110,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             // Process each task request
             for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getTasks()) {
                 TaskInfo storedTaskInfo = taskInfoRepository.findByTaskId(taskInfoRequest.getTaskId());
+                List<TaskInfo> taskInfoArrayList = taskInfoRepository.findAll();
+
                 CoreQueryRequest coreQueryRequest = taskInfoRequest.getCoreQueryRequest();
                 SparqlQueryRequest sparqlQueryRequest = taskInfoRequest.getSparqlQueryRequest();
 

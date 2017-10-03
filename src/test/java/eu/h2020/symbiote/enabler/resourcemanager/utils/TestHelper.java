@@ -1,22 +1,61 @@
 package eu.h2020.symbiote.enabler.resourcemanager.utils;
 
 
+import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerUpdateRequest;
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
+import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.integration.RestTemplateAnswer;
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 
-/**
- * Created by vasgl on 7/26/2017.
- */
-public final class TestHelper {
+public class TestHelper {
 
-    private TestHelper() {
-        // empty constructor
+    public static void setUp(DummyPlatformProxyListener dummyPlatformProxyListener,
+                      DummyEnablerLogicListener dummyEnablerLogicListener,
+                      AuthorizationManager authorizationManager,
+                      String symbIoTeCoreUrl, SearchHelper searchHelper,
+                      RestTemplate restTemplate) throws Exception {
+
+        searchHelper.restartTimer();
+        dummyPlatformProxyListener.clearRequestsReceivedByListener();
+        dummyEnablerLogicListener.clearRequestsReceivedByListener();
+
+        doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
+
+        doAnswer(new RestTemplateAnswer(symbIoTeCoreUrl)).when(restTemplate)
+                .exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(Class.class));
+        doAnswer(new RestTemplateAnswer(symbIoTeCoreUrl)).when(restTemplate)
+                .exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(ParameterizedTypeReference.class));
+        doThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR)).when(restTemplate)
+                .exchange(eq(symbIoTeCoreUrl + "/resourceUrls?id=badCRAMrespose"), any(HttpMethod.class),
+                        any(HttpEntity.class), any(ParameterizedTypeReference.class));
+        doThrow(new HttpServerErrorException(HttpStatus.BAD_REQUEST)).when(restTemplate)
+                .exchange(eq(symbIoTeCoreUrl + "/query?location_name=Zurich&observed_property=temperature,humidity&should_rank=true"),
+                        any(HttpMethod.class), any(HttpEntity.class), eq(QueryResponse.class));
+
+    }
+
+    public static void clearSetup(TaskInfoRepository taskInfoRepository) throws Exception {
+        taskInfoRepository.deleteAll();
     }
 
     public static ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {

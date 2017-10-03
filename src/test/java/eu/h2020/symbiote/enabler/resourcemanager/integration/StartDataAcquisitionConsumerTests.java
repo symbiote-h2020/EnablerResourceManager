@@ -12,8 +12,9 @@ import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureAcquisitionStartCallback;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
 
+import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -35,31 +36,22 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.web.client.RestTemplate;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doReturn;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT,
-        properties = {"eureka.client.enabled=false",
-                "spring.sleuth.enabled=false",
-                "symbiote.core.url=http://localhost:8080",
-                "symbiote.coreaam.url=http://localhost:8080"}
-)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ContextConfiguration
 @Configuration
-@ComponentScan
 @EnableAutoConfiguration
+@ComponentScan
 @ActiveProfiles("test")
 public class StartDataAcquisitionConsumerTests {
 
@@ -82,30 +74,37 @@ public class StartDataAcquisitionConsumerTests {
     private AuthorizationManager authorizationManager;
 
     @Autowired
+    private SearchHelper searchHelper;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
     @Qualifier("symbIoTeCoreUrl")
     private String symbIoTeCoreUrl;
 
     @Value("${rabbit.exchange.resourceManager.name}")
     private String resourceManagerExchangeName;
 
+    @Value("${rabbit.routingKey.resourceManager.cancelTask}")
+    private String cancelTaskRoutingKey;
+
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionRoutingKey;
 
     private ObjectMapper mapper = new ObjectMapper();
 
+
     // Execute the Setup method before the test.
     @Before
     public void setUp() throws Exception {
-        dummyPlatformProxyListener.clearRequestsReceivedByListener();
-        dummyEnablerLogicListener.clearRequestsReceivedByListener();
-
-        doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
-
+        TestHelper.setUp(dummyPlatformProxyListener, dummyEnablerLogicListener, authorizationManager, symbIoTeCoreUrl,
+                searchHelper, restTemplate);
     }
 
     @After
     public void clearSetup() throws Exception {
-        taskInfoRepository.deleteAll();
+        TestHelper.clearSetup(taskInfoRepository);
     }
 
     @Test

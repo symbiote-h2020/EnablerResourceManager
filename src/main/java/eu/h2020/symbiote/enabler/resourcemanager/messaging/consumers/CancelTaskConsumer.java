@@ -14,6 +14,7 @@ import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponseStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 
+import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -36,6 +37,9 @@ public class CancelTaskConsumer extends DefaultConsumer {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private SearchHelper searchHelper;
 
     @Value("${rabbit.exchange.enablerPlatformProxy.name}")
     private String platformProxyExchange;
@@ -84,6 +88,9 @@ public class CancelTaskConsumer extends DefaultConsumer {
                 if (taskInfo != null) {
                     log.info("The task with id = " + id + " was deleted.");
                     taskInfoRepository.delete(taskInfo);
+
+                    if (taskInfo.getAllowCaching())
+                        searchHelper.removeTaskTimer(taskInfo.getTaskId());
 
                     if (taskInfo.getInformPlatformProxy())
                         cancelTaskRequestToPlatformProxy.getTaskIdList().add(taskInfo.getTaskId());
