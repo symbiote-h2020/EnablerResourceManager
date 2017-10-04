@@ -1,4 +1,4 @@
-package eu.h2020.symbiote.enabler.resourcemanager.dummyListeners;
+package eu.h2020.symbiote.enabler.resourcemanager.integration.dummyListeners;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

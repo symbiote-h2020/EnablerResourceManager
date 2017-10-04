@@ -1,9 +1,9 @@
-package eu.h2020.symbiote.enabler.resourcemanager.utils;
+package eu.h2020.symbiote.enabler.resourcemanager.integration.callbacks;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerUpdateResponse;
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -17,22 +17,22 @@ import static org.junit.Assert.fail;
 /**
  * Created by vasgl on 7/26/2017.
  */
-public class ListenableFutureUpdateCallback implements ListenableFutureCallback<ResourceManagerUpdateResponse> {
+public class ListenableFutureCancelCallback implements ListenableFutureCallback<CancelTaskResponse> {
 
     private static Log log = LogFactory
-            .getLog(ListenableFutureUpdateCallback.class);
+            .getLog(ListenableFutureCancelCallback.class);
 
-    private AtomicReference<ResourceManagerUpdateResponse> resultRef;
+    private AtomicReference<CancelTaskResponse> resultRef;
     private String test;
     private ObjectMapper mapper = new ObjectMapper();
 
-    public ListenableFutureUpdateCallback(String test, AtomicReference<ResourceManagerUpdateResponse> resultRef) {
+    public ListenableFutureCancelCallback(String test, AtomicReference<CancelTaskResponse> resultRef) {
         this.test = test;
         this.resultRef = resultRef;
         mapper = new ObjectMapper();
     }
 
-    public void onSuccess(ResourceManagerUpdateResponse result) {
+    public void onSuccess(CancelTaskResponse result) {
         try {
             log.info(test + ": Successfully received response = " + mapper.writeValueAsString(result));
         } catch (JsonProcessingException e) {

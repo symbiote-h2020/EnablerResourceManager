@@ -1,8 +1,9 @@
-package eu.h2020.symbiote.enabler.resourcemanager.integration;
+package eu.h2020.symbiote.enabler.resourcemanager.integration.tests;
 
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ProblematicResourcesInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
+import eu.h2020.symbiote.enabler.resourcemanager.integration.AbstractTestClass;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;

@@ -1,9 +1,9 @@
-package eu.h2020.symbiote.enabler.resourcemanager.utils;
+package eu.h2020.symbiote.enabler.resourcemanager.integration.utils;
 
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.integration.dummyListeners.DummyEnablerLogicListener;
+import eu.h2020.symbiote.enabler.resourcemanager.integration.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 

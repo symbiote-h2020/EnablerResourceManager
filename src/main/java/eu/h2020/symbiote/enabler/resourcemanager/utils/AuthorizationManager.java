@@ -9,7 +9,6 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsExce
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.security.communication.payloads.AAM;
-import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.security.handler.ISecurityHandler;
 import eu.h2020.symbiote.security.helpers.MutualAuthenticationHelper;

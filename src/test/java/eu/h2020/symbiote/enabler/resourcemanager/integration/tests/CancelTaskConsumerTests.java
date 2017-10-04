@@ -1,4 +1,4 @@
-package eu.h2020.symbiote.enabler.resourcemanager.integration;
+package eu.h2020.symbiote.enabler.resourcemanager.integration.tests;
 
 
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
@@ -6,9 +6,10 @@ import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponse;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponseStatus;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
+import eu.h2020.symbiote.enabler.resourcemanager.integration.AbstractTestClass;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ScheduledTaskInfoUpdate;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCancelCallback;
+import eu.h2020.symbiote.enabler.resourcemanager.integration.callbacks.ListenableFutureCancelCallback;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
