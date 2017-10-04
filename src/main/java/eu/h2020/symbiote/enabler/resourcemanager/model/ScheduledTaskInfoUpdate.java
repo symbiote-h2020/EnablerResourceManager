@@ -38,7 +38,26 @@ public class ScheduledTaskInfoUpdate extends TimerTask {
         log.debug("Updating taskInfo with id: " + taskInfo.getTaskId());
         QueryAndProcessSearchResponseResult result = searchHelper.queryAndProcessSearchResponse(taskInfo);
 
-        taskInfo.setStoredResourceIds(new ArrayList<>(result.getTaskInfo().getStoredResourceIds()));
+        taskInfo.setStoredResourceIds(new ArrayList<>());
+
+        /**
+         * Add to the storedResourceIds all the resource ids of the result.resourceIds and result.storedResourceIds
+         * which are not contained in taskInfo.resourceIds
+         */
+
+        ArrayList<String> newStoredResourceIds = new ArrayList<>();
+
+        for (String resourceId : result.getTaskInfo().getResourceIds()) {
+            if (!taskInfo.getResourceIds().contains(resourceId))
+                newStoredResourceIds.add(resourceId);
+        }
+
+        for (String resourceId : result.getTaskInfo().getStoredResourceIds()) {
+            if (!taskInfo.getResourceIds().contains(resourceId))
+                newStoredResourceIds.add(resourceId);
+        }
+
+        taskInfo.setStoredResourceIds(newStoredResourceIds);
         taskInfoRepository.save(taskInfo);
     }
 

@@ -7,6 +7,7 @@ import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
+import eu.h2020.symbiote.enabler.resourcemanager.model.ScheduledTaskInfoUpdate;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
@@ -42,8 +43,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -1013,13 +1013,13 @@ public class UpdateTaskConsumerTests {
     @Test
     public void updateTaskWithAllowCachingTest() throws Exception {
 
-        log.info("updateTaskWithAllowCachingBecomingFalseTest STARTED!");
+        log.info("updateTaskWithAllowCachingTest STARTED!");
 
         final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
-                .locationName("Zurich")
+                .locationName("Athens")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .shouldRank(true)
                 .build();
@@ -1032,10 +1032,12 @@ public class UpdateTaskConsumerTests {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true,
+                true, "P0-0-0T1:0:1", true,
                 "enablerLogic", null, resourceIds,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
         taskInfoRepository.save(task1);
+        searchHelper.getScheduledTaskInfoUpdateMap().put(task1.getTaskId(), new ScheduledTaskInfoUpdate(taskInfoRepository,
+                searchHelper, task1));
 
         Map<String, String> resourceUrls2 = new HashMap<>();
         resourceUrls2.put("21", symbIoTeCoreUrl + "/Sensors('21')");
@@ -1045,6 +1047,8 @@ public class UpdateTaskConsumerTests {
         task2.setResourceIds(Arrays.asList("21", "22"));
         task2.setResourceUrls(resourceUrls2);
         taskInfoRepository.save(task2);
+        searchHelper.getScheduledTaskInfoUpdateMap().put(task2.getTaskId(), new ScheduledTaskInfoUpdate(taskInfoRepository,
+                searchHelper, task2));
 
         // resource1 should not be in the storedResourceIds after the update
         Map<String, String> resourceUrls3 = new HashMap<>();
@@ -1069,12 +1073,19 @@ public class UpdateTaskConsumerTests {
         task4.setResourceUrls(resourceUrls4);
         taskInfoRepository.save(task4);
 
+        // Check the stored ScheduledTaskInfoUpdates
+        assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task1.getTaskId()));
+        assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task2.getTaskId()));
+        assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task3.getTaskId()));
+        assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task4.getTaskId()));
+
         // This task should reach Platform Proxy and inform it for new resources
         // true -> false transition
         // CoreQueryRequest changed
         TaskInfo updatedTask1 = new TaskInfo(task1);
         updatedTask1.getCoreQueryRequest().setLocation_name("Paris");
         updatedTask1.setAllowCaching(false);
+
 
         // This task should not reach Platform Proxy, because nothing that concerns the Platform Proxy changes
         // true -> false transition
@@ -1183,6 +1194,12 @@ public class UpdateTaskConsumerTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", storedTaskInfo4.getResourceUrls().get("resource1"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", storedTaskInfo4.getResourceUrls().get("resource2"));
 
+        // Check the stored ScheduledTaskInfoUpdates
+        assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task1.getTaskId()));
+        assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task2.getTaskId()));
+        assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task3.getTaskId()));
+        assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get(task4.getTaskId()));
+
         // Test what Enabler Logic receives
         assertEquals(4, resultRef.get().getTasks().size());
         assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
@@ -1248,7 +1265,7 @@ public class UpdateTaskConsumerTests {
         assertEquals(true, foundTask1);
         assertEquals(true, foundTask4);
         
-        log.info("updateTaskWithAllowCachingBecomingFalseTest FINISHED!");
+        log.info("updateTaskWithAllowCachingTest FINISHED!");
     }
 
     @Test

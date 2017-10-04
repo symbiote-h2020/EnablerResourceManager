@@ -176,13 +176,13 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                             // Also, add the storedResource ids of the newTask
                             updatedTaskInfo.getStoredResourceIds().addAll(newTaskInfo.getStoredResourceIds());
+                            searchHelper.configureTaskTimer(updatedTaskInfo);
 
-                            // ToDo: Configure the timer
                         } else {
                             log.debug("AllowCaching changed value from true to false");
 
                             updatedTaskInfo.getStoredResourceIds().clear();
-                            // Todo: Clear The timer
+                            searchHelper.removeTaskTimer(updatedTaskInfo.getTaskId());
                         }
                     }
 
@@ -277,6 +277,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 } else {
                     log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " changed.");
 
+                    // Remove the timer, since it will be recreated automatically in any case
+                    searchHelper.removeTaskTimer(taskInfoRequest.getTaskId());
                     // Always request ranked results
                     taskInfoRequest.getCoreQueryRequest().setShould_rank(true);
 
