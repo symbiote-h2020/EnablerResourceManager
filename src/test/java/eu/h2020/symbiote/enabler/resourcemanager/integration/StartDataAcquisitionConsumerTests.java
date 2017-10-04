@@ -1,113 +1,36 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureAcquisitionStartCallback;
 
-import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.web.client.RestTemplate;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@ContextConfiguration
-@Configuration
 @EnableAutoConfiguration
-@ComponentScan
-@ActiveProfiles("test")
-public class StartDataAcquisitionConsumerTests {
+public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
     private static Log log = LogFactory
             .getLog(StartDataAcquisitionConsumerTests.class);
 
-    @Autowired
-    private AsyncRabbitTemplate asyncRabbitTemplate;
-
-    @Autowired
-    private TaskInfoRepository taskInfoRepository;
-
-    @Autowired
-    private DummyPlatformProxyListener dummyPlatformProxyListener;
-
-    @Autowired
-    private DummyEnablerLogicListener dummyEnablerLogicListener;
-
-    @Autowired
-    private AuthorizationManager authorizationManager;
-
-    @Autowired
-    private SearchHelper searchHelper;
-
-    @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
-    @Qualifier("symbIoTeCoreUrl")
-    private String symbIoTeCoreUrl;
-
-    @Value("${rabbit.exchange.resourceManager.name}")
-    private String resourceManagerExchangeName;
-
-    @Value("${rabbit.routingKey.resourceManager.cancelTask}")
-    private String cancelTaskRoutingKey;
-
-    @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
-    private String startDataAcquisitionRoutingKey;
-
-    private ObjectMapper mapper = new ObjectMapper();
-
-
-    // Execute the Setup method before the test.
-    @Before
-    public void setUp() throws Exception {
-        TestHelper.setUp(dummyPlatformProxyListener, dummyEnablerLogicListener, authorizationManager, symbIoTeCoreUrl,
-                searchHelper, restTemplate);
-    }
-
-    @After
-    public void clearSetup() throws Exception {
-        TestHelper.clearSetup(taskInfoRepository);
-    }
 
     @Test
     public void resourceManagerGetResourceDetailsTest() throws Exception {
@@ -116,7 +39,7 @@ public class StartDataAcquisitionConsumerTests {
         // ToDo: add default field value in TaskInfo
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
         log.info("Before sending the message");
@@ -206,7 +129,7 @@ public class StartDataAcquisitionConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         SparqlQueryRequest sparqlQueryRequest1 = new SparqlQueryRequest("Paris",
                 SparqlQueryOutputFormat.COUNT);
         SparqlQueryRequest sparqlQueryRequest2 = new SparqlQueryRequest("Athens",
@@ -335,7 +258,7 @@ public class StartDataAcquisitionConsumerTests {
         log.info("resourceManagerGetResourceDetailsBadRequestTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createBadQueryToResourceManager();
+        ResourceManagerAcquisitionStartRequest query = createBadQueryToResourceManager();
 
         log.info("Before sending the message");
         RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
@@ -371,7 +294,7 @@ public class StartDataAcquisitionConsumerTests {
         log.info("notSendingToPlatformProxyTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
         // Forward to PlatformProxy only the 2nd task
@@ -440,7 +363,7 @@ public class StartDataAcquisitionConsumerTests {
         log.info("allowCachingTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
 
         // Cache only the 1st task
         query.getTasks().get(0).setAllowCaching(true);
@@ -506,7 +429,7 @@ public class StartDataAcquisitionConsumerTests {
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         query.getTasks().get(0).setAllowCaching(true);
         query.getTasks().get(1).setMinNoResources(3);
         query.getTasks().get(1).setAllowCaching(true);
@@ -580,7 +503,7 @@ public class StartDataAcquisitionConsumerTests {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
 
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         Field queryIntervalField = query.getTasks().get(1).getClass().getDeclaredField("queryInterval");
         queryIntervalField.setAccessible(true);
         queryIntervalField.set(query.getTasks().get(1), "10s");
@@ -625,7 +548,7 @@ public class StartDataAcquisitionConsumerTests {
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
 
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         Field cachingIntervalField = query.getTasks().get(1).getClass().getDeclaredField("cachingInterval");
         cachingIntervalField.setAccessible(true);
         cachingIntervalField.set(query.getTasks().get(1), "10s");

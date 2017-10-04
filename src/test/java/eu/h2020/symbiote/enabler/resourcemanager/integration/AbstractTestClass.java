@@ -1,5 +1,7 @@
-package eu.h2020.symbiote.enabler.resourcemanager.utils;
+package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
@@ -8,13 +10,30 @@ import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerUpdateRequest;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
 import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
-import eu.h2020.symbiote.enabler.resourcemanager.integration.RestTemplateAnswer;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ProblematicResourcesHandler;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.runner.RunWith;
+
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,14 +45,68 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
+@RunWith(SpringJUnit4ClassRunner.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextConfiguration
+@Configuration
+@ComponentScan
+@ActiveProfiles("test")
+public abstract class AbstractTestClass {
 
-public class TestHelper {
+    @Autowired
+    protected AsyncRabbitTemplate asyncRabbitTemplate;
 
-    public static void setUp(DummyPlatformProxyListener dummyPlatformProxyListener,
-                      DummyEnablerLogicListener dummyEnablerLogicListener,
-                      AuthorizationManager authorizationManager,
-                      String symbIoTeCoreUrl, SearchHelper searchHelper,
-                      RestTemplate restTemplate) throws Exception {
+    @Autowired
+    protected TaskInfoRepository taskInfoRepository;
+
+    @Autowired
+    protected DummyPlatformProxyListener dummyPlatformProxyListener;
+
+    @Autowired
+    protected DummyEnablerLogicListener dummyEnablerLogicListener;
+
+    @Autowired
+    protected AuthorizationManager authorizationManager;
+
+    @Autowired
+    protected SearchHelper searchHelper;
+
+    @Autowired
+    protected ProblematicResourcesHandler problematicResourcesHandler;
+
+    @Autowired
+    protected RestTemplate restTemplate;
+
+    @Autowired
+    protected RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    @Qualifier("symbIoTeCoreUrl")
+    protected String symbIoTeCoreUrl;
+
+    @Value("${rabbit.exchange.resourceManager.name}")
+    protected String resourceManagerExchangeName;
+
+    @Value("${rabbit.routingKey.resourceManager.cancelTask}")
+    protected String cancelTaskRoutingKey;
+
+    @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
+    protected String startDataAcquisitionRoutingKey;
+
+    @Value("${rabbit.routingKey.resourceManager.updateTask}")
+    protected String updateTaskRoutingKey;
+
+    @Value("${rabbit.routingKey.resourceManager.wrongData}")
+    protected String wrongDataRoutingKey;
+
+    @Value("${rabbit.routingKey.resourceManager.unavailableResources}")
+    protected String unavailableResourcesRoutingKey;
+
+    protected ObjectMapper mapper = new ObjectMapper();
+
+    // Execute the Setup method before the test.
+    @Before
+    public void setUp() throws Exception {
 
         searchHelper.restartTimer();
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
@@ -54,11 +127,12 @@ public class TestHelper {
 
     }
 
-    public static void clearSetup(TaskInfoRepository taskInfoRepository) throws Exception {
+    @After
+    public void clearSetup() throws Exception {
         taskInfoRepository.deleteAll();
     }
 
-    public static ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {
+    ResourceManagerAcquisitionStartRequest createValidQueryToResourceManager(int noTasks) {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
         ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
 
@@ -90,13 +164,13 @@ public class TestHelper {
         return request;
     }
 
-    public static ResourceManagerUpdateRequest createValidUpdateQueryToResourceManager(int noTasks) {
+    ResourceManagerUpdateRequest createValidUpdateQueryToResourceManager(int noTasks) {
         ResourceManagerUpdateRequest updateRequest = new ResourceManagerUpdateRequest();
         updateRequest.setTasks(createValidQueryToResourceManager(noTasks).getTasks());
         return updateRequest;
     }
 
-    public static ResourceManagerAcquisitionStartRequest createBadQueryToResourceManager() {
+    ResourceManagerAcquisitionStartRequest createBadQueryToResourceManager() {
         ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
         ResourceManagerAcquisitionStartRequest request = new ResourceManagerAcquisitionStartRequest();
 

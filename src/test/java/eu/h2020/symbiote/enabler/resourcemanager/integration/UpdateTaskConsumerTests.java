@@ -5,38 +5,17 @@ import eu.h2020.symbiote.core.ci.SparqlQueryOutputFormat;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ScheduledTaskInfoUpdate;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.AuthorizationManager;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureUpdateCallback;
 
-import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.TestHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.web.client.RestTemplate;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -46,67 +25,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@ContextConfiguration
-@Configuration
 @EnableAutoConfiguration
-@ComponentScan
-@ActiveProfiles("test")
-public class UpdateTaskConsumerTests {
+public class UpdateTaskConsumerTests extends AbstractTestClass {
 
     private static Log log = LogFactory
             .getLog(UpdateTaskConsumerTests.class);
 
-    @Autowired
-    protected AsyncRabbitTemplate asyncRabbitTemplate;
-
-    @Autowired
-    protected TaskInfoRepository taskInfoRepository;
-
-    @Autowired
-    protected DummyPlatformProxyListener dummyPlatformProxyListener;
-
-    @Autowired
-    protected DummyEnablerLogicListener dummyEnablerLogicListener;
-
-    @Autowired
-    private AuthorizationManager authorizationManager;
-
-    @Autowired
-    private SearchHelper searchHelper;
-
-    @Autowired
-    protected RestTemplate restTemplate;
-
-    @Autowired
-    @Qualifier("symbIoTeCoreUrl")
-    protected String symbIoTeCoreUrl;
-
-    @Value("${rabbit.exchange.resourceManager.name}")
-    protected String resourceManagerExchangeName;
-
-    @Value("${rabbit.routingKey.resourceManager.cancelTask}")
-    protected String cancelTaskRoutingKey;
-
-    @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
-    protected String startDataAcquisitionRoutingKey;
-
-    @Value("${rabbit.routingKey.resourceManager.updateTask}")
-    private String updateTaskRoutingKey;
-
-
-    // Execute the Setup method before the test.
-    @Before
-    public void setUp() throws Exception {
-        TestHelper.setUp(dummyPlatformProxyListener, dummyEnablerLogicListener, authorizationManager, symbIoTeCoreUrl,
-                searchHelper, restTemplate);
-    }
-
-    @After
-    public void clearSetup() throws Exception {
-        TestHelper.clearSetup(taskInfoRepository);
-    }
 
     @Test
     public void updateTaskTest() throws Exception {
@@ -623,7 +547,7 @@ public class UpdateTaskConsumerTests {
 
         final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
 
-        ResourceManagerUpdateRequest query = TestHelper.createValidUpdateQueryToResourceManager(2);
+        ResourceManagerUpdateRequest query = createValidUpdateQueryToResourceManager(2);
         Field queryIntervalField = query.getTasks().get(1).getClass().getDeclaredField("queryInterval");
         queryIntervalField.setAccessible(true);
         queryIntervalField.set(query.getTasks().get(1), "10s");
@@ -669,7 +593,7 @@ public class UpdateTaskConsumerTests {
 
         final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
 
-        ResourceManagerUpdateRequest query = TestHelper.createValidUpdateQueryToResourceManager(2);
+        ResourceManagerUpdateRequest query = createValidUpdateQueryToResourceManager(2);
         Field cachingIntervalField = query.getTasks().get(1).getClass().getDeclaredField("cachingInterval");
         cachingIntervalField.setAccessible(true);
         cachingIntervalField.set(query.getTasks().get(1), "10s");

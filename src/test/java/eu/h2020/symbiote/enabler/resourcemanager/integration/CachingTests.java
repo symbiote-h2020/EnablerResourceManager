@@ -1,38 +1,20 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyEnablerLogicListener;
-import eu.h2020.symbiote.enabler.resourcemanager.dummyListeners.DummyPlatformProxyListener;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ScheduledTaskInfoUpdate;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
-import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-import eu.h2020.symbiote.enabler.resourcemanager.utils.*;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureAcquisitionStartCallback;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureCancelCallback;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ListenableFutureUpdateCallback;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,81 +25,20 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
-
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@ContextConfiguration
-@Configuration
 @EnableAutoConfiguration
-@ComponentScan
-@ActiveProfiles("test")
-public class CachingTests {
+public class CachingTests extends AbstractTestClass {
 
     private static Log log = LogFactory
             .getLog(CachingTests.class);
-
-    @Autowired
-    private AsyncRabbitTemplate asyncRabbitTemplate;
-
-    @Autowired
-    private TaskInfoRepository taskInfoRepository;
-
-    @Autowired
-    private DummyPlatformProxyListener dummyPlatformProxyListener;
-
-    @Autowired
-    private DummyEnablerLogicListener dummyEnablerLogicListener;
-
-    @Autowired
-    private AuthorizationManager authorizationManager;
-
-    @Autowired
-    private SearchHelper searchHelper;
-
-    @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
-    @Qualifier("symbIoTeCoreUrl")
-    private String symbIoTeCoreUrl;
-
-    @Value("${rabbit.exchange.resourceManager.name}")
-    private String resourceManagerExchangeName;
-
-    @Value("${rabbit.routingKey.resourceManager.cancelTask}")
-    private String cancelTaskRoutingKey;
-
-    @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
-    private String startDataAcquisitionRoutingKey;
-
-    @Value("${rabbit.routingKey.resourceManager.updateTask}")
-    private String updateTaskRoutingKey;
-
-    private ObjectMapper mapper = new ObjectMapper();
-
-
-    // Execute the Setup method before the test.
-    @Before
-    public void setUp() throws Exception {
-        TestHelper.setUp(dummyPlatformProxyListener, dummyEnablerLogicListener, authorizationManager, symbIoTeCoreUrl,
-                searchHelper, restTemplate);
-    }
-
-    @After
-    public void clearSetup() throws Exception {
-        TestHelper.clearSetup(taskInfoRepository);
-    }
 
     @Test
     public void createAndCancelCachingTasksTest() throws Exception {
         log.info("createAndCancelCachingTasksTest STARTED!");
 
-        /**
-         *  Create the task
-         */
+        // Create the task
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> createResultRef = new AtomicReference<>();
-        ResourceManagerAcquisitionStartRequest query = TestHelper.createValidQueryToResourceManager(2);
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
 
         query.getTasks().get(0).setAllowCaching(true);
@@ -205,9 +126,7 @@ public class CachingTests {
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
 
-        /**
-         *  Check if timer is activated
-         */
+        //  Check if timer is activated
 
         taskInfo = taskInfoRepository.findByTaskId("1");
         taskInfo.getStoredResourceIds().clear();
@@ -249,9 +168,7 @@ public class CachingTests {
         assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get("2"));
 
 
-        /**
-         *  Cancel the Task
-         */
+        // Cancel the Task
 
         final AtomicReference<CancelTaskResponse> cancelResultRef = new AtomicReference<>();
         List<CancelTaskRequest> cancelTaskRequestArrayList;
@@ -562,9 +479,7 @@ public class CachingTests {
         assertEquals(true, foundTask4);
 
 
-        /**
-         *  Check if timer is activated
-         */
+        // Check if timer is activated
 
         // Clear the storedResourceIds from task3 and task4
         storedTaskInfo3.getStoredResourceIds().clear();
