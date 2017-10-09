@@ -110,7 +110,6 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             // Process each task request
             for (ResourceManagerTaskInfoRequest taskInfoRequest : request.getTasks()) {
                 TaskInfo storedTaskInfo = taskInfoRepository.findByTaskId(taskInfoRequest.getTaskId());
-                List<TaskInfo> taskInfoArrayList = taskInfoRepository.findAll();
 
                 CoreQueryRequest coreQueryRequest = taskInfoRequest.getCoreQueryRequest();
                 SparqlQueryRequest sparqlQueryRequest = taskInfoRequest.getSparqlQueryRequest();
@@ -123,120 +122,25 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                     log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " did not change.");
 
-                    TaskInfo updatedTaskInfo = new TaskInfo(taskInfoRequest);
                     List<PlatformProxyResourceInfo> platformProxyResourceInfoList = new ArrayList<>();
 
                     // runtime checking variable
                     boolean informPlatformProxy = true;
                     ResourceManagerTaskInfoResponseStatus responseStatus = ResourceManagerTaskInfoResponseStatus.UNKNOWN;
 
-                    // If a value is null, retain the previous value
-                    if (updatedTaskInfo.getMinNoResources() == null)
-                        updatedTaskInfo.setMinNoResources(storedTaskInfo.getMinNoResources());
-                    if (updatedTaskInfo.getQueryInterval() == null)
-                        updatedTaskInfo.setQueryInterval(storedTaskInfo.getQueryInterval());
-                    if (updatedTaskInfo.getAllowCaching() == null)
-                        updatedTaskInfo.setAllowCaching(storedTaskInfo.getAllowCaching());
-                    if (updatedTaskInfo.getCachingInterval() == null)
-                        updatedTaskInfo.setCachingInterval(storedTaskInfo.getCachingInterval());
-                    if (updatedTaskInfo.getInformPlatformProxy() == null)
-                        updatedTaskInfo.setInformPlatformProxy(storedTaskInfo.getInformPlatformProxy());
-                    if (updatedTaskInfo.getEnablerLogicName() == null)
-                        updatedTaskInfo.setEnablerLogicName(storedTaskInfo.getEnablerLogicName());
-
-                    // Always retain the following values in the updatedTaskInfo if the CoreQuery Request does not change
-                    updatedTaskInfo.setCoreQueryRequest(CoreQueryRequest.newInstance(storedTaskInfo.getCoreQueryRequest()));
-                    updatedTaskInfo.setResourceIds(new ArrayList<>(storedTaskInfo.getResourceIds()));
-                    updatedTaskInfo.setStoredResourceIds(new ArrayList<>(storedTaskInfo.getStoredResourceIds()));
-                    updatedTaskInfo.setResourceUrls(new HashMap<>(storedTaskInfo.getResourceUrls()));
-                    if (storedTaskInfo.getSparqlQueryRequest() != null)
-                        updatedTaskInfo.setSparqlQueryRequest(new SparqlQueryRequest(storedTaskInfo.getSparqlQueryRequest()));
-                    else
-                        updatedTaskInfo.setSparqlQueryRequest(null);
-
+                    // Create the updatedTaskInfo
+                    TaskInfo updatedTaskInfo = createUpdatedTaskInfo(taskInfoRequest, storedTaskInfo);
 
                     // Check if allowCaching changed value
-                    if (storedTaskInfo.getAllowCaching() != updatedTaskInfo.getAllowCaching()) {
-                        if (updatedTaskInfo.getAllowCaching()) {
-                            log.debug("AllowCaching changed value from false to true");
-
-                            // Acquire resources
-                            QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
-                                    .queryAndProcessSearchResponse(updatedTaskInfo);
-
-                            TaskInfo newTaskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
-                            updatedTaskInfo.setStoredResourceIds(new ArrayList<>());
-
-                            // Add the resource ids of the newTask that are not already in the resourceIds list
-                            for (String resource : newTaskInfo.getResourceIds()) {
-                                if (!updatedTaskInfo.getResourceIds().contains(resource)) {
-                                    updatedTaskInfo.getStoredResourceIds().add(resource);
-                                }
-                            }
-
-                            // Also, add the storedResource ids of the newTask
-                            updatedTaskInfo.getStoredResourceIds().addAll(newTaskInfo.getStoredResourceIds());
-                            searchHelper.configureTaskTimer(updatedTaskInfo);
-
-                        } else {
-                            log.debug("AllowCaching changed value from true to false");
-
-                            updatedTaskInfo.getStoredResourceIds().clear();
-                            searchHelper.removeTaskTimer(updatedTaskInfo.getTaskId());
-                        }
-                    }
+                    checkAllowCaching(updatedTaskInfo, storedTaskInfo);
 
                     // Check if minNoResource increased
-                    if (updatedTaskInfo.getMinNoResources() > storedTaskInfo.getMinNoResources()) {
-                        log.info("The update on task " + updatedTaskInfo.getTaskId() + " requests more resources: " +
-                        storedTaskInfo.getMinNoResources() + " -> " + updatedTaskInfo.getMinNoResources());
+                    CheckMinNoResourcesResult checkMinNoResourcesResult =checkMinNoResources(updatedTaskInfo,
+                            storedTaskInfo, platformProxyResourceInfoList,
+                            responseStatus, informPlatformProxy);
+                    responseStatus = checkMinNoResourcesResult.getResponseStatus();
+                    informPlatformProxy = checkMinNoResourcesResult.isInformPlatformProxy();
 
-                        // ToDo: Behavior when allowCaching == false
-                        int noNewResourcesNeeded = updatedTaskInfo.getMinNoResources() - storedTaskInfo.getMinNoResources();
-                        if (updatedTaskInfo.getAllowCaching()) {
-
-                            Map<String, String> newResourceUrls = new HashMap<>();
-
-                            while (newResourceUrls.size() != noNewResourcesNeeded &&
-                                    updatedTaskInfo.getStoredResourceIds().size() != 0) {
-                                String candidateResourceId = updatedTaskInfo.getStoredResourceIds().get(0);
-                                String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
-
-                                if (candidateResourceUrl != null) {
-                                    newResourceUrls.put(candidateResourceId, candidateResourceUrl);
-
-                                    PlatformProxyResourceInfo candidatePlatformProxyResourceInfo = new PlatformProxyResourceInfo();
-                                    candidatePlatformProxyResourceInfo.setResourceId(candidateResourceId);
-                                    candidatePlatformProxyResourceInfo.setAccessURL(candidateResourceUrl);
-
-                                    platformProxyResourceInfoList.add(candidatePlatformProxyResourceInfo);
-                                }
-
-                                //ToDo: add it to another list if CRAM does not respond with a url
-                                updatedTaskInfo.getStoredResourceIds().remove(0);
-                            }
-
-                            updatedTaskInfo.addResourceIds(newResourceUrls);
-
-                            if (newResourceUrls.size() == noNewResourcesNeeded) {
-                                log.info("There were enough resources to be added");
-                                responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
-
-                            } else {
-                                log.info("Not enough resources are available.");
-                                if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN) {
-                                    responseStatus = ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES;
-                                }
-                                informPlatformProxy = false;
-
-                            }
-                        }
-                    } else if (updatedTaskInfo.getMinNoResources() < storedTaskInfo.getMinNoResources()) { // Check if minNoResources decreased
-                        if (updatedTaskInfo.getMinNoResources() <= updatedTaskInfo.getResourceIds().size() &&
-                                storedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES) {
-                            updatedTaskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-                        }
-                    }
 
                     // Inform Enabler Logic in any case
                     ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse =
@@ -249,28 +153,9 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     updatedTaskInfo.setStatus(responseStatus);
 
                     // Check if there is a need to inform Platform Proxy
-
-                    // Check if informPlatformProxy changed value
-                    if (storedTaskInfo.getInformPlatformProxy() != updatedTaskInfo.getInformPlatformProxy()) {
-                        processPlatformProxyTransition(updatedTaskInfo, platformProxyAcquisitionStartRequestList,
-                                cancelTaskRequest);
-                    }
-                    else if (updatedTaskInfo.getInformPlatformProxy() && informPlatformProxy &&
-                            (!updatedTaskInfo.getQueryInterval().equals(storedTaskInfo.getQueryInterval()) ||
-                                    !updatedTaskInfo.getEnablerLogicName().equals(storedTaskInfo.getEnablerLogicName()) ||
-                                            platformProxyResourceInfoList.size() > 0 ||
-                                    (updatedTaskInfo.getStatus() != storedTaskInfo.getStatus() &&
-                                            updatedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS))) {
-
-                        PlatformProxyUpdateRequest updateRequest = new PlatformProxyUpdateRequest();
-                        updateRequest.setTaskId(updatedTaskInfo.getTaskId());
-                        updateRequest.setEnablerLogicName(updatedTaskInfo.getEnablerLogicName());
-                        updateRequest.setQueryInterval_ms(new IntervalFormatter(updatedTaskInfo.getQueryInterval())
-                                .getMillis());
-                        updateRequest.setResources(updatedTaskInfo.createPlatformProxyResourceInfoList());
-                        platformProxyUpdateRequestList.add(updateRequest);
-                    }
-
+                    checkInformPlatformProxy(updatedTaskInfo, storedTaskInfo, platformProxyResourceInfoList,
+                            platformProxyAcquisitionStartRequestList, platformProxyUpdateRequestList,
+                            cancelTaskRequest, informPlatformProxy);
 
                     taskInfoRepository.save(updatedTaskInfo);
 
@@ -329,14 +214,17 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 response.setMessage(message);
             } else if (failedTasks.size() < response.getTasks().size()) {
                 String message = "Failed update tasks id : [";
+                StringBuilder stringBuilder = new StringBuilder(message);
 
                 for (String id : failedTasks) {
-                    message += id + ", ";
+                    stringBuilder.append(id).append(", ");
                 }
-                message = message.substring(0, message.length() - 2);
-                message += "]";
 
-                log.info(message);
+                stringBuilder.delete(stringBuilder.length() - 2, stringBuilder.length());
+                stringBuilder.append(']');
+                message = stringBuilder.toString();
+                log.debug(message);
+
                 response.setStatus(ResourceManagerTasksStatus.PARTIAL_SUCCESS);
                 response.setMessage(message);
             }
@@ -401,6 +289,126 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         }
     }
 
+    private TaskInfo createUpdatedTaskInfo(ResourceManagerTaskInfoRequest taskInfoRequest, TaskInfo storedTaskInfo) {
+        TaskInfo updatedTaskInfo = new TaskInfo(taskInfoRequest);
+
+        // If a value is null, retain the previous value
+        if (updatedTaskInfo.getMinNoResources() == null)
+            updatedTaskInfo.setMinNoResources(storedTaskInfo.getMinNoResources());
+        if (updatedTaskInfo.getQueryInterval() == null)
+            updatedTaskInfo.setQueryInterval(storedTaskInfo.getQueryInterval());
+        if (updatedTaskInfo.getAllowCaching() == null)
+            updatedTaskInfo.setAllowCaching(storedTaskInfo.getAllowCaching());
+        if (updatedTaskInfo.getCachingInterval() == null)
+            updatedTaskInfo.setCachingInterval(storedTaskInfo.getCachingInterval());
+        if (updatedTaskInfo.getInformPlatformProxy() == null)
+            updatedTaskInfo.setInformPlatformProxy(storedTaskInfo.getInformPlatformProxy());
+        if (updatedTaskInfo.getEnablerLogicName() == null)
+            updatedTaskInfo.setEnablerLogicName(storedTaskInfo.getEnablerLogicName());
+
+        // Always retain the following values in the updatedTaskInfo if the CoreQuery Request does not change
+        updatedTaskInfo.setCoreQueryRequest(CoreQueryRequest.newInstance(storedTaskInfo.getCoreQueryRequest()));
+        updatedTaskInfo.setResourceIds(new ArrayList<>(storedTaskInfo.getResourceIds()));
+        updatedTaskInfo.setStoredResourceIds(new ArrayList<>(storedTaskInfo.getStoredResourceIds()));
+        updatedTaskInfo.setResourceUrls(new HashMap<>(storedTaskInfo.getResourceUrls()));
+        if (storedTaskInfo.getSparqlQueryRequest() != null)
+            updatedTaskInfo.setSparqlQueryRequest(new SparqlQueryRequest(storedTaskInfo.getSparqlQueryRequest()));
+        else
+            updatedTaskInfo.setSparqlQueryRequest(null);
+
+        return updatedTaskInfo;
+    }
+
+    private void checkAllowCaching(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo) {
+        if (storedTaskInfo.getAllowCaching() != updatedTaskInfo.getAllowCaching()) {
+            if (updatedTaskInfo.getAllowCaching()) {
+                log.debug("AllowCaching changed value from false to true");
+
+                // Acquire resources
+                QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
+                        .queryAndProcessSearchResponse(updatedTaskInfo);
+
+                TaskInfo newTaskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
+                updatedTaskInfo.setStoredResourceIds(new ArrayList<>());
+
+                // Add the resource ids of the newTask that are not already in the resourceIds list
+                for (String resource : newTaskInfo.getResourceIds()) {
+                    if (!updatedTaskInfo.getResourceIds().contains(resource)) {
+                        updatedTaskInfo.getStoredResourceIds().add(resource);
+                    }
+                }
+
+                // Also, add the storedResource ids of the newTask
+                updatedTaskInfo.getStoredResourceIds().addAll(newTaskInfo.getStoredResourceIds());
+                searchHelper.configureTaskTimer(updatedTaskInfo);
+
+            } else {
+                log.debug("AllowCaching changed value from true to false");
+
+                updatedTaskInfo.getStoredResourceIds().clear();
+                searchHelper.removeTaskTimer(updatedTaskInfo.getTaskId());
+            }
+        }
+    }
+
+    private CheckMinNoResourcesResult checkMinNoResources(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo,
+                                     List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
+                                     ResourceManagerTaskInfoResponseStatus responseStatus,
+                                     boolean informPlatformProxy) {
+        if (updatedTaskInfo.getMinNoResources() > storedTaskInfo.getMinNoResources()) {
+            log.info("The update on task " + updatedTaskInfo.getTaskId() + " requests more resources: " +
+                    storedTaskInfo.getMinNoResources() + " -> " + updatedTaskInfo.getMinNoResources());
+
+            // ToDo: Behavior when allowCaching == false
+            int noNewResourcesNeeded = updatedTaskInfo.getMinNoResources() - storedTaskInfo.getMinNoResources();
+            if (updatedTaskInfo.getAllowCaching()) {
+
+                Map<String, String> newResourceUrls = new HashMap<>();
+
+                while (newResourceUrls.size() != noNewResourcesNeeded &&
+                        updatedTaskInfo.getStoredResourceIds().size() != 0) {
+                    String candidateResourceId = updatedTaskInfo.getStoredResourceIds().get(0);
+                    String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
+
+                    if (candidateResourceUrl != null) {
+                        newResourceUrls.put(candidateResourceId, candidateResourceUrl);
+
+                        PlatformProxyResourceInfo candidatePlatformProxyResourceInfo = new PlatformProxyResourceInfo();
+                        candidatePlatformProxyResourceInfo.setResourceId(candidateResourceId);
+                        candidatePlatformProxyResourceInfo.setAccessURL(candidateResourceUrl);
+
+                        platformProxyResourceInfoList.add(candidatePlatformProxyResourceInfo);
+                    }
+
+                    //ToDo: add it to another list if CRAM does not respond with a url
+                    updatedTaskInfo.getStoredResourceIds().remove(0);
+                }
+
+                updatedTaskInfo.addResourceIds(newResourceUrls);
+
+                if (newResourceUrls.size() == noNewResourcesNeeded) {
+                    log.info("There were enough resources to be added");
+                    responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
+
+                } else {
+                    log.info("Not enough resources are available.");
+                    if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN) {
+                        responseStatus = ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES;
+                    }
+                    informPlatformProxy = false;
+
+                }
+            }
+        } else if (updatedTaskInfo.getMinNoResources() < storedTaskInfo.getMinNoResources()) { // Check if minNoResources decreased
+            if (updatedTaskInfo.getMinNoResources() <= updatedTaskInfo.getResourceIds().size() &&
+                    storedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES) {
+                updatedTaskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+            }
+        }
+
+        return new CheckMinNoResourcesResult(responseStatus, informPlatformProxy);
+    }
+
     private void processPlatformProxyTransition(TaskInfo taskInfo, List<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList,
                       CancelTaskRequest cancelTaskRequest) {
         if (taskInfo.getInformPlatformProxy()) {
@@ -418,6 +426,49 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             // send CancelTaskRequest
             cancelTaskRequest.getTaskIdList().add(taskInfo.getTaskId());
         }
+    }
+
+    private void checkInformPlatformProxy(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo,
+                                          List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
+                                          ArrayList<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList,
+                                          ArrayList<PlatformProxyTaskInfo> platformProxyUpdateRequestList,
+                                          CancelTaskRequest cancelTaskRequest, boolean informPlatformProxy) {
+        // Check if informPlatformProxy changed value
+        if (storedTaskInfo.getInformPlatformProxy() != updatedTaskInfo.getInformPlatformProxy()) {
+            processPlatformProxyTransition(updatedTaskInfo, platformProxyAcquisitionStartRequestList,
+                    cancelTaskRequest);
+        }
+        else if (updatedTaskInfo.getInformPlatformProxy() && informPlatformProxy &&
+                (!updatedTaskInfo.getQueryInterval().equals(storedTaskInfo.getQueryInterval()) ||
+                        !updatedTaskInfo.getEnablerLogicName().equals(storedTaskInfo.getEnablerLogicName()) ||
+                        platformProxyResourceInfoList.size() > 0 ||
+                        (updatedTaskInfo.getStatus() != storedTaskInfo.getStatus() &&
+                                updatedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS))) {
+
+            PlatformProxyUpdateRequest updateRequest = new PlatformProxyUpdateRequest();
+            updateRequest.setTaskId(updatedTaskInfo.getTaskId());
+            updateRequest.setEnablerLogicName(updatedTaskInfo.getEnablerLogicName());
+            updateRequest.setQueryInterval_ms(new IntervalFormatter(updatedTaskInfo.getQueryInterval())
+                    .getMillis());
+            updateRequest.setResources(updatedTaskInfo.createPlatformProxyResourceInfoList());
+            platformProxyUpdateRequestList.add(updateRequest);
+        }
+    }
+
+    private class CheckMinNoResourcesResult {
+        private ResourceManagerTaskInfoResponseStatus responseStatus;
+        private boolean informPlatformProxy;
+
+        private CheckMinNoResourcesResult(ResourceManagerTaskInfoResponseStatus responseStatus, boolean informPlatformProxy) {
+            this.responseStatus = responseStatus;
+            this.informPlatformProxy = informPlatformProxy;
+        }
+
+        private ResourceManagerTaskInfoResponseStatus getResponseStatus() { return responseStatus; }
+        private void setResponseStatus(ResourceManagerTaskInfoResponseStatus responseStatus) { this.responseStatus = responseStatus; }
+
+        private boolean isInformPlatformProxy() { return informPlatformProxy; }
+        private void setInformPlatformProxy(boolean informPlatformProxy) { this.informPlatformProxy = informPlatformProxy; }
     }
 }
 
