@@ -2,6 +2,7 @@ package eu.h2020.symbiote.enabler.resourcemanager.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.h2020.symbiote.security.ComponentSecurityHandlerFactory;
+import eu.h2020.symbiote.security.commons.SecurityConstants;
 import eu.h2020.symbiote.security.commons.Token;
 import eu.h2020.symbiote.security.commons.credentials.AuthorizationCredentials;
 import eu.h2020.symbiote.security.commons.credentials.HomeCredentials;
@@ -83,6 +84,9 @@ public class AuthorizationManager {
     }
 
     public Map<String, String> requestHomeToken(String platformId) throws SecurityHandlerException {
+
+        // Todo: remove this line when release 1.1.0 is out
+        platformId = SecurityConstants.CORE_AAM_INSTANCE_ID;
 
         if (securityEnabled) {
             ISecurityHandler iSecurityHandler = componentSecurityHandler.getSecurityHandler();

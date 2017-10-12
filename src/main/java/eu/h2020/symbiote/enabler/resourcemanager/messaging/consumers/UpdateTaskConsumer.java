@@ -128,14 +128,12 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     boolean informPlatformProxy = true;
                     ResourceManagerTaskInfoResponseStatus responseStatus = ResourceManagerTaskInfoResponseStatus.UNKNOWN;
 
-                    // Create the updatedTaskInfo
+                    // Create updatedTaskInfo and modify its values according to the changes
                     TaskInfo updatedTaskInfo = createUpdatedTaskInfo(taskInfoRequest, storedTaskInfo);
-
-                    // Check if allowCaching changed value
-                    checkAllowCaching(updatedTaskInfo, storedTaskInfo);
-
-                    // Check if minNoResource increased
-                    CheckMinNoResourcesResult checkMinNoResourcesResult =checkMinNoResources(updatedTaskInfo,
+                    boolean allowCachingChanged = checkAllowCaching(updatedTaskInfo, storedTaskInfo);
+                    if (!allowCachingChanged)
+                        checkCachingInterval(updatedTaskInfo, storedTaskInfo);
+                    CheckMinNoResourcesResult checkMinNoResourcesResult = checkMinNoResources(updatedTaskInfo,
                             storedTaskInfo, platformProxyResourceInfoList,
                             responseStatus, informPlatformProxy);
                     responseStatus = checkMinNoResourcesResult.getResponseStatus();
@@ -197,6 +195,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
             response.setTasks(resourceManagerTaskInfoResponseList);
 
+            // Set the response status
             for (ResourceManagerTaskInfoResponse taskInfoResponse : response.getTasks()) {
                 if (taskInfoResponse.getStatus() != ResourceManagerTaskInfoResponseStatus.SUCCESS)
                     failedTasks.add(taskInfoResponse.getTaskId());
@@ -319,27 +318,16 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         return updatedTaskInfo;
     }
 
-    private void checkAllowCaching(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo) {
+    private boolean checkAllowCaching(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo) {
+        // The return value shows if there was a modification on the allowCaching field
+
         if (storedTaskInfo.getAllowCaching() != updatedTaskInfo.getAllowCaching()) {
             if (updatedTaskInfo.getAllowCaching()) {
                 log.debug("AllowCaching changed value from false to true");
 
-                // Acquire resources
-                QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
-                        .queryAndProcessSearchResponse(updatedTaskInfo);
+                List<String> newStoredResourceIds = getUpdatedStoredResourceIds(updatedTaskInfo);
 
-                TaskInfo newTaskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
-                updatedTaskInfo.setStoredResourceIds(new ArrayList<>());
-
-                // Add the resource ids of the newTask that are not already in the resourceIds list
-                for (String resource : newTaskInfo.getResourceIds()) {
-                    if (!updatedTaskInfo.getResourceIds().contains(resource)) {
-                        updatedTaskInfo.getStoredResourceIds().add(resource);
-                    }
-                }
-
-                // Also, add the storedResource ids of the newTask
-                updatedTaskInfo.getStoredResourceIds().addAll(newTaskInfo.getStoredResourceIds());
+                updatedTaskInfo.setStoredResourceIds(newStoredResourceIds);
                 searchHelper.configureTaskTimer(updatedTaskInfo);
 
             } else {
@@ -348,8 +336,63 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 updatedTaskInfo.getStoredResourceIds().clear();
                 searchHelper.removeTaskTimer(updatedTaskInfo.getTaskId());
             }
+
+            return true;
         }
+
+        return false;
     }
+
+
+    /**
+     * This function checks if the cachingInterval has changed, updates the StoredResourceIds and
+     * reconfigures the timer. This should be called only when checkAllowCaching returns false, which means
+     * that the checkAllowCaching did not changed. If checkAllowCaching == true, then the configuration of
+     * the cachingInterval has already be taken care of inside the checkAllowCaching.
+     */
+    private void checkCachingInterval(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo) {
+
+        if (!storedTaskInfo.getCachingInterval().equals(updatedTaskInfo.getCachingInterval())) {
+            log.debug("CachingInterval changed value!");
+
+            List<String> newStoredResourceIds = getUpdatedStoredResourceIds(updatedTaskInfo);
+
+            updatedTaskInfo.setStoredResourceIds(newStoredResourceIds);
+            searchHelper.configureTaskTimer(updatedTaskInfo);
+
+        }
+
+    }
+
+
+    private List<String> getUpdatedStoredResourceIds(TaskInfo updatedTaskInfo) {
+
+        List<String> result = new ArrayList<>();
+
+        // Acquire resources
+        QueryAndProcessSearchResponseResult newQueryAndProcessSearchResponseResult = searchHelper
+                .queryAndProcessSearchResponse(updatedTaskInfo);
+
+        TaskInfo newTaskInfo = newQueryAndProcessSearchResponseResult.getTaskInfo();
+        updatedTaskInfo.setStoredResourceIds(new ArrayList<>());
+
+        // Add the resource ids of the newTask that are not already in the resourceIds list
+        for (String resource : newTaskInfo.getResourceIds()) {
+            if (!updatedTaskInfo.getResourceIds().contains(resource)) {
+                result.add(resource);
+            }
+        }
+
+        // Also, add the storedResource ids of the newTask
+        for (String resource : newTaskInfo.getStoredResourceIds()) {
+            if (!updatedTaskInfo.getResourceIds().contains(resource)) {
+                result.add(resource);
+            }
+        }
+
+        return result;
+    }
+
 
     private CheckMinNoResourcesResult checkMinNoResources(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo,
                                      List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
@@ -409,6 +452,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         return new CheckMinNoResourcesResult(responseStatus, informPlatformProxy);
     }
 
+
     private void processPlatformProxyTransition(TaskInfo taskInfo, List<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList,
                       CancelTaskRequest cancelTaskRequest) {
         if (taskInfo.getInformPlatformProxy()) {
@@ -427,6 +471,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             cancelTaskRequest.getTaskIdList().add(taskInfo.getTaskId());
         }
     }
+
 
     private void checkInformPlatformProxy(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo,
                                           List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
@@ -454,6 +499,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             platformProxyUpdateRequestList.add(updateRequest);
         }
     }
+
 
     private class CheckMinNoResourcesResult {
         private ResourceManagerTaskInfoResponseStatus responseStatus;

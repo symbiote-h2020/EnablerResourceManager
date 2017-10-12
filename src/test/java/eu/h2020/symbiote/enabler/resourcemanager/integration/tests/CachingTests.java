@@ -52,7 +52,8 @@ public class CachingTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        createFuture.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetResourceDetailsTest", createResultRef));
+        createFuture.addCallback(new ListenableFutureAcquisitionStartCallback("createAndCancelCachingTasksTest",
+                createResultRef));
 
         while(!createFuture.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -80,7 +81,6 @@ public class CachingTests extends AbstractTestClass {
         assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get("2"));
 
         while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 2) {
-            log.info("startAcquisitionRequestsReceivedByListener.size(): " + dummyPlatformProxyListener.startAcquisitionRequestsReceived());
             TimeUnit.MILLISECONDS.sleep(100);
         }
         // Added extra delay to make sure that the message is handled
@@ -183,7 +183,8 @@ public class CachingTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, cancelTaskRoutingKey, cancelTaskRequest);
         log.info("After sending the message");
 
-        cancelFuture.addCallback(new ListenableFutureCancelCallback("successfulCancelTaskTest", cancelResultRef));
+        cancelFuture.addCallback(new ListenableFutureCancelCallback("createAndCancelCachingTasksTest",
+                cancelResultRef));
 
         while(!cancelFuture.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -250,8 +251,8 @@ public class CachingTests extends AbstractTestClass {
                 "enablerLogic", null, resourceIds,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
         taskInfoRepository.save(task1);
-        searchHelper.getScheduledTaskInfoUpdateMap().put(task1.getTaskId(), new ScheduledTaskInfoUpdate(taskInfoRepository,
-                searchHelper, task1));
+        searchHelper.getScheduledTaskInfoUpdateMap().put(task1.getTaskId(),
+                new ScheduledTaskInfoUpdate(taskInfoRepository, searchHelper, task1));
 
         Map<String, String> resourceUrls2 = new HashMap<>();
         resourceUrls2.put("21", symbIoTeCoreUrl + "/Sensors('21')");
@@ -261,8 +262,8 @@ public class CachingTests extends AbstractTestClass {
         task2.setResourceIds(Arrays.asList("21", "22"));
         task2.setResourceUrls(resourceUrls2);
         taskInfoRepository.save(task2);
-        searchHelper.getScheduledTaskInfoUpdateMap().put(task2.getTaskId(), new ScheduledTaskInfoUpdate(taskInfoRepository,
-                searchHelper, task2));
+        searchHelper.getScheduledTaskInfoUpdateMap().put(task2.getTaskId(),
+                new ScheduledTaskInfoUpdate(taskInfoRepository, searchHelper, task2));
 
         // resource1 should not be in the storedResourceIds after the update
         Map<String, String> resourceUrls3 = new HashMap<>();
@@ -332,7 +333,7 @@ public class CachingTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureUpdateCallback("updateTaskWithAllowCachingBecomingFalseTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("updateTaskWithAllowCachingTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -491,6 +492,8 @@ public class CachingTests extends AbstractTestClass {
         // Wait a little more than 1 sec in order to check if stored resources are updated
         TimeUnit.MILLISECONDS.sleep(1200);
 
+        storedTaskInfo1 = taskInfoRepository.findByTaskId("1");
+        storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
         storedTaskInfo3 = taskInfoRepository.findByTaskId("3");
         storedTaskInfo4 = taskInfoRepository.findByTaskId("4");
 
@@ -551,5 +554,4 @@ public class CachingTests extends AbstractTestClass {
 
         log.info("updateTaskWithAllowCachingTest FINISHED!");
     }
-
 }
