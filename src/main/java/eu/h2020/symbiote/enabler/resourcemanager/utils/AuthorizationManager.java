@@ -17,6 +17,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -111,6 +112,32 @@ public class AuthorizationManager {
         } else {
             log.debug("Security is disabled. Returning empty Map");
             return new HashMap<>();
+        }
+    }
+
+
+    public boolean verifyServiceResponse(HttpHeaders httpHeaders, String platformId) {
+        if (securityEnabled) {
+            // Todo: remove this line when release 1.1.0 is out
+            platformId = SecurityConstants.CORE_AAM_INSTANCE_ID;
+
+            String serviceResponse = httpHeaders.get(SecurityConstants.SECURITY_RESPONSE_HEADER).get(0);
+
+            if (serviceResponse == null)
+                return false;
+            else {
+                try {
+                    return componentSecurityHandler.isReceivedServiceResponseVerified(serviceResponse,
+                            "cram", platformId);
+                } catch (SecurityHandlerException e) {
+                    log.info("Exception during serviceResponse verification", e);
+                    return false;
+                }
+            }
+
+        } else {
+            log.debug("Security is disabled. Returning true");
+            return true;
         }
     }
 

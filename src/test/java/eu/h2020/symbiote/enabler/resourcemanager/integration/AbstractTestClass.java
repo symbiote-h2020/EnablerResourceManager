@@ -123,6 +123,7 @@ public abstract class AbstractTestClass {
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
 
         doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
+        doReturn(true).when(authorizationManager).verifyServiceResponse(any(), any());
 
         doAnswer(new RestTemplateAnswer()).when(restTemplate)
                 .exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(Class.class));
