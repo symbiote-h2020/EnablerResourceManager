@@ -7,6 +7,7 @@ import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
+import eu.h2020.symbiote.core.internal.ResourceUrlsResponse;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ScheduledTaskInfoUpdate;
@@ -21,7 +22,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -294,10 +294,9 @@ public class SearchHelper {
             cramHttpHeaders.setContentType(MediaType.APPLICATION_JSON);
 
             HttpEntity<String> cramEntity = new HttpEntity<>(cramHttpHeaders);
-            ParameterizedTypeReference<Map<String, String>> typeRef = new ParameterizedTypeReference<Map<String, String>>() {};
-            ResponseEntity<Map<String, String>> cramResponseEntity = restTemplate.exchange(
-                    cramRequestUrl, HttpMethod.GET, cramEntity, typeRef);
-            Map<String, String> cramResponse = cramResponseEntity.getBody();
+            ResponseEntity<ResourceUrlsResponse> cramResponseEntity = restTemplate.exchange(
+                    cramRequestUrl, HttpMethod.GET, cramEntity, ResourceUrlsResponse.class);
+            Map<String, String> cramResponse = cramResponseEntity.getBody().getBody();
 
             log.info("CRAM Response: " + cramResponse);
 

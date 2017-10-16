@@ -8,6 +8,7 @@ import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
+import eu.h2020.symbiote.core.internal.ResourceUrlsResponse;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerUpdateRequest;
@@ -402,18 +403,26 @@ public abstract class AbstractTestClass {
         private ResponseEntity getResourceUrls(Map<String, String> queryPairs) {
 
             String resourceId = queryPairs.get("id");
-            HashMap<String, String> response = new HashMap<>();
+            ResourceUrlsResponse response = new ResourceUrlsResponse();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
+
             if (!resourceId.equals("badCRAMrespose")) {
-                if (!resourceId.equals("noCRAMurl"))
-                    response.put(resourceId, symbIoTeCoreUrl + "/Sensors('" + resourceId + "')");
+                HashMap<String, String> responseBody = new HashMap<>();
+
+                if (!resourceId.equals("noCRAMurl")) {
+                    responseBody.put(resourceId, symbIoTeCoreUrl + "/Sensors('" + resourceId + "')");
+                }
+
+                response.setBody(responseBody);
             } else {
-                return new ResponseEntity<>("", headers, HttpStatus.INTERNAL_SERVER_ERROR);
+                response.setBody(new HashMap<>());
+                return new ResponseEntity<>(response, headers, HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
             return new ResponseEntity<>(response, headers, HttpStatus.OK);
+
         }
     }
 }
