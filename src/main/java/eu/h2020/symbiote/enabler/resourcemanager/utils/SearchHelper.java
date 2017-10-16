@@ -89,7 +89,7 @@ public class SearchHelper {
             try {
                 log.info("SymbIoTe Core Response: " + mapper.writeValueAsString(queryResponseEntity));
             } catch (JsonProcessingException e) {
-                log.info(e);
+                log.info("Cannot deserialize SymbIoTe Core Response", e);
             }
 
             QueryResponse queryResponse = queryResponseEntity.getBody();
@@ -108,7 +108,7 @@ public class SearchHelper {
                 return null;
 
         } catch (HttpClientErrorException | HttpServerErrorException e) {
-            log.info(e.toString());
+            log.info("Exception in querySingleResource", e);
             return null;
         }
     }
@@ -149,7 +149,7 @@ public class SearchHelper {
             try {
                 log.info("SymbIoTe Core Response: " + mapper.writeValueAsString(queryResponseEntity));
             } catch (JsonProcessingException e) {
-                log.info(e);
+                log.info("Cannot deserialize SymbIoTe Core Response", e);
             }
 
             queryResponse = queryResponseEntity.getBody();
@@ -177,8 +177,9 @@ public class SearchHelper {
 
             }
         } catch (SecurityException | HttpClientErrorException | HttpServerErrorException e) {
-            log.info(e.toString());
+            log.info("", e);
             taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.FAILED);
+            // Todo: Add message in taskInfoResponse
         }
 
         TaskInfo taskInfo = new TaskInfo(taskInfoResponse);
@@ -240,11 +241,6 @@ public class SearchHelper {
         }
     }
 
-    private void loadTaskInfo() {
-
-    }
-
-
     public Timer getTimer() { return timer; }
     public void setTimer(Timer timer) { this.timer = timer; }
 
@@ -254,6 +250,11 @@ public class SearchHelper {
 
     public void setScheduledTaskInfoUpdateMap(Map<String, ScheduledTaskInfoUpdate> scheduledTaskInfoUpdateMap) {
         this.scheduledTaskInfoUpdateMap = scheduledTaskInfoUpdateMap;
+    }
+
+
+    private void loadTaskInfo() {
+        // Todo: load taskInfo at startup
     }
 
     private TaskResponseToComponents processSearchResponse(QueryResponse queryResponse, ResourceManagerTaskInfoRequest taskInfoRequest) {
@@ -287,6 +288,7 @@ public class SearchHelper {
             String cramRequestUrl = symbIoTeCoreUrl + "/resourceUrls?id=" + queryResourceResult.getId();
             HttpHeaders cramHttpHeaders = new HttpHeaders();
 
+            // Add Security Request Headers
             for (Map.Entry<String, String> entry : securityRequestHeaders.entrySet()) {
                 cramHttpHeaders.add(entry.getKey(), entry.getValue());
             }
@@ -297,6 +299,10 @@ public class SearchHelper {
             ParameterizedTypeReference<Map<String, String>> typeRef = new ParameterizedTypeReference<Map<String, String>>() {};
             ResponseEntity<Map<String, String>> cramResponseEntity = restTemplate.exchange(
                     cramRequestUrl, HttpMethod.GET, cramEntity, typeRef);
+
+            if (!authorizationManager.verifyServiceResponse(cramResponseEntity.getHeaders(), queryResourceResult.getPlatformId()))
+                throw new SecurityHandlerException("Service Response was not verified");
+
             Map<String, String> cramResponse = cramResponseEntity.getBody();
 
             log.info("CRAM Response: " + cramResponse);
@@ -316,7 +322,7 @@ public class SearchHelper {
                 }
             }
         } catch (SecurityHandlerException | HttpClientErrorException | HttpServerErrorException e) {
-            log.info(e.toString());
+            log.info("Exception in getUrlsFromCram()", e);
         }
 
         return taskResponseToComponents;

@@ -24,6 +24,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 
 
 @EnableAutoConfiguration
@@ -215,6 +218,96 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
         log.info("resourceManagerGetSparqlResourceDetailsTest FINISHED!");
     }
+
+    @Test
+    public void resourceManagerGetResourceDetailsInvalidServiceResponseTest() throws Exception {
+        log.info("resourceManagerGetResourceDetailsInvalidServiceResponseTest STARTED!");
+
+        doReturn(false).when(authorizationManager).verifyServiceResponse(any(), eq("platform1"));
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureAcquisitionStartCallback(
+                "resourceManagerGetResourceDetailsInvalidServiceResponseTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        String responseInString = mapper.writeValueAsString(resultRef.get().getTasks());
+        log.info("Response String: " + responseInString);
+
+        // Test what Enabler Logic receives
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals("ALL the task requests were successful!", resultRef.get().getMessage());
+        assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals(1, resultRef.get().getTasks().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(0));
+        assertEquals("resource3", resultRef.get().getTasks().get(0).getResourceIds().get(1));
+        assertEquals("resource4", resultRef.get().getTasks().get(1).getResourceIds().get(0));
+
+        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 2) {
+            log.info("startAcquisitionRequestsReceivedByListener.size(): " + dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Platform Proxy receives
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+
+        assertEquals(2, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+
+        if (startAcquisitionRequestsReceivedByListener.get(0).getTaskId().equals("1")) {
+            assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+            assertEquals("resource3", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(1).getResourceId());
+            assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(0).getResourceId());
+            assertEquals("enablerLogicName", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
+            assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(1).getEnablerLogicName());
+
+        } else {
+            assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(0).getResourceId());
+            assertEquals("resource3", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(1).getResourceId());
+            assertEquals("resource4", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+            assertEquals("enablerLogicName", startAcquisitionRequestsReceivedByListener.get(1).getEnablerLogicName());
+            assertEquals("enablerLogicName2", startAcquisitionRequestsReceivedByListener.get(0).getEnablerLogicName());
+        }
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
+        assertEquals(2, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("resource2", taskInfo.getResourceIds().get(0));
+        assertEquals("resource3", taskInfo.getResourceIds().get(1));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource3')", taskInfo.getResourceUrls().get("resource3"));
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
+        assertEquals(1, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("resource4", taskInfo.getResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
+
+        log.info("resourceManagerGetResourceDetailsInvalidServiceResponseTest FINISHED!");
+    }
+
 
     // @Test
     public void resourceManagerGetResourceDetailsNoResponseTest() throws Exception {
