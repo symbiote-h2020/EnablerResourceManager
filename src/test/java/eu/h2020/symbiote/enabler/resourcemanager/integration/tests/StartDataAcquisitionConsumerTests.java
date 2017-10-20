@@ -13,8 +13,11 @@ import org.apache.commons.logging.LogFactory;
 
 import org.junit.Test;
 
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.http.HttpHeaders;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -26,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 
 
@@ -223,7 +227,16 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
     public void resourceManagerGetResourceDetailsInvalidServiceResponseTest() throws Exception {
         log.info("resourceManagerGetResourceDetailsInvalidServiceResponseTest STARTED!");
 
-        doReturn(false).when(authorizationManager).verifyServiceResponse(any(), eq("platform1"));
+        doAnswer(new Answer<Boolean>() {
+            @Override
+            public Boolean answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+                HttpHeaders httpHeaders = HttpHeaders.class.cast(args[0]);
+                String invalidServiceResponse = httpHeaders.get("invalidServiceResponse").get(0);
+
+                return (invalidServiceResponse != null && invalidServiceResponse.equals("false"));
+            }
+        }).when(authorizationManager).verifyServiceResponse(any(), any(), any());
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);

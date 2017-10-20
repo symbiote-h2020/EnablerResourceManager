@@ -7,13 +7,14 @@ import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
-import eu.h2020.symbiote.core.internal.ResourceUrlsResponse;
+import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.ScheduledTaskInfoUpdate;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskResponseToComponents;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.security.commons.SecurityConstants;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.util.IntervalFormatter;
 
@@ -39,6 +40,8 @@ import java.util.Timer;
  */
 @Component
 public class SearchHelper {
+
+    private static final String CRAM_IDENTIFIER = "cram";
 
     private static Log log = LogFactory.getLog(SearchHelper.class);
 
@@ -300,7 +303,8 @@ public class SearchHelper {
             ResponseEntity<ResourceUrlsResponse> cramResponseEntity = restTemplate.exchange(
                     cramRequestUrl, HttpMethod.GET, cramEntity, ResourceUrlsResponse.class);
 
-            if (!authorizationManager.verifyServiceResponse(cramResponseEntity.getHeaders(), queryResourceResult.getPlatformId()))
+            if (!authorizationManager.verifyServiceResponse(cramResponseEntity.getHeaders(),
+                    CRAM_IDENTIFIER, SecurityConstants.CORE_AAM_INSTANCE_ID))
                 throw new SecurityHandlerException("Service Response was not verified");
 
             Map<String, String> cramResponse = cramResponseEntity.getBody().getBody();

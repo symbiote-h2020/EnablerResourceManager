@@ -10,6 +10,7 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsExce
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.security.communication.payloads.AAM;
+import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.security.handler.ISecurityHandler;
 import eu.h2020.symbiote.security.helpers.MutualAuthenticationHelper;
@@ -86,26 +87,12 @@ public class AuthorizationManager {
 
     public Map<String, String> requestHomeToken(String platformId) throws SecurityHandlerException {
 
-        // Todo: remove this line when release 1.1.0 is out
-        platformId = SecurityConstants.CORE_AAM_INSTANCE_ID;
-
         if (securityEnabled) {
-            ISecurityHandler iSecurityHandler = componentSecurityHandler.getSecurityHandler();
-            Set<AuthorizationCredentials> authorizationCredentialsSet = new HashSet<>();
-
             try {
-                Map<String, AAM> availableAAMs = iSecurityHandler.getAvailableAAMs();
-                // Todo: Change hardcoded values "username" and "password"
-                iSecurityHandler.getCertificate(availableAAMs.get(platformId), "username", "password", clientId);
-                Token homeToken = iSecurityHandler.login(availableAAMs.get(platformId));
-
-                HomeCredentials homeCredentials = iSecurityHandler.getAcquiredCredentials().get(platformId).homeCredentials;
-
-                authorizationCredentialsSet.add(new AuthorizationCredentials(homeToken, homeCredentials.homeAAM, homeCredentials));
-
-                return MutualAuthenticationHelper.getSecurityRequest(authorizationCredentialsSet, false)
+                // Todo: Ask Mikolaj how I can get credentials from more than 1 home platform
+                return componentSecurityHandler.generateSecurityRequestUsingLocalCredentials()
                         .getSecurityRequestHeaderParams();
-            } catch (NoSuchAlgorithmException | ValidationException | JsonProcessingException e) {
+            } catch (JsonProcessingException e) {
                 log.error(e);
                 throw new SecurityHandlerException("Failed to generate security request: " + e.getMessage());
             }
@@ -116,11 +103,8 @@ public class AuthorizationManager {
     }
 
 
-    public boolean verifyServiceResponse(HttpHeaders httpHeaders, String platformId) {
+    public boolean verifyServiceResponse(HttpHeaders httpHeaders, String componentIdentifier, String platformId) {
         if (securityEnabled) {
-            // Todo: remove this line when release 1.1.0 is out
-            platformId = SecurityConstants.CORE_AAM_INSTANCE_ID;
-
             String serviceResponse = httpHeaders.get(SecurityConstants.SECURITY_RESPONSE_HEADER).get(0);
 
             if (serviceResponse == null)
@@ -128,7 +112,7 @@ public class AuthorizationManager {
             else {
                 try {
                     return componentSecurityHandler.isReceivedServiceResponseVerified(serviceResponse,
-                            "cram", platformId);
+                            componentIdentifier, platformId);
                 } catch (SecurityHandlerException e) {
                     log.info("Exception during serviceResponse verification", e);
                     return false;

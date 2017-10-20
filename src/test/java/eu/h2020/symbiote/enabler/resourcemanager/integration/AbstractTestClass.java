@@ -8,7 +8,7 @@ import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
-import eu.h2020.symbiote.core.internal.ResourceUrlsResponse;
+import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerUpdateRequest;
@@ -43,10 +43,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -123,7 +120,7 @@ public abstract class AbstractTestClass {
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
 
         doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
-        doReturn(true).when(authorizationManager).verifyServiceResponse(any(), any());
+        doReturn(true).when(authorizationManager).verifyServiceResponse(any(), any(), any());
 
         doAnswer(new RestTemplateAnswer()).when(restTemplate)
                 .exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(Class.class));
@@ -408,12 +405,16 @@ public abstract class AbstractTestClass {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-
             if (!resourceId.equals("badCRAMrespose")) {
                 HashMap<String, String> responseBody = new HashMap<>();
 
                 if (!resourceId.equals("noCRAMurl")) {
                     responseBody.put(resourceId, symbIoTeCoreUrl + "/Sensors('" + resourceId + "')");
+
+                    if (resourceId.equals("resource1"))
+                        headers.put("invalidServiceResponse", Collections.singletonList("true"));
+                    else
+                        headers.put("invalidServiceResponse", Collections.singletonList("false"));
                 }
 
                 response.setBody(responseBody);
@@ -421,6 +422,7 @@ public abstract class AbstractTestClass {
                 response.setBody(new HashMap<>());
                 return new ResponseEntity<>(response, headers, HttpStatus.INTERNAL_SERVER_ERROR);
             }
+
 
             return new ResponseEntity<>(response, headers, HttpStatus.OK);
 
