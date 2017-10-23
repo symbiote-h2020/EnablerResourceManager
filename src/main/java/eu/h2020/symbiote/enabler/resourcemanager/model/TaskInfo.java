@@ -29,9 +29,9 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
                     String queryInterval, Boolean allowCaching, String cachingInterval,
                     Boolean informPlatformProxy, String enablerLogicName, SparqlQueryRequest sparqlQuery,
                     List<String> resourceIds, ResourceManagerTaskInfoResponseStatus status,
-                    List<String> storedResourceIds, Map<String, String>  resourceUrls) {
+                    List<String> storedResourceIds, Map<String, String>  resourceUrls, String message) {
         super(taskId, minNoResources, coreQueryRequest, queryInterval, allowCaching, cachingInterval,
-                informPlatformProxy, enablerLogicName, sparqlQuery, resourceIds, status);
+                informPlatformProxy, enablerLogicName, sparqlQuery, resourceIds, status, message);
         setStoredResourceIds(storedResourceIds);
         setResourceUrls(resourceUrls);
     }
@@ -40,6 +40,7 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
         super(resourceManagerTaskInfoRequest);
         setResourceIds(new ArrayList<>());
         setStatus(ResourceManagerTaskInfoResponseStatus.UNKNOWN);
+        setMessage("");
         storedResourceIds = new ArrayList<>();
         resourceUrls = new HashMap<>();
     }

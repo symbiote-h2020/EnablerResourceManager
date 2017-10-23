@@ -71,8 +71,10 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("ALL the task requests were successful!", resultRef.get().getMessage());
         assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
         assertEquals(1, resultRef.get().getTasks().get(1).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -112,6 +114,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
@@ -122,6 +125,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
@@ -166,8 +170,10 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("ALL the task requests were successful!", resultRef.get().getMessage());
         assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
         assertEquals(1, resultRef.get().getTasks().get(1).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("sparqlResource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("sparqlResource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -207,6 +213,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("sparqlResource1", taskInfo.getResourceIds().get(0));
         assertEquals("sparqlResource2", taskInfo.getResourceIds().get(1));
         assertEquals(symbIoTeCoreUrl + "/Sensors('sparqlResource1')", taskInfo.getResourceUrls().get("sparqlResource1"));
@@ -217,6 +224,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("sparqlResource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('sparqlResource4')", taskInfo.getResourceUrls().get("sparqlResource4"));
 
@@ -264,8 +272,10 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("ALL the task requests were successful!", resultRef.get().getMessage());
         assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
         assertEquals(1, resultRef.get().getTasks().get(1).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource3", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -305,6 +315,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource2", taskInfo.getResourceIds().get(0));
         assertEquals("resource3", taskInfo.getResourceIds().get(1));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
@@ -315,6 +326,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size()); // allowCaching == false
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
@@ -384,6 +396,9 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTasksStatus.FAILED, resultRef.get().getStatus());
         assertEquals("NONE of the task requests were successful", resultRef.get().getMessage());
         assertEquals(0, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(1, resultRef.get().getTasks().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.FAILED, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals("400 BAD_REQUEST", resultRef.get().getTasks().get(0).getMessage());
 
         // Test what Platform Proxy receives
         TimeUnit.MILLISECONDS.sleep(500);
@@ -425,8 +440,10 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("ALL the task requests were successful!", resultRef.get().getMessage());
         assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
         assertEquals(1, resultRef.get().getTasks().get(1).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -449,6 +466,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
@@ -459,6 +477,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
@@ -493,8 +512,10 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("ALL the task requests were successful!", resultRef.get().getMessage());
         assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
         assertEquals(1, resultRef.get().getTasks().get(1).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -510,6 +531,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(1, taskInfo.getStoredResourceIds().size());
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
         assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
@@ -522,6 +544,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
         assertNull(searchHelper.getScheduledTaskInfoUpdateMap().get("2"));
@@ -559,8 +582,10 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("Failed tasks id : [2]", resultRef.get().getMessage());
         assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
         assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("Not enough resources. Only 2 were found", resultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -585,6 +610,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(1, taskInfo.getStoredResourceIds().size());
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
         assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
@@ -596,6 +622,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
+        assertEquals("Not enough resources. Only 2 were found", taskInfo.getMessage());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals("resource5", taskInfo.getResourceIds().get(1));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));

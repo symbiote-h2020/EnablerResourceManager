@@ -55,9 +55,8 @@ public class CancelTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T1:0:1", true,
-                "TestEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T1:0:1", true, "TestEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "message");
         taskInfoRepository.save(task1);
 
         TaskInfo task2 = new TaskInfo(task1);
@@ -165,9 +164,8 @@ public class CancelTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true,
-                "TestEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T0:0:1", true, "TestEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "message");
         taskInfoRepository.save(task1);
 
         TaskInfo task2 = new TaskInfo(task1);
@@ -262,9 +260,8 @@ public class CancelTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true,
-                "TestEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T0:0:1", true, "TestEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "message");
         taskInfoRepository.save(task1);
 
         TaskInfo task2 = new TaskInfo(task1);

@@ -75,19 +75,23 @@ public final class ProblematicResourcesHandler {
 
                     if (problematicResourcesHandlerResult.getStatus() != ProblematicResourcesHandlerStatus.UNKNOWN) {
                         TaskInfo newTaskInfo = problematicResourcesHandlerResult.getTaskInfo();
-                        taskInfoRepository.save(newTaskInfo);
+
 
                         if (problematicResourcesHandlerResult.getStatus() ==
                                 ProblematicResourcesHandlerStatus.RESOURCES_REPLACED_SUCCESSFULLY) {
 
                             log.info("There were enough resources to replace the problematic ones for task " + newTaskInfo.getTaskId());
+                            newTaskInfo.setMessage("SUCCESS");
                             informComponents(newTaskInfo);
                         } else if (problematicResourcesHandlerResult.getStatus() == ProblematicResourcesHandlerStatus.ENOUGH_RESOURCES) {
 
                             log.info("There were enough remaining resources to replace the problematic ones for task " + newTaskInfo.getTaskId());
+                            newTaskInfo.setMessage("SUCCESS");
                             informComponents(newTaskInfo);
                         } else if (problematicResourcesHandlerResult.getStatus() == ProblematicResourcesHandlerStatus.NOT_ENOUGH_RESOURCES) {
                             log.info("There were NOT enough resources to replace the problematic ones for task " + newTaskInfo.getTaskId());
+
+                            newTaskInfo.setMessage("Not enough resources. Only " + newTaskInfo.getResourceIds().size() + " were found");
 
                             // Inform Enabler Logic that not enough resources are available
                             String specificEnablerLogicNotEnoughResourcesKey = genericEnablerLogicNotEnoughResourcesKey +
@@ -96,6 +100,8 @@ public final class ProblematicResourcesHandler {
                             rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicNotEnoughResourcesKey,
                                     problematicResourcesHandlerResult.getNotEnoughResourcesAvailable());
                         }
+
+                        taskInfoRepository.save(newTaskInfo);
                     }
                 }
             }

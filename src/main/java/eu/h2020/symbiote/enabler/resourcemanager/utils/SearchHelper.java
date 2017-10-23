@@ -160,10 +160,14 @@ public class SearchHelper {
 
             // Finalizing task response to EnablerLogic
             taskInfoResponse.setResourceIds(taskResponseToComponents.getResourceIdsForEnablerLogic());
-            if (taskInfoResponse.getResourceIds().size() >= taskInfoResponse.getMinNoResources())
+            if (taskInfoResponse.getResourceIds().size() >= taskInfoResponse.getMinNoResources()) {
                 taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-            else
+                taskInfoResponse.setMessage("SUCCESS");
+            }
+            else {
                 taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES);
+                taskInfoResponse.setMessage("Not enough resources. Only " + taskInfoResponse.getResourceIds().size() + " were found");
+            }
 
             // Finalizing request to PlatformProxy
             if (taskInfoResponse.getInformPlatformProxy() &&
@@ -182,7 +186,7 @@ public class SearchHelper {
         } catch (SecurityException | HttpClientErrorException | HttpServerErrorException e) {
             log.info("", e);
             taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.FAILED);
-            // Todo: Add message in taskInfoResponse
+            taskInfoResponse.setMessage(e.getMessage());
         }
 
         TaskInfo taskInfo = new TaskInfo(taskInfoResponse);

@@ -44,9 +44,8 @@ public class ProblematicResourcesHandlerTests extends AbstractTestClass {
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(),
-                "P0-0-0T0:0:1", true, "P0-0-0T0:0:1", false,
-                "TestEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
+                "P0-0-0T0:0:1", true, "P0-0-0T0:0:1", false, "TestEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
         problematicResourcesInfo.setTaskId("task1");

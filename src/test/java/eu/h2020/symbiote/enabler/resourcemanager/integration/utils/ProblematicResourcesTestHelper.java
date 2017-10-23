@@ -49,9 +49,8 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
-                true, "P0-0-0T0:0:0.1", true,
-                "testEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
+                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "success");
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -190,9 +189,8 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo("task1", 2, coreQueryRequest, "P0-0-0T0:0:0.1",
-                false, "P0-0-0T0:0:0.1", true,
-                "testEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
+                false, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -291,9 +289,8 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo("task1", 1, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
-                true, "P0-0-0T0:0:0.1", true,
-                "testEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
+                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -374,9 +371,8 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
-                true, "P0-0-0T0:0:0.1", true,
-                "testEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
+                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -409,6 +405,7 @@ public class ProblematicResourcesTestHelper {
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(3, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
+        assertEquals("Not enough resources. Only 3 were found", taskInfo.getMessage());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
         assertEquals("4", taskInfo.getResourceIds().get(1));
@@ -453,9 +450,8 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
         TaskInfo taskInfo = new TaskInfo("task1", 3, coreQueryRequest, "P0-0-0T0:0:0.1",
-                false, "P0-0-0T0:0:0.1", true,
-                "testEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
+                false, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -488,6 +484,7 @@ public class ProblematicResourcesTestHelper {
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
+        assertEquals("Not enough resources. Only 1 were found", taskInfo.getMessage());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
 
@@ -525,7 +522,7 @@ public class ProblematicResourcesTestHelper {
         TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
                 true, "P0-0-0T0:0:0.1", true,
                 "testEnablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();
@@ -558,6 +555,7 @@ public class ProblematicResourcesTestHelper {
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(4, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
+        assertEquals("Not enough resources. Only 4 were found", taskInfo.getMessage());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
         assertEquals("4", taskInfo.getResourceIds().get(1));

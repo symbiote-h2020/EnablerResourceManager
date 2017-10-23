@@ -340,7 +340,7 @@ public class TaskInfoTests {
         TaskInfo taskInfo1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
                 true, "P0-0-0T0:0:1", true,
                 "TestEnablerLogic", sparqlQueryRequest, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls);
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
 
         TaskInfo taskInfo2 = new TaskInfo(taskInfo1);
         assertEquals(true, taskInfo1.equals(taskInfo2));
@@ -427,6 +427,12 @@ public class TaskInfoTests {
         assertEquals(2, taskInfo1.getResourceUrls().size());
         assertEquals(false, taskInfo1.equals(taskInfo2));
         taskInfo2.setResourceUrls(taskInfo1.getResourceUrls());
+        assertEquals(true, taskInfo1.equals(taskInfo2));
+
+        taskInfo2.setMessage("blah");
+        assertEquals(true, taskInfo1.getMessage().equals("message"));
+        assertEquals(false, taskInfo1.equals(taskInfo2));
+        taskInfo2.setMessage(taskInfo1.getMessage());
         assertEquals(true, taskInfo1.equals(taskInfo2));
     }
 }

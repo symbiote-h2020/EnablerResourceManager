@@ -56,9 +56,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true,
-                "enablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T0:0:1", true, "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "SUCCESS");
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -195,6 +194,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(1, storedTaskInfo1.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo1.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo1.getMessage());
         assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
         assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
         assertEquals("resource3", storedTaskInfo1.getStoredResourceIds().get(0));
@@ -204,7 +204,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo2.getResourceIds().size());
         assertEquals(2, storedTaskInfo2.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo2.getResourceUrls().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo2.getMessage());
         assertEquals("21", storedTaskInfo2.getResourceIds().get(0));
         assertEquals("22", storedTaskInfo2.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo2.getStoredResourceIds().get(0));
@@ -216,6 +216,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo3.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo3.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo3.getMessage());
         assertEquals("31", storedTaskInfo3.getResourceIds().get(0));
         assertEquals("32", storedTaskInfo3.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo3.getStoredResourceIds().get(0));
@@ -227,6 +228,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo4.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo4.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo4.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo4.getMessage());
         assertEquals("41", storedTaskInfo4.getResourceIds().get(0));
         assertEquals("42", storedTaskInfo4.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo4.getStoredResourceIds().get(0));
@@ -238,6 +240,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo5.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo5.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo5.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo5.getMessage());
         assertEquals("51", storedTaskInfo5.getResourceIds().get(0));
         assertEquals("52", storedTaskInfo5.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo5.getStoredResourceIds().get(0));
@@ -249,6 +252,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo6.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo6.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo6.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo6.getMessage());
         assertEquals("61", storedTaskInfo6.getResourceIds().get(0));
         assertEquals("62", storedTaskInfo6.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo6.getStoredResourceIds().get(0));
@@ -273,6 +277,12 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(3).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(4).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(5).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(2).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(3).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(4).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(5).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -382,9 +392,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true,
-                "enablerLogic", sparqlQueryRequest, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T0:0:1", true, "enablerLogic", sparqlQueryRequest, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "SUCCESS");
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -460,6 +469,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo1.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo1.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo1.getMessage());
         assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
         assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo1.getStoredResourceIds().get(0));
@@ -471,6 +481,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(1, storedTaskInfo2.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo2.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo2.getMessage());
         assertEquals("sparqlResource1", storedTaskInfo2.getResourceIds().get(0));
         assertEquals("sparqlResource2", storedTaskInfo2.getResourceIds().get(1));
         assertEquals("sparqlResource3", storedTaskInfo2.getStoredResourceIds().get(0));
@@ -481,6 +492,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo3.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo3.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo3.getMessage());
         assertEquals("31", storedTaskInfo3.getResourceIds().get(0));
         assertEquals("32", storedTaskInfo3.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo3.getStoredResourceIds().get(0));
@@ -499,7 +511,9 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(2).getStatus());
-
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(2).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -568,6 +582,24 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
 
         // Test what Enabler Logic receives
         assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+        assertEquals("java.lang.IllegalArgumentException: Invalid format: \"10s\"\n" +
+                " at [Source: {\"tasks\":[{\"taskId\":\"1\",\"minNoResources\":2,\"coreQueryRequest\":" +
+                "{\"platform_id\":null,\"platform_name\":null,\"owner\":null,\"name\":null,\"id\":null," +
+                "\"description\":null,\"location_name\":\"Paris\",\"location_lat\":null,\"location_long\":null," +
+                "\"max_distance\":null,\"observed_property\":[\"temperature\",\"humidity\"],\"resource_type\":null," +
+                "\"securityRequest\":null,\"should_rank\":null},\"queryInterval\":\"P0-0-0T0:0:0.06\"," +
+                "\"allowCaching\":false,\"cachingInterval\":\"P0-0-0T0:0:1\",\"informPlatformProxy\":true," +
+                "\"enablerLogicName\":\"enablerLogicName\",\"sparqlQueryRequest\":null},{\"taskId\":\"2\"," +
+                "\"minNoResources\":1,\"coreQueryRequest\":{\"platform_id\":null,\"platform_name\":null," +
+                "\"owner\":null,\"name\":null,\"id\":null,\"description\":null,\"location_name\":\"Athens\"," +
+                "\"location_lat\":null,\"location_long\":null,\"max_distance\":null,\"observed_property\":" +
+                "[\"air quality\"],\"resource_type\":null,\"securityRequest\":null,\"should_rank\":null}," +
+                "\"queryInterval\":\"10s\",\"allowCaching\":false,\"cachingInterval\":\"P0-0-0T0:0:1\"," +
+                "\"informPlatformProxy\":true,\"enablerLogicName\":\"enablerLogicName2\"," +
+                "\"sparqlQueryRequest\":null}]}; line: 1, column: 883] (through reference chain:" +
+                " eu.h2020.symbiote.enabler.messaging.model.ResourceManagerUpdateRequest[\"tasks\"]->" +
+                "java.util.ArrayList[1]->eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest" +
+                "[\"queryInterval\"])", resultRef.get().getMessage());
         assertEquals(true,
                 resultRef.get().getMessage().contains(IllegalArgumentException.class.getName() + ": Invalid format:"));
 
@@ -614,6 +646,23 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
 
         // Test what Enabler Logic receives
         assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
+        assertEquals("java.lang.IllegalArgumentException: Invalid format: \"10s\"\n" +
+                " at [Source: {\"tasks\":[{\"taskId\":\"1\",\"minNoResources\":2,\"coreQueryRequest\":" +
+                "{\"platform_id\":null,\"platform_name\":null,\"owner\":null,\"name\":null,\"id\":null" +
+                ",\"description\":null,\"location_name\":\"Paris\",\"location_lat\":null,\"location_long\":null," +
+                "\"max_distance\":null,\"observed_property\":[\"temperature\",\"humidity\"],\"resource_type\":null," +
+                "\"securityRequest\":null,\"should_rank\":null},\"queryInterval\":\"P0-0-0T0:0:0.06\"," +
+                "\"allowCaching\":false,\"cachingInterval\":\"P0-0-0T0:0:1\",\"informPlatformProxy\":true," +
+                "\"enablerLogicName\":\"enablerLogicName\",\"sparqlQueryRequest\":null},{\"taskId\":\"2\"," +
+                "\"minNoResources\":1,\"coreQueryRequest\":{\"platform_id\":null,\"platform_name\":null," +
+                "\"owner\":null,\"name\":null,\"id\":null,\"description\":null,\"location_name\":\"Athens\"," +
+                "\"location_lat\":null,\"location_long\":null,\"max_distance\":null,\"observed_property\":" +
+                "[\"air quality\"],\"resource_type\":null,\"securityRequest\":null,\"should_rank\":null}," +
+                "\"queryInterval\":\"P0-0-0T0:0:0.06\",\"allowCaching\":false,\"cachingInterval\":\"10s\"," +
+                "\"informPlatformProxy\":true,\"enablerLogicName\":\"enablerLogicName2\"," +
+                "\"sparqlQueryRequest\":null}]}; line: 1, column: 940] (through reference chain: " +
+                "eu.h2020.symbiote.enabler.messaging.model.ResourceManagerUpdateRequest[\"tasks\"]->" +
+                "java.util.ArrayList[1]->eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest[\"cachingInterval\"])", resultRef.get().getMessage());
         assertEquals(true,
                 resultRef.get().getMessage().contains(IllegalArgumentException.class.getName() + ": Invalid format:"));
 
@@ -657,9 +706,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true,
-                "enablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T0:0:1", true, "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "SUCCESS");
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -714,6 +762,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(1, storedTaskInfo1.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo1.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo1.getMessage());
         assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
         assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
         assertEquals("resource3", storedTaskInfo1.getStoredResourceIds().get(0));
@@ -724,6 +773,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo2.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo2.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo2.getMessage());
         assertEquals("21", storedTaskInfo2.getResourceIds().get(0));
         assertEquals("22", storedTaskInfo2.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo2.getStoredResourceIds().get(0));
@@ -740,6 +790,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals("ALL the update task requests were successful!", resultRef.get().getMessage());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -789,9 +841,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", false,
-                "enablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T0:0:1", false, "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "SUCCESS");
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -822,7 +873,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, updateTaskRoutingKey, req);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureUpdateCallback("updateTaskWithInformPlatformProxyBecomingFalseTest", resultRef));
+        future.addCallback(new ListenableFutureUpdateCallback("updateTaskWithInformPlatformProxyBecomingFalseTest",
+                resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -846,6 +898,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(1, storedTaskInfo1.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo1.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo1.getMessage());
         assertEquals("resource1", storedTaskInfo1.getResourceIds().get(0));
         assertEquals("resource2", storedTaskInfo1.getResourceIds().get(1));
         assertEquals("resource3", storedTaskInfo1.getStoredResourceIds().get(0));
@@ -856,6 +909,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo2.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo2.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo2.getMessage());
         assertEquals("21", storedTaskInfo2.getResourceIds().get(0));
         assertEquals("22", storedTaskInfo2.getResourceIds().get(1));
         assertEquals("3", storedTaskInfo2.getStoredResourceIds().get(0));
@@ -872,6 +926,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals("ALL the update task requests were successful!", resultRef.get().getMessage());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -957,9 +1013,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T1:0:1", true,
-                "enablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T1:0:1", true, "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "SUCCESS");
         taskInfoRepository.save(task1);
         searchHelper.getScheduledTaskInfoUpdateMap().put(task1.getTaskId(), new ScheduledTaskInfoUpdate(taskInfoRepository,
                 searchHelper, task1));
@@ -1084,6 +1139,12 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo3.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo4.getStatus());
 
+        // Test the messages
+        assertEquals("SUCCESS", storedTaskInfo1.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo2.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo3.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo4.getMessage());
+
         // Test if stored resources were added in the last 2 tasks
         assertEquals(3, storedTaskInfo3.getResourceIds().size());
         assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
@@ -1138,6 +1199,10 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(2).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(3).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(2).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(3).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -1200,7 +1265,6 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         log.info("updateTaskWithCachingIntervalTest STARTED!");
 
         final AtomicReference<ResourceManagerUpdateResponse> resultRef = new AtomicReference<>();
-        List<PlatformProxyUpdateRequest> taskUpdateRequestsReceivedByListener;
 
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .locationName("Paris")
@@ -1216,9 +1280,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("12", symbIoTeCoreUrl + "/Sensors('12')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T1:0:0", true,
-                "enablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T1:0:0", true, "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "SUCCESS");
         taskInfoRepository.save(task1);
         searchHelper.getScheduledTaskInfoUpdateMap().put(task1.getTaskId(),
                 new ScheduledTaskInfoUpdate(taskInfoRepository, searchHelper, task1));
@@ -1320,10 +1383,15 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
         assertEquals(3, storedTaskInfo3.getResourceUrls().size());
 
-        // Test the statuses
+        // Check the statuses
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo3.getStatus());
+
+        // Check the message
+        assertEquals("SUCCESS", storedTaskInfo1.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo2.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo3.getMessage());
 
         // Check the resourceIds
         assertEquals("11", storedTaskInfo1.getResourceIds().get(0));
@@ -1367,6 +1435,9 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(2).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(2).getMessage());
 
         assertEquals("11", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("12", resultRef.get().getTasks().get(0).getResourceIds().get(1));
@@ -1413,6 +1484,11 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo2.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo3.getStatus());
+
+        // Test the message
+        assertEquals("SUCCESS", storedTaskInfo1.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo2.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo3.getMessage());
 
         // Check the resourceIds
         assertEquals("11", storedTaskInfo1.getResourceIds().get(0));
@@ -1470,9 +1546,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true,
-                "enablerLogic", null, resourceIds,
-                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1);
+                true, "P0-0-0T0:0:1", true, "enablerLogic", null, resourceIds,
+                ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "SUCCESS");
         taskInfoRepository.save(task1);
 
         Map<String, String> resourceUrls2 = new HashMap<>();
@@ -1581,6 +1656,11 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, storedTaskInfo3.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, storedTaskInfo4.getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo5.getStatus());
+        assertEquals("SUCCESS", storedTaskInfo1.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo2.getMessage());
+        assertEquals("Not enough resources. Only 4 were found", storedTaskInfo3.getMessage());
+        assertEquals("Not enough resources. Only 4 were found", storedTaskInfo4.getMessage());
+        assertEquals("SUCCESS", storedTaskInfo5.getMessage());
 
         // Check the sizes of resourceIds, storedResourceIds and resourceUrls
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
@@ -1641,15 +1721,20 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         assertEquals(ResourceManagerTasksStatus.PARTIAL_SUCCESS, resultRef.get().getStatus());
         assertEquals("Failed update tasks id : [3, 4]", resultRef.get().getMessage());
         assertEquals(2, resultRef.get().getTasks().get(0).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
         assertEquals(3, resultRef.get().getTasks().get(1).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
         assertEquals(4, resultRef.get().getTasks().get(2).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getTasks().get(2).getStatus());
         assertEquals(4, resultRef.get().getTasks().get(3).getResourceIds().size());
-        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getTasks().get(3).getStatus());
         assertEquals(2, resultRef.get().getTasks().get(4).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getTasks().get(2).getStatus());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, resultRef.get().getTasks().get(3).getStatus());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(4).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
+        assertEquals("Not enough resources. Only 4 were found", resultRef.get().getTasks().get(2).getMessage());
+        assertEquals("Not enough resources. Only 4 were found", resultRef.get().getTasks().get(3).getMessage());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(4).getMessage());
 
         assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));

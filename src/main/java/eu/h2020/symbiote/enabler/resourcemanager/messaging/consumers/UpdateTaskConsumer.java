@@ -127,6 +127,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     // runtime checking variable
                     boolean informPlatformProxy = true;
                     ResourceManagerTaskInfoResponseStatus responseStatus = ResourceManagerTaskInfoResponseStatus.UNKNOWN;
+                    String responseMessage = "";
 
                     // Create updatedTaskInfo and modify its values according to the changes
                     TaskInfo updatedTaskInfo = createUpdatedTaskInfo(taskInfoRequest, storedTaskInfo);
@@ -137,18 +138,24 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                             storedTaskInfo, platformProxyResourceInfoList,
                             responseStatus, informPlatformProxy);
                     responseStatus = checkMinNoResourcesResult.getResponseStatus();
+                    responseMessage = checkMinNoResourcesResult.getResponseMessage();
                     informPlatformProxy = checkMinNoResourcesResult.isInformPlatformProxy();
 
 
                     // Inform Enabler Logic in any case
                     ResourceManagerTaskInfoResponse resourceManagerTaskInfoResponse =
                             new ResourceManagerTaskInfoResponse(updatedTaskInfo);
-                    if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN)
+                    // Check if anything was done
+                    if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN) {
                         responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
+                        responseMessage = "SUCCESS";
+                    }
                     resourceManagerTaskInfoResponse.setStatus(responseStatus);
+                    resourceManagerTaskInfoResponse.setMessage(responseMessage);
                     resourceManagerTaskInfoResponseList.add(resourceManagerTaskInfoResponse);
 
                     updatedTaskInfo.setStatus(responseStatus);
+                    updatedTaskInfo.setMessage(responseMessage);
 
                     // Check if there is a need to inform Platform Proxy
                     checkInformPlatformProxy(updatedTaskInfo, storedTaskInfo, platformProxyResourceInfoList,
@@ -398,6 +405,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                                      List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
                                      ResourceManagerTaskInfoResponseStatus responseStatus,
                                      boolean informPlatformProxy) {
+        String responseMessage = "";
+
         if (updatedTaskInfo.getMinNoResources() > storedTaskInfo.getMinNoResources()) {
             log.info("The update on task " + updatedTaskInfo.getTaskId() + " requests more resources: " +
                     storedTaskInfo.getMinNoResources() + " -> " + updatedTaskInfo.getMinNoResources());
@@ -432,11 +441,13 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 if (newResourceUrls.size() == noNewResourcesNeeded) {
                     log.info("There were enough resources to be added");
                     responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
-
+                    responseMessage = "SUCCESS";
                 } else {
                     log.info("Not enough resources are available.");
                     if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN) {
                         responseStatus = ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES;
+                        responseMessage = "Not enough resources. Only " + updatedTaskInfo.getResourceUrls().size() +
+                                " were found";
                     }
                     informPlatformProxy = false;
 
@@ -446,10 +457,11 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             if (updatedTaskInfo.getMinNoResources() <= updatedTaskInfo.getResourceIds().size() &&
                     storedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES) {
                 updatedTaskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+                responseMessage = "SUCCESS";
             }
         }
 
-        return new CheckMinNoResourcesResult(responseStatus, informPlatformProxy);
+        return new CheckMinNoResourcesResult(responseStatus, responseMessage, informPlatformProxy);
     }
 
 
@@ -503,15 +515,21 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
     private class CheckMinNoResourcesResult {
         private ResourceManagerTaskInfoResponseStatus responseStatus;
+        private String responseMessage;
         private boolean informPlatformProxy;
 
-        private CheckMinNoResourcesResult(ResourceManagerTaskInfoResponseStatus responseStatus, boolean informPlatformProxy) {
+        private CheckMinNoResourcesResult(ResourceManagerTaskInfoResponseStatus responseStatus, String responseMessage,
+                                          boolean informPlatformProxy) {
             this.responseStatus = responseStatus;
+            this.responseMessage = responseMessage;
             this.informPlatformProxy = informPlatformProxy;
         }
 
         private ResourceManagerTaskInfoResponseStatus getResponseStatus() { return responseStatus; }
         private void setResponseStatus(ResourceManagerTaskInfoResponseStatus responseStatus) { this.responseStatus = responseStatus; }
+
+        public String getResponseMessage() { return responseMessage; }
+        public void setResponseMessage(String responseMessage) { this.responseMessage = responseMessage; }
 
         private boolean isInformPlatformProxy() { return informPlatformProxy; }
         private void setInformPlatformProxy(boolean informPlatformProxy) { this.informPlatformProxy = informPlatformProxy; }
