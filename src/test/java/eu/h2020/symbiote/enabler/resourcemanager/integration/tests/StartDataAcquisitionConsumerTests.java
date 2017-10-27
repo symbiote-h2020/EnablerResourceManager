@@ -41,8 +41,8 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
 
     @Test
-    public void resourceManagerGetResourceDetailsTest() throws Exception {
-        log.info("resourceManagerGetResourceDetailsTest STARTED!");
+    public void getResourceDetailsTest() throws Exception {
+        log.info("getResourceDetailsTest STARTED!");
 
         // ToDo: add default field value in TaskInfo
 
@@ -55,7 +55,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetResourceDetailsTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("getResourceDetailsTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -129,12 +129,12 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
-        log.info("resourceManagerGetResourceDetailsTest FINISHED!");
+        log.info("getResourceDetailsTest FINISHED!");
     }
 
     @Test
-    public void resourceManagerGetSparqlResourceDetailsTest() throws Exception {
-        log.info("resourceManagerGetSparqlResourceDetailsTest STARTED!");
+    public void getSparqlResourceDetailsTest() throws Exception {
+        log.info("getSparqlResourceDetailsTest STARTED!");
 
         // ToDo: add default field value in TaskInfo
 
@@ -154,7 +154,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetSparqlResourceDetailsTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("getSparqlResourceDetailsTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -228,12 +228,12 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("sparqlResource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('sparqlResource4')", taskInfo.getResourceUrls().get("sparqlResource4"));
 
-        log.info("resourceManagerGetSparqlResourceDetailsTest FINISHED!");
+        log.info("getSparqlResourceDetailsTest FINISHED!");
     }
 
     @Test
-    public void resourceManagerGetResourceDetailsInvalidServiceResponseTest() throws Exception {
-        log.info("resourceManagerGetResourceDetailsInvalidServiceResponseTest STARTED!");
+    public void getResourceDetailsInvalidServiceResponseTest() throws Exception {
+        log.info("getResourceDetailsInvalidServiceResponseTest STARTED!");
 
         doAnswer(new Answer<Boolean>() {
             @Override
@@ -256,7 +256,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         log.info("After sending the message");
 
         future.addCallback(new ListenableFutureAcquisitionStartCallback(
-                "resourceManagerGetResourceDetailsInvalidServiceResponseTest", resultRef));
+                "getResourceDetailsInvalidServiceResponseTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -330,13 +330,13 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
-        log.info("resourceManagerGetResourceDetailsInvalidServiceResponseTest FINISHED!");
+        log.info("getResourceDetailsInvalidServiceResponseTest FINISHED!");
     }
 
 
     // @Test
-    public void resourceManagerGetResourceDetailsNoResponseTest() throws Exception {
-        log.info("resourceManagerGetResourceDetailsNoResponseTest STARTED!");
+    public void getResourceDetailsNoResponseTest() throws Exception {
+        log.info("getResourceDetailsNoResponseTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
@@ -362,19 +362,19 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetResourceDetailsNoResponseTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("getResourceDetailsNoResponseTest", resultRef));
 
         while(!future.isDone()) {
             log.info("Sleeping!!!!!!");
             TimeUnit.MILLISECONDS.sleep(100);
         }
 
-        log.info("resourceManagerGetResourceDetailsNoResponseTest FINISHED!");
+        log.info("getResourceDetailsNoResponseTest FINISHED!");
     }
 
     @Test
-    public void resourceManagerGetResourceDetailsBadRequestTest() throws Exception {
-        log.info("resourceManagerGetResourceDetailsBadRequestTest STARTED!");
+    public void getResourceDetailsBadRequestTest() throws Exception {
+        log.info("getResourceDetailsBadRequestTest STARTED!");
 
         final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
         ResourceManagerAcquisitionStartRequest query = createBadQueryToResourceManager();
@@ -384,7 +384,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureAcquisitionStartCallback("resourceManagerGetResourceDetailsBadRequestTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("getResourceDetailsBadRequestTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -408,7 +408,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(null, taskInfo);
 
-        log.info("resourceManagerGetResourceDetailsBadRequestTest FINISHED!");
+        log.info("getResourceDetailsBadRequestTest FINISHED!");
     }
 
     @Test
@@ -561,6 +561,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
         ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         query.getTasks().get(0).setAllowCaching(true);
+        query.getTasks().get(1).setMaxNoResources(3);
         query.getTasks().get(1).setMinNoResources(3);
         query.getTasks().get(1).setAllowCaching(true);
 
@@ -569,7 +570,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureAcquisitionStartCallback("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("notEnoughResourcesTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -632,6 +633,97 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
     }
 
     @Test
+    public void maxNoResourcesTest() throws Exception {
+        log.info("maxNoResourcesTest STARTED!");
+
+        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+        List<PlatformProxyAcquisitionStartRequest> startAcquisitionRequestsReceivedByListener;
+
+        ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
+        query.getTasks().get(0).setAllowCaching(true);
+        query.getTasks().get(0).setMaxNoResources(TaskInfo.ALL_AVAILABLE_RESOURCES);
+        query.getTasks().get(0).setMinNoResources(1);
+        query.getTasks().get(1).getCoreQueryRequest().setLocation_name("Paris");
+        query.getTasks().get(1).setMaxNoResources(2);
+        query.getTasks().get(1).setMinNoResources(1);
+        query.getTasks().get(1).setAllowCaching(true);
+
+        log.info("Before sending the message");
+        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+                .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+        log.info("After sending the message");
+
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("maxNoResourcesTest", resultRef));
+
+        while(!future.isDone()) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        // Added extra delay to make sure that the message is handled
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Test what Enabler Logic receives
+        assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
+        assertEquals("ALL the task requests were successful!", resultRef.get().getMessage());
+        assertEquals(3, resultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(0).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(0).getMessage());
+        assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, resultRef.get().getTasks().get(1).getStatus());
+        assertEquals("SUCCESS", resultRef.get().getTasks().get(1).getMessage());
+
+        assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceIds().get(1));
+        assertEquals("resource3", resultRef.get().getTasks().get(0).getResourceIds().get(2));
+        assertEquals("resource1", resultRef.get().getTasks().get(1).getResourceIds().get(0));
+        assertEquals("resource2", resultRef.get().getTasks().get(1).getResourceIds().get(1));
+
+        while(dummyPlatformProxyListener.startAcquisitionRequestsReceived() < 1) {
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        // Test what Platform Proxy receives
+        startAcquisitionRequestsReceivedByListener = dummyPlatformProxyListener.getStartAcquisitionRequestsReceivedByListener();
+        assertEquals(2, dummyPlatformProxyListener.startAcquisitionRequestsReceived());
+        assertEquals(0, dummyPlatformProxyListener.updateAcquisitionRequestsReceived());
+        assertEquals(3, startAcquisitionRequestsReceivedByListener.get(0).getResources().size());
+        assertEquals("resource1", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(0).getResourceId());
+        assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(1).getResourceId());
+        assertEquals("resource3", startAcquisitionRequestsReceivedByListener.get(0).getResources().get(2).getResourceId());
+        assertEquals(2, startAcquisitionRequestsReceivedByListener.get(1).getResources().size());
+        assertEquals("resource1", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(0).getResourceId());
+        assertEquals("resource2", startAcquisitionRequestsReceivedByListener.get(1).getResources().get(1).getResourceId());
+
+        // Test what is stored in the database
+        TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
+        assertEquals(3, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getStoredResourceIds().size());
+        assertEquals(3, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
+        assertEquals("resource1", taskInfo.getResourceIds().get(0));
+        assertEquals("resource2", taskInfo.getResourceIds().get(1));
+        assertEquals("resource3", taskInfo.getResourceIds().get(2));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource3')", taskInfo.getResourceUrls().get("resource3"));
+
+        taskInfo = taskInfoRepository.findByTaskId("2");
+        assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(1, taskInfo.getStoredResourceIds().size());
+        assertEquals(2, taskInfo.getResourceUrls().size());
+        assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
+        assertEquals("SUCCESS", taskInfo.getMessage());
+        assertEquals("resource1", taskInfo.getResourceIds().get(0));
+        assertEquals("resource2", taskInfo.getResourceIds().get(1));
+        assertEquals("resource3", taskInfo.getStoredResourceIds().get(0));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
+        assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
+
+        log.info("maxNoResourcesTest FINISHED!");
+    }
+
+
+    @Test
     public void wrongQueryIntervalFormatTest() throws Exception {
         log.info("wrongQueryIntervalFormatTest STARTED!");
 
@@ -647,7 +739,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureAcquisitionStartCallback("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("wrongQueryIntervalFormatTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -692,7 +784,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
                 .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
         log.info("After sending the message");
 
-        future.addCallback(new ListenableFutureAcquisitionStartCallback("allowCachingTest", resultRef));
+        future.addCallback(new ListenableFutureAcquisitionStartCallback("wrongCacheIntervalFormatTest", resultRef));
 
         while(!future.isDone()) {
             TimeUnit.MILLISECONDS.sleep(100);

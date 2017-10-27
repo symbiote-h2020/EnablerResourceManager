@@ -253,6 +253,7 @@ public class CachingTests extends AbstractTestClass {
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
                 true, "P0-0-0T0:0:1", true, "enablerLogic", null, resourceIds,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "message");
+        task1.setMaxNoResources(2);
         taskInfoRepository.save(task1);
         searchHelper.getScheduledTaskInfoUpdateMap().put(task1.getTaskId(),
                 new ScheduledTaskInfoUpdate(taskInfoRepository, searchHelper, task1));

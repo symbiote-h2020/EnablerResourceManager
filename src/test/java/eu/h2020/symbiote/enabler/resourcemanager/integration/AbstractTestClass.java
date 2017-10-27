@@ -152,7 +152,7 @@ public abstract class AbstractTestClass {
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest("1", 2,
                 coreQueryRequest1, "P0-0-0T0:0:0.06", false, "P0-0-0T0:0:1",
                 true, "enablerLogicName", null);
-
+        request1.setMaxNoResources(2);
         resources.add(request1);
 
         if (noTasks > 1) {
@@ -164,7 +164,7 @@ public abstract class AbstractTestClass {
             ResourceManagerTaskInfoRequest request2 = new ResourceManagerTaskInfoRequest("2", 1,
                     coreQueryRequest2, "P0-0-0T0:0:0.06", false, "P0-0-0T0:0:1",
                     true, "enablerLogicName2", null);
-
+            request2.setMaxNoResources(1);
             resources.add(request2);
         }
 
@@ -190,6 +190,7 @@ public abstract class AbstractTestClass {
         ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest("1", 2,
                 coreQueryRequest1, "P0-0-0T0:0:0.06", false, "P0-0-0T0:0:1",
                 true, "enablerLogicName", null);
+        request1.setMaxNoResources(2);
 
         resources.add(request1);
         request.setTasks(resources);

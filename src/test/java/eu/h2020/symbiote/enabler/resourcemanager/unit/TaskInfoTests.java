@@ -38,6 +38,7 @@ public class TaskInfoTests {
 
         request.setTaskId("1");
         request.setMinNoResources(2);
+        request.setMaxNoResources(ResourceManagerTaskInfoRequest.ALL_AVAILABLE_RESOURCES);
         request.setCoreQueryRequest(coreQueryRequest);
         request.setQueryInterval("P0-0-0T0:0:0.06");
         request.setAllowCaching(true);
@@ -71,6 +72,7 @@ public class TaskInfoTests {
 
         response.setTaskId("1");
         response.setMinNoResources(2);
+        response.setMaxNoResources(ResourceManagerTaskInfoResponse.ALL_AVAILABLE_RESOURCES);
         response.setCoreQueryRequest(coreQueryRequest);
         response.setResourceIds(Arrays.asList("1", "2"));
         response.setQueryInterval("P0-0-0T0:0:0.06");
@@ -109,6 +111,7 @@ public class TaskInfoTests {
 
         initialTaskInfo.setTaskId("1");
         initialTaskInfo.setMinNoResources(2);
+        initialTaskInfo.setMaxNoResources(TaskInfo.ALL_AVAILABLE_RESOURCES);
         initialTaskInfo.setCoreQueryRequest(coreQueryRequest);
         initialTaskInfo.setResourceIds(Arrays.asList("1", "2"));
         initialTaskInfo.setQueryInterval("P0-0-0T0:0:0.06");
@@ -123,6 +126,7 @@ public class TaskInfoTests {
         TaskInfo taskInfo = new TaskInfo(initialTaskInfo);
         assertEquals(initialTaskInfo.getTaskId(), taskInfo.getTaskId());
         assertEquals(initialTaskInfo.getMinNoResources(), taskInfo.getMinNoResources());
+        assertEquals(initialTaskInfo.getMaxNoResources(), taskInfo.getMaxNoResources());
         assertEquals(initialTaskInfo.getCoreQueryRequest().getLocation_name(), taskInfo.getCoreQueryRequest().getLocation_name());
         assertEquals(initialTaskInfo.getCoreQueryRequest().getObserved_property(), taskInfo.getCoreQueryRequest().getObserved_property());
         assertEquals(initialTaskInfo.getResourceIds(), taskInfo.getResourceIds());

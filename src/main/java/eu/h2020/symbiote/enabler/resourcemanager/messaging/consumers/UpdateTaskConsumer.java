@@ -134,12 +134,23 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     boolean allowCachingChanged = checkAllowCaching(updatedTaskInfo, storedTaskInfo);
                     if (!allowCachingChanged)
                         checkCachingInterval(updatedTaskInfo, storedTaskInfo);
-                    CheckMinNoResourcesResult checkMinNoResourcesResult = checkMinNoResources(updatedTaskInfo,
+                    
+                    CheckNoResourcesResult checkMinNoResourcesResult = checkMinNoResources(updatedTaskInfo,
                             storedTaskInfo, platformProxyResourceInfoList,
                             responseStatus, informPlatformProxy);
                     responseStatus = checkMinNoResourcesResult.getResponseStatus();
-                    responseMessage = checkMinNoResourcesResult.getResponseMessage();
+                    responseMessage += checkMinNoResourcesResult.getResponseMessage();
                     informPlatformProxy = checkMinNoResourcesResult.isInformPlatformProxy();
+
+                    if (checkMinNoResourcesResult.getResponseStatus() == ResourceManagerTaskInfoResponseStatus.SUCCESS ||
+                            checkMinNoResourcesResult.getResponseStatus() == ResourceManagerTaskInfoResponseStatus.UNKNOWN) {
+                        CheckNoResourcesResult checkMaxNoResourcesResult = checkMaxNoResources(updatedTaskInfo,
+                                storedTaskInfo, platformProxyResourceInfoList,
+                                responseStatus, informPlatformProxy);
+                        responseStatus = checkMaxNoResourcesResult.getResponseStatus();
+                        responseMessage += checkMaxNoResourcesResult.getResponseMessage();
+                        informPlatformProxy = checkMaxNoResourcesResult.isInformPlatformProxy();
+                    }
 
 
                     // Inform Enabler Logic in any case
@@ -148,7 +159,8 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                     // Check if anything was done
                     if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN) {
                         responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
-                        responseMessage = "SUCCESS";
+                        if (responseMessage.isEmpty())
+                            responseMessage = "SUCCESS";
                     }
                     resourceManagerTaskInfoResponse.setStatus(responseStatus);
                     resourceManagerTaskInfoResponse.setMessage(responseMessage);
@@ -401,14 +413,14 @@ public class UpdateTaskConsumer extends DefaultConsumer {
     }
 
 
-    private CheckMinNoResourcesResult checkMinNoResources(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo,
+    private CheckNoResourcesResult checkMinNoResources(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo,
                                      List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
                                      ResourceManagerTaskInfoResponseStatus responseStatus,
                                      boolean informPlatformProxy) {
         String responseMessage = "";
 
         if (updatedTaskInfo.getMinNoResources() > storedTaskInfo.getMinNoResources()) {
-            log.info("The update on task " + updatedTaskInfo.getTaskId() + " requests more resources: " +
+            log.debug("The update on task " + updatedTaskInfo.getTaskId() + " requests more resources: " +
                     storedTaskInfo.getMinNoResources() + " -> " + updatedTaskInfo.getMinNoResources());
 
             // ToDo: Behavior when allowCaching == false
@@ -424,12 +436,6 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                     if (candidateResourceUrl != null) {
                         newResourceUrls.put(candidateResourceId, candidateResourceUrl);
-
-                        PlatformProxyResourceInfo candidatePlatformProxyResourceInfo = new PlatformProxyResourceInfo();
-                        candidatePlatformProxyResourceInfo.setResourceId(candidateResourceId);
-                        candidatePlatformProxyResourceInfo.setAccessURL(candidateResourceUrl);
-
-                        platformProxyResourceInfoList.add(candidatePlatformProxyResourceInfo);
                     }
 
                     //ToDo: add it to another list if CRAM does not respond with a url
@@ -438,16 +444,24 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
                 updatedTaskInfo.addResourceIds(newResourceUrls);
 
+                for (String id : updatedTaskInfo.getResourceIds()) {
+                    PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+                    platformProxyResourceInfo.setResourceId(id);
+                    platformProxyResourceInfo.setAccessURL(updatedTaskInfo.getResourceUrls().get(id));
+
+                    platformProxyResourceInfoList.add(platformProxyResourceInfo);
+                }
+
                 if (newResourceUrls.size() == noNewResourcesNeeded) {
-                    log.info("There were enough resources to be added");
+                    log.debug("There were enough resources to satisfy the minNoResources. ");
                     responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
-                    responseMessage = "SUCCESS";
+                    responseMessage = "There were enough resources to satisfy the minNoResources. ";
                 } else {
-                    log.info("Not enough resources are available.");
+                    log.debug("Not enough resources are available.");
                     if (responseStatus == ResourceManagerTaskInfoResponseStatus.UNKNOWN) {
                         responseStatus = ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES;
                         responseMessage = "Not enough resources. Only " + updatedTaskInfo.getResourceUrls().size() +
-                                " were found";
+                                " were found. ";
                     }
                     informPlatformProxy = false;
 
@@ -457,11 +471,97 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             if (updatedTaskInfo.getMinNoResources() <= updatedTaskInfo.getResourceIds().size() &&
                     storedTaskInfo.getStatus() == ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES) {
                 updatedTaskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
-                responseMessage = "SUCCESS";
+                responseMessage = "The minNoResources was decreased to " + updatedTaskInfo.getMinNoResources() + ". ";
             }
         }
 
-        return new CheckMinNoResourcesResult(responseStatus, responseMessage, informPlatformProxy);
+        return new CheckNoResourcesResult(responseStatus, responseMessage, informPlatformProxy);
+    }
+
+
+    private CheckNoResourcesResult checkMaxNoResources(TaskInfo updatedTaskInfo, TaskInfo storedTaskInfo,
+                                                       List<PlatformProxyResourceInfo> platformProxyResourceInfoList,
+                                                       ResourceManagerTaskInfoResponseStatus responseStatus,
+                                                       boolean informPlatformProxy) {
+        String responseMessage = "";
+
+        if (updatedTaskInfo.getMaxNoResources() > storedTaskInfo.getMaxNoResources()) {
+            log.debug("The update on task " + updatedTaskInfo.getTaskId() +
+                    " requests indicates a higher value of maxNoResources: " +
+                    storedTaskInfo.getMinNoResources() + " -> " + updatedTaskInfo.getMinNoResources());
+
+            int noNewResourcesNeeded = updatedTaskInfo.getMaxNoResources() - updatedTaskInfo.getMinNoResources();
+
+            // ToDo: Behavior when allowCaching == false
+            if (updatedTaskInfo.getAllowCaching()) {
+
+                Map<String, String> newResourceUrls = new HashMap<>();
+
+                while ((newResourceUrls.size() != noNewResourcesNeeded ||
+                        updatedTaskInfo.getMaxNoResources() == ResourceManagerTaskInfoRequest.ALL_AVAILABLE_RESOURCES)  &&
+                        updatedTaskInfo.getStoredResourceIds().size() != 0) {
+                    String candidateResourceId = updatedTaskInfo.getStoredResourceIds().get(0);
+                    String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
+
+                    if (candidateResourceUrl != null) {
+                        newResourceUrls.put(candidateResourceId, candidateResourceUrl);
+                    }
+
+                    //ToDo: add it to another list if CRAM does not respond with a url
+                    updatedTaskInfo.getStoredResourceIds().remove(0);
+                }
+
+                updatedTaskInfo.addResourceIds(newResourceUrls);
+
+                for (String id : updatedTaskInfo.getResourceIds()) {
+                    PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+                    platformProxyResourceInfo.setResourceId(id);
+                    platformProxyResourceInfo.setAccessURL(updatedTaskInfo.getResourceUrls().get(id));
+
+                    platformProxyResourceInfoList.add(platformProxyResourceInfo);
+                }
+
+                if (newResourceUrls.size() == noNewResourcesNeeded) {
+                    log.debug("The maximum number of resources is satisfied");
+                    responseMessage = "The maximum number of resources is satisfied. ";
+
+                } else {
+                    log.debug("Not enough resources are available for satisfying the maxNoResources.");
+                    responseMessage = "Not enough resources are available for satisfying the maxNoResources. ";
+
+                }
+
+                responseStatus = ResourceManagerTaskInfoResponseStatus.SUCCESS;
+                informPlatformProxy = true;
+            }
+        } else if (updatedTaskInfo.getMaxNoResources() < storedTaskInfo.getMaxNoResources()) { // Check if maxNoResources decreased
+            int noOfIdsToBeStored = storedTaskInfo.getMaxNoResources() - updatedTaskInfo.getMaxNoResources();
+            List<String> resourceIds = storedTaskInfo.getResourceIds();
+            List<String> idsToBeStored = resourceIds.subList(Math.max(resourceIds.size() - noOfIdsToBeStored, 0), resourceIds.size());
+
+            updatedTaskInfo.getResourceIds().removeAll(idsToBeStored);
+            updatedTaskInfo.getStoredResourceIds().addAll(0, idsToBeStored);
+
+            for (String id : idsToBeStored)
+                updatedTaskInfo.getResourceUrls().remove(id);
+
+            for (String id : updatedTaskInfo.getResourceIds()) {
+                PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
+                platformProxyResourceInfo.setResourceId(id);
+                platformProxyResourceInfo.setAccessURL(updatedTaskInfo.getResourceUrls().get(id));
+
+                platformProxyResourceInfoList.add(platformProxyResourceInfo);
+            }
+
+            log.debug("The maxNoResources was decreased to " + updatedTaskInfo.getMaxNoResources() +
+                    ", so the following resources were removed: " + idsToBeStored);
+            updatedTaskInfo.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
+            responseMessage = "The maxNoResources was decreased to " + updatedTaskInfo.getMaxNoResources() +
+                    ", so the following resources were removed: " + idsToBeStored + ". ";
+            informPlatformProxy = true;
+        }
+
+        return new CheckNoResourcesResult(responseStatus, responseMessage, informPlatformProxy);
     }
 
 
@@ -513,12 +613,12 @@ public class UpdateTaskConsumer extends DefaultConsumer {
     }
 
 
-    private class CheckMinNoResourcesResult {
+    private class CheckNoResourcesResult {
         private ResourceManagerTaskInfoResponseStatus responseStatus;
         private String responseMessage;
         private boolean informPlatformProxy;
 
-        private CheckMinNoResourcesResult(ResourceManagerTaskInfoResponseStatus responseStatus, String responseMessage,
+        private CheckNoResourcesResult(ResourceManagerTaskInfoResponseStatus responseStatus, String responseMessage,
                                           boolean informPlatformProxy) {
             this.responseStatus = responseStatus;
             this.responseMessage = responseMessage;

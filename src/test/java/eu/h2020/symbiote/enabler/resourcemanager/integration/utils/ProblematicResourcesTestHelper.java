@@ -191,6 +191,7 @@ public class ProblematicResourcesTestHelper {
         TaskInfo taskInfo = new TaskInfo("task1", 2, coreQueryRequest, "P0-0-0T0:0:0.1",
                 false, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
+        taskInfo.setMaxNoResources(2);
         taskInfoRepository.save(taskInfo);
 
         ProblematicResourcesInfo problematicResourcesInfo = new ProblematicResourcesInfo();

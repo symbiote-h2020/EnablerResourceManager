@@ -272,7 +272,8 @@ public class SearchHelper {
         // Process the response for each task
         for (QueryResourceResult queryResourceResult : queryResultLists) {
 
-            if (taskResponseToComponents.getCount() >= taskInfoRequest.getMinNoResources())
+            if (taskInfoRequest.getMaxNoResources() != TaskInfo.ALL_AVAILABLE_RESOURCES &&
+                    taskResponseToComponents.getCount().equals(taskInfoRequest.getMaxNoResources()))
                 break;
 
             TaskResponseToComponents newTaskResponseToComponents = getUrlsFromCram(queryResourceResult);
