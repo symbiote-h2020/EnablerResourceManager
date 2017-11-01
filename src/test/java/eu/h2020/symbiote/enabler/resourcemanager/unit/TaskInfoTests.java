@@ -58,6 +58,7 @@ public class TaskInfoTests {
         assertEquals(request.getEnablerLogicName(), taskInfo.getEnablerLogicName());
         assertEquals(ResourceManagerTaskInfoResponseStatus.UNKNOWN, taskInfo.getStatus());
         assertEquals(0, taskInfo.getResourceIds().size());
+        assertEquals(0, taskInfo.getResourceDescriptions().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(0, taskInfo.getResourceUrls().size());
     }
@@ -70,11 +71,17 @@ public class TaskInfoTests {
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
 
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
+
         response.setTaskId("1");
         response.setMinNoResources(2);
         response.setMaxNoResources(ResourceManagerTaskInfoResponse.ALL_AVAILABLE_RESOURCES);
         response.setCoreQueryRequest(coreQueryRequest);
         response.setResourceIds(Arrays.asList("1", "2"));
+        response.setResourceDescriptions(Arrays.asList(result1, result2));
         response.setQueryInterval("P0-0-0T0:0:0.06");
         response.setAllowCaching(true);
         response.setCachingInterval("P0-0-0T0:0:1");
@@ -88,6 +95,7 @@ public class TaskInfoTests {
         assertEquals(response.getCoreQueryRequest().getLocation_name(), taskInfo.getCoreQueryRequest().getLocation_name());
         assertEquals(response.getCoreQueryRequest().getObserved_property(), taskInfo.getCoreQueryRequest().getObserved_property());
         assertEquals(response.getResourceIds(), taskInfo.getResourceIds());
+        assertEquals(response.getResourceDescriptions(), taskInfo.getResourceDescriptions());
         assertEquals(response.getQueryInterval(), taskInfo.getQueryInterval());
         assertEquals(response.getAllowCaching(), taskInfo.getAllowCaching());
         assertEquals(response.getCachingInterval(), taskInfo.getCachingInterval());
@@ -105,15 +113,22 @@ public class TaskInfoTests {
                 .locationName("Zurich")
                 .observedProperty(Arrays.asList("temperature", "humidity"))
                 .build();
+
         Map<String, String> resourceUrls = new HashMap<>();
         resourceUrls.put("1", "http://1.com");
         resourceUrls.put("2", "http://2.com");
+
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
 
         initialTaskInfo.setTaskId("1");
         initialTaskInfo.setMinNoResources(2);
         initialTaskInfo.setMaxNoResources(TaskInfo.ALL_AVAILABLE_RESOURCES);
         initialTaskInfo.setCoreQueryRequest(coreQueryRequest);
         initialTaskInfo.setResourceIds(Arrays.asList("1", "2"));
+        initialTaskInfo.setResourceDescriptions(Arrays.asList(result1, result2));
         initialTaskInfo.setQueryInterval("P0-0-0T0:0:0.06");
         initialTaskInfo.setAllowCaching(true);
         initialTaskInfo.setCachingInterval("P0-0-0T0:0:1");
@@ -130,6 +145,7 @@ public class TaskInfoTests {
         assertEquals(initialTaskInfo.getCoreQueryRequest().getLocation_name(), taskInfo.getCoreQueryRequest().getLocation_name());
         assertEquals(initialTaskInfo.getCoreQueryRequest().getObserved_property(), taskInfo.getCoreQueryRequest().getObserved_property());
         assertEquals(initialTaskInfo.getResourceIds(), taskInfo.getResourceIds());
+        assertEquals(initialTaskInfo.getResourceDescriptions(), taskInfo.getResourceDescriptions());
         assertEquals(initialTaskInfo.getQueryInterval(), taskInfo.getQueryInterval());
         assertEquals(initialTaskInfo.getAllowCaching(), taskInfo.getAllowCaching());
         assertEquals(initialTaskInfo.getCachingInterval(), taskInfo.getCachingInterval());
@@ -199,7 +215,21 @@ public class TaskInfoTests {
         newResourceUrls.put("3", "http://3.com");
         newResourceUrls.put("4", "http://4.com");
 
-        taskInfo.addResourceIds(newResourceUrls);
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        result1.setId("1");
+        results.add(result1);
+        QueryResourceResult result2 = new QueryResourceResult();
+        result2.setId("2");
+        results.add(result2);
+        QueryResourceResult result3 = new QueryResourceResult();
+        result3.setId("3");
+        results.add(result3);
+        QueryResourceResult result4 = new QueryResourceResult();
+        result4.setId("4");
+        results.add(result4);
+
+        taskInfo.addResourceIds(newResourceUrls, results);
 
         assertEquals(4, taskInfo.getResourceIds().size());
         assertEquals("1", taskInfo.getResourceIds().get(0));
@@ -212,6 +242,12 @@ public class TaskInfoTests {
         assertEquals("http://2.com", taskInfo.getResourceUrls().get("2"));
         assertEquals("http://3.com", taskInfo.getResourceUrls().get("3"));
         assertEquals("http://4.com", taskInfo.getResourceUrls().get("4"));
+
+        assertEquals(4, taskInfo.getResourceDescriptions().size());
+        assertEquals(true, taskInfo.getResourceDescriptions().get(0).equals(result1));
+        assertEquals(true, taskInfo.getResourceDescriptions().get(1).equals(result2));
+        assertEquals(true, taskInfo.getResourceDescriptions().get(2).equals(result3));
+        assertEquals(true, taskInfo.getResourceDescriptions().get(3).equals(result4));
     }
 
     @Test
@@ -268,13 +304,25 @@ public class TaskInfoTests {
         resourceUrls.put("1", "http://1.com");
         resourceUrls.put("2", "http://2.com");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        result1.setId("1");
+        QueryResourceResult result2 = new QueryResourceResult();
+        result2.setId("2");
+        results.add(result1);
+        results.add(result2);
+
         taskInfo.setResourceIds(new ArrayList<>(Arrays.asList("1", "2")));
         taskInfo.setResourceUrls(resourceUrls);
+        taskInfo.setResourceDescriptions(results);
 
         taskInfo.deleteResourceIds(new ArrayList<>(Arrays.asList("1", "3")));
 
         assertEquals(1, taskInfo.getResourceIds().size());
         assertEquals("2", taskInfo.getResourceIds().get(0));
+
+        assertEquals(1, taskInfo.getResourceDescriptions().size());
+        assertEquals("2", taskInfo.getResourceDescriptions().get(0).getId());
 
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals("http://2.com", taskInfo.getResourceUrls().get("2"));
@@ -341,9 +389,17 @@ public class TaskInfoTests {
         resourceUrls.put("1", "http://1.com");
         resourceUrls.put("2", "http://2.com");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
+        results.add(result1);
+        results.add(result2);
+
         TaskInfo taskInfo1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
                 true, "P0-0-0T0:0:1", true,
-                "TestEnablerLogic", sparqlQueryRequest, resourceIds,
+                "TestEnablerLogic", sparqlQueryRequest, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
 
         TaskInfo taskInfo2 = new TaskInfo(taskInfo1);

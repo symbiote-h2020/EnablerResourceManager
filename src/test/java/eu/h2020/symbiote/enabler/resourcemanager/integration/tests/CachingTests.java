@@ -1,5 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration.tests;
 
+import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.integration.AbstractTestClass;
@@ -17,10 +18,7 @@ import org.junit.Test;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -68,14 +66,20 @@ public class CachingTests extends AbstractTestClass {
         assertEquals(ResourceManagerTasksStatus.SUCCESS, createResultRef.get().getStatus());
         assertEquals("ALL the task requests were successful!", createResultRef.get().getMessage());
         assertEquals(2, createResultRef.get().getTasks().get(0).getResourceIds().size());
+        assertEquals(2, createResultRef.get().getTasks().get(0).getResourceDescriptions().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, createResultRef.get().getTasks().get(0).getStatus());
         assertEquals("SUCCESS", createResultRef.get().getTasks().get(0).getMessage());
         assertEquals(1, createResultRef.get().getTasks().get(1).getResourceIds().size());
+        assertEquals(1, createResultRef.get().getTasks().get(1).getResourceDescriptions().size());
         assertEquals("SUCCESS", createResultRef.get().getTasks().get(1).getMessage());
 
         assertEquals("resource1", createResultRef.get().getTasks().get(0).getResourceIds().get(0));
         assertEquals("resource2", createResultRef.get().getTasks().get(0).getResourceIds().get(1));
         assertEquals("resource4", createResultRef.get().getTasks().get(1).getResourceIds().get(0));
+
+        assertEquals("resource1", createResultRef.get().getTasks().get(0).getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", createResultRef.get().getTasks().get(0).getResourceDescriptions().get(1).getId());
+        assertEquals("resource4", createResultRef.get().getTasks().get(1).getResourceDescriptions().get(0).getId());
 
         // Check the stored ScheduledTaskInfoUpdate
         assertNotNull(searchHelper.getScheduledTaskInfoUpdateMap().get("1"));
@@ -111,22 +115,27 @@ public class CachingTests extends AbstractTestClass {
         // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(2, taskInfo.getResourceDescriptions().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
+        assertEquals("resource1", taskInfo.getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", taskInfo.getResourceDescriptions().get(1).getId());
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(1, taskInfo.getResourceDescriptions().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
+        assertEquals("resource4", taskInfo.getResourceDescriptions().get(0).getId());
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
 
@@ -151,21 +160,26 @@ public class CachingTests extends AbstractTestClass {
         // Test what is stored in the database
         taskInfo = taskInfoRepository.findByTaskId("1");
         assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(2, taskInfo.getResourceDescriptions().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
         assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
+        assertEquals("resource1", taskInfo.getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", taskInfo.getResourceDescriptions().get(1).getId());
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
 
         taskInfo = taskInfoRepository.findByTaskId("2");
         assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(1, taskInfo.getResourceDescriptions().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals("SUCCESS", taskInfo.getMessage());
         assertEquals("resource4", taskInfo.getResourceIds().get(0));
+        assertEquals("resource4", taskInfo.getResourceDescriptions().get(0).getId());
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource4')", taskInfo.getResourceUrls().get("resource4"));
 
         // Check the stored ScheduledTaskInfoUpdate
@@ -250,8 +264,16 @@ public class CachingTests extends AbstractTestClass {
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        result1.setId("resource1");
+        result2.setId("resource2");
+        results.add(result1);
+        results.add(result2);
+
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true, "enablerLogic", null, resourceIds,
+                true, "P0-0-0T0:0:1", true, "enablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "message");
         task1.setMaxNoResources(2);
         taskInfoRepository.save(task1);
@@ -265,6 +287,8 @@ public class CachingTests extends AbstractTestClass {
         task2.setTaskId("2");
         task2.setResourceIds(Arrays.asList("21", "22"));
         task2.setResourceUrls(resourceUrls2);
+        task2.getResourceDescriptions().get(0).setId("21");
+        task2.getResourceDescriptions().get(1).setId("22");
         taskInfoRepository.save(task2);
         searchHelper.getScheduledTaskInfoUpdateMap().put(task2.getTaskId(),
                 new ScheduledTaskInfoUpdate(taskInfoRepository, searchHelper, task2));
@@ -280,6 +304,11 @@ public class CachingTests extends AbstractTestClass {
         task3.setResourceIds(Arrays.asList("31", "32", "resource1"));
         task3.setAllowCaching(false);
         task3.setResourceUrls(resourceUrls3);
+        task3.getResourceDescriptions().get(0).setId("31");
+        task3.getResourceDescriptions().get(1).setId("32");
+        QueryResourceResult result3 = new QueryResourceResult();
+        result3.setId("resource1");
+        task3.getResourceDescriptions().add(result3);
         taskInfoRepository.save(task3);
 
         Map<String, String> resourceUrls4 = new HashMap<>();
@@ -290,6 +319,8 @@ public class CachingTests extends AbstractTestClass {
         task4.setResourceIds(Arrays.asList("41", "42"));
         task4.setAllowCaching(false);
         task4.setResourceUrls(resourceUrls4);
+        task4.getResourceDescriptions().get(0).setId("41");
+        task4.getResourceDescriptions().get(1).setId("42");
         taskInfoRepository.save(task4);
 
         // Check the stored ScheduledTaskInfoUpdates
@@ -366,9 +397,11 @@ public class CachingTests extends AbstractTestClass {
 
         // Test if the stored resources were cleared in the first 2 tasks
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getResourceDescriptions().size());
         assertEquals(0, storedTaskInfo1.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo1.getResourceUrls().size());
         assertEquals(2, storedTaskInfo2.getResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getResourceDescriptions().size());
         assertEquals(0, storedTaskInfo2.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo2.getResourceUrls().size());
 
@@ -386,9 +419,11 @@ public class CachingTests extends AbstractTestClass {
 
         // Test if stored resources were added in the last 2 tasks
         assertEquals(3, storedTaskInfo3.getResourceIds().size());
+        assertEquals(3, storedTaskInfo3.getResourceDescriptions().size());
         assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
         assertEquals(3, storedTaskInfo3.getResourceUrls().size());
         assertEquals(2, storedTaskInfo4.getResourceIds().size());
+        assertEquals(2, storedTaskInfo4.getResourceDescriptions().size());
         assertEquals(1, storedTaskInfo4.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo4.getResourceUrls().size());
 
@@ -402,6 +437,17 @@ public class CachingTests extends AbstractTestClass {
         assertEquals("resource1", storedTaskInfo3.getResourceIds().get(2));
         assertEquals("resource1", storedTaskInfo4.getResourceIds().get(0));
         assertEquals("resource2", storedTaskInfo4.getResourceIds().get(1));
+
+        // Check the resourceDescriptions
+        assertEquals("resource1", storedTaskInfo1.getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", storedTaskInfo1.getResourceDescriptions().get(1).getId());
+        assertEquals("21", storedTaskInfo2.getResourceDescriptions().get(0).getId());
+        assertEquals("22", storedTaskInfo2.getResourceDescriptions().get(1).getId());
+        assertEquals("31", storedTaskInfo3.getResourceDescriptions().get(0).getId());
+        assertEquals("32", storedTaskInfo3.getResourceDescriptions().get(1).getId());
+        assertEquals("resource1", storedTaskInfo3.getResourceDescriptions().get(2).getId());
+        assertEquals("resource1", storedTaskInfo4.getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", storedTaskInfo4.getResourceDescriptions().get(1).getId());
 
         // Check the storedResourceIds
         assertEquals("resource2", storedTaskInfo3.getStoredResourceIds().get(0));
@@ -431,6 +477,10 @@ public class CachingTests extends AbstractTestClass {
         assertEquals(2, resultRef.get().getTasks().get(1).getResourceIds().size());
         assertEquals(3, resultRef.get().getTasks().get(2).getResourceIds().size());
         assertEquals(2, resultRef.get().getTasks().get(3).getResourceIds().size());
+        assertEquals(2, resultRef.get().getTasks().get(0).getResourceDescriptions().size());
+        assertEquals(2, resultRef.get().getTasks().get(1).getResourceDescriptions().size());
+        assertEquals(3, resultRef.get().getTasks().get(2).getResourceDescriptions().size());
+        assertEquals(2, resultRef.get().getTasks().get(3).getResourceDescriptions().size());
 
         assertEquals(ResourceManagerTasksStatus.SUCCESS, resultRef.get().getStatus());
         assertEquals("ALL the update task requests were successful!", resultRef.get().getMessage());
@@ -452,6 +502,16 @@ public class CachingTests extends AbstractTestClass {
         assertEquals("resource1", resultRef.get().getTasks().get(2).getResourceIds().get(2));
         assertEquals("resource1", resultRef.get().getTasks().get(3).getResourceIds().get(0));
         assertEquals("resource2", resultRef.get().getTasks().get(3).getResourceIds().get(1));
+
+        assertEquals("resource1", resultRef.get().getTasks().get(0).getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", resultRef.get().getTasks().get(0).getResourceDescriptions().get(1).getId());
+        assertEquals("21", resultRef.get().getTasks().get(1).getResourceDescriptions().get(0).getId());
+        assertEquals("22", resultRef.get().getTasks().get(1).getResourceDescriptions().get(1).getId());
+        assertEquals("31", resultRef.get().getTasks().get(2).getResourceDescriptions().get(0).getId());
+        assertEquals("32", resultRef.get().getTasks().get(2).getResourceDescriptions().get(1).getId());
+        assertEquals("resource1", resultRef.get().getTasks().get(2).getResourceDescriptions().get(2).getId());
+        assertEquals("resource1", resultRef.get().getTasks().get(3).getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", resultRef.get().getTasks().get(3).getResourceDescriptions().get(1).getId());
 
         while (dummyPlatformProxyListener.updateAcquisitionRequestsReceived() < 2) {
             TimeUnit.MILLISECONDS.sleep(100);
@@ -513,9 +573,11 @@ public class CachingTests extends AbstractTestClass {
 
         // Test if the stored resources were cleared in the first 2 tasks
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
+        assertEquals(2, storedTaskInfo1.getResourceDescriptions().size());
         assertEquals(0, storedTaskInfo1.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo1.getResourceUrls().size());
         assertEquals(2, storedTaskInfo2.getResourceIds().size());
+        assertEquals(2, storedTaskInfo2.getResourceDescriptions().size());
         assertEquals(0, storedTaskInfo2.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo2.getResourceUrls().size());
 
@@ -533,9 +595,11 @@ public class CachingTests extends AbstractTestClass {
 
         // Test if stored resources were updated in the last 2 tasks
         assertEquals(3, storedTaskInfo3.getResourceIds().size());
+        assertEquals(3, storedTaskInfo3.getResourceDescriptions().size());
         assertEquals(2, storedTaskInfo3.getStoredResourceIds().size());
         assertEquals(3, storedTaskInfo3.getResourceUrls().size());
         assertEquals(2, storedTaskInfo4.getResourceIds().size());
+        assertEquals(2, storedTaskInfo4.getResourceDescriptions().size());
         assertEquals(1, storedTaskInfo4.getStoredResourceIds().size());
         assertEquals(2, storedTaskInfo4.getResourceUrls().size());
 
@@ -549,6 +613,17 @@ public class CachingTests extends AbstractTestClass {
         assertEquals("resource1", storedTaskInfo3.getResourceIds().get(2));
         assertEquals("resource1", storedTaskInfo4.getResourceIds().get(0));
         assertEquals("resource2", storedTaskInfo4.getResourceIds().get(1));
+
+        // Check the resourceIds
+        assertEquals("resource1", storedTaskInfo1.getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", storedTaskInfo1.getResourceDescriptions().get(1).getId());
+        assertEquals("21", storedTaskInfo2.getResourceDescriptions().get(0).getId());
+        assertEquals("22", storedTaskInfo2.getResourceDescriptions().get(1).getId());
+        assertEquals("31", storedTaskInfo3.getResourceDescriptions().get(0).getId());
+        assertEquals("32", storedTaskInfo3.getResourceDescriptions().get(1).getId());
+        assertEquals("resource1", storedTaskInfo3.getResourceDescriptions().get(2).getId());
+        assertEquals("resource1", storedTaskInfo4.getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", storedTaskInfo4.getResourceDescriptions().get(1).getId());
 
         // Check the storedResourceIds
         assertEquals("resource2", storedTaskInfo3.getStoredResourceIds().get(0));

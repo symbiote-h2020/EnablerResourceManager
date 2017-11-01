@@ -74,7 +74,7 @@ public class SearchHelper {
         loadTaskInfo();
     }
 
-    public String querySingleResource (String resourceId)  {
+    public TaskResponseToComponents querySingleResource (String resourceId)  {
         // Query the core for a single resource
 
         ObjectMapper mapper = new ObjectMapper();
@@ -101,9 +101,8 @@ public class SearchHelper {
 
             if (queryResponse.getResources().size() == 1) {
                 TaskResponseToComponents taskResponseToComponents = getUrlsFromCram(queryResponse.getResources().get(0));
-
                 if (taskResponseToComponents.getPlatformProxyResourceInfoList().size() == 1)
-                    return taskResponseToComponents.getPlatformProxyResourceInfoList().get(0).getAccessURL();
+                    return taskResponseToComponents;
                 else
                     return null;
 
@@ -160,6 +159,7 @@ public class SearchHelper {
 
             // Finalizing task response to EnablerLogic
             taskInfoResponse.setResourceIds(taskResponseToComponents.getResourceIdsForEnablerLogic());
+            taskInfoResponse.setResourceDescriptions(taskResponseToComponents.getResourceDescriptionsForEnablerLogic());
             if (taskInfoResponse.getResourceIds().size() >= taskInfoResponse.getMinNoResources()) {
                 taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);
                 taskInfoResponse.setMessage("SUCCESS");
@@ -328,6 +328,7 @@ public class SearchHelper {
 
                     // Save the id for returning it to the EnablerLogic
                     taskResponseToComponents.addToResourceIdsForEnablerLogic(queryResourceResult.getId());
+                    taskResponseToComponents.addToResourceDescriptionsForEnablerLogic(queryResourceResult);
                 }
             }
         } catch (SecurityHandlerException | HttpClientErrorException | HttpServerErrorException e) {

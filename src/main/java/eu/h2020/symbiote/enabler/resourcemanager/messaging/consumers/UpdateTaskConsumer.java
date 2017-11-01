@@ -9,11 +9,13 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
+import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import eu.h2020.symbiote.enabler.resourcemanager.model.TaskResponseToComponents;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
 import eu.h2020.symbiote.util.IntervalFormatter;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -327,6 +330,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         // Always retain the following values in the updatedTaskInfo if the CoreQuery Request does not change
         updatedTaskInfo.setCoreQueryRequest(CoreQueryRequest.newInstance(storedTaskInfo.getCoreQueryRequest()));
         updatedTaskInfo.setResourceIds(new ArrayList<>(storedTaskInfo.getResourceIds()));
+        updatedTaskInfo.setResourceDescriptions(new ArrayList<>(storedTaskInfo.getResourceDescriptions()));
         updatedTaskInfo.setStoredResourceIds(new ArrayList<>(storedTaskInfo.getStoredResourceIds()));
         updatedTaskInfo.setResourceUrls(new HashMap<>(storedTaskInfo.getResourceUrls()));
         if (storedTaskInfo.getSparqlQueryRequest() != null)
@@ -428,21 +432,24 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             if (updatedTaskInfo.getAllowCaching()) {
 
                 Map<String, String> newResourceUrls = new HashMap<>();
+                ArrayList<QueryResourceResult> results = new ArrayList<>();
 
                 while (newResourceUrls.size() != noNewResourcesNeeded &&
                         updatedTaskInfo.getStoredResourceIds().size() != 0) {
                     String candidateResourceId = updatedTaskInfo.getStoredResourceIds().get(0);
-                    String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
+                    TaskResponseToComponents taskResponseToComponents = searchHelper.querySingleResource(candidateResourceId);
 
-                    if (candidateResourceUrl != null) {
-                        newResourceUrls.put(candidateResourceId, candidateResourceUrl);
+                    if (taskResponseToComponents != null) {
+                        newResourceUrls.put(candidateResourceId,
+                                taskResponseToComponents.getPlatformProxyResourceInfoList().get(0).getAccessURL());
+                        results.add(taskResponseToComponents.getResourceDescriptionsForEnablerLogic().get(0));
                     }
 
                     //ToDo: add it to another list if CRAM does not respond with a url
                     updatedTaskInfo.getStoredResourceIds().remove(0);
                 }
 
-                updatedTaskInfo.addResourceIds(newResourceUrls);
+                updatedTaskInfo.addResourceIds(newResourceUrls, results);
 
                 for (String id : updatedTaskInfo.getResourceIds()) {
                     PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
@@ -496,22 +503,25 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             if (updatedTaskInfo.getAllowCaching()) {
 
                 Map<String, String> newResourceUrls = new HashMap<>();
+                ArrayList<QueryResourceResult> results = new ArrayList<>();
 
                 while ((newResourceUrls.size() != noNewResourcesNeeded ||
                         updatedTaskInfo.getMaxNoResources() == ResourceManagerTaskInfoRequest.ALL_AVAILABLE_RESOURCES)  &&
                         updatedTaskInfo.getStoredResourceIds().size() != 0) {
                     String candidateResourceId = updatedTaskInfo.getStoredResourceIds().get(0);
-                    String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
+                    TaskResponseToComponents taskResponseToComponents = searchHelper.querySingleResource(candidateResourceId);
 
-                    if (candidateResourceUrl != null) {
-                        newResourceUrls.put(candidateResourceId, candidateResourceUrl);
+                    if (taskResponseToComponents != null) {
+                        newResourceUrls.put(candidateResourceId,
+                                taskResponseToComponents.getPlatformProxyResourceInfoList().get(0).getAccessURL());
+                        results.add(taskResponseToComponents.getResourceDescriptionsForEnablerLogic().get(0));
                     }
 
                     //ToDo: add it to another list if CRAM does not respond with a url
                     updatedTaskInfo.getStoredResourceIds().remove(0);
                 }
 
-                updatedTaskInfo.addResourceIds(newResourceUrls);
+                updatedTaskInfo.addResourceIds(newResourceUrls, results);
 
                 for (String id : updatedTaskInfo.getResourceIds()) {
                     PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();
@@ -542,8 +552,13 @@ public class UpdateTaskConsumer extends DefaultConsumer {
             updatedTaskInfo.getResourceIds().removeAll(idsToBeStored);
             updatedTaskInfo.getStoredResourceIds().addAll(0, idsToBeStored);
 
-            for (String id : idsToBeStored)
+            for (String id : idsToBeStored) {
                 updatedTaskInfo.getResourceUrls().remove(id);
+
+                // Find and remove resource Descriptions
+                updatedTaskInfo.setResourceDescriptions(updatedTaskInfo.getResourceDescriptions().stream()
+                        .filter(elem -> !elem.getId().equals(id)).collect(Collectors.toList()));
+            }
 
             for (String id : updatedTaskInfo.getResourceIds()) {
                 PlatformProxyResourceInfo platformProxyResourceInfo = new PlatformProxyResourceInfo();

@@ -1,6 +1,7 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration.tests;
 
 
+import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponse;
@@ -18,10 +19,7 @@ import org.junit.Test;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -54,8 +52,16 @@ public class CancelTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        result1.setId("resource1");
+        result2.setId("resource2");
+        results.add(result1);
+        results.add(result2);
+
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T1:0:1", true, "TestEnablerLogic", null, resourceIds,
+                true, "P0-0-0T1:0:1", true, "TestEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "message");
         taskInfoRepository.save(task1);
 
@@ -163,8 +169,16 @@ public class CancelTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        result1.setId("resource1");
+        result2.setId("resource2");
+        results.add(result1);
+        results.add(result2);
+
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true, "TestEnablerLogic", null, resourceIds,
+                true, "P0-0-0T0:0:1", true, "TestEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "message");
         taskInfoRepository.save(task1);
 
@@ -259,8 +273,16 @@ public class CancelTaskConsumerTests extends AbstractTestClass {
         resourceUrls1.put("resource1", symbIoTeCoreUrl + "/Sensors('resource1')");
         resourceUrls1.put("resource2", symbIoTeCoreUrl + "/Sensors('resource2')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        result1.setId("resource1");
+        result2.setId("resource2");
+        results.add(result1);
+        results.add(result2);
+
         TaskInfo task1 = new TaskInfo("1", 2, coreQueryRequest, "P0-0-0T0:0:0.06",
-                true, "P0-0-0T0:0:1", true, "TestEnablerLogic", null, resourceIds,
+                true, "P0-0-0T0:0:1", true, "TestEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls1, "message");
         taskInfoRepository.save(task1);
 

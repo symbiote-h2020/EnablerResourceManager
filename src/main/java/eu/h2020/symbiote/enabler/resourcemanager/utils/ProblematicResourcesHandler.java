@@ -4,11 +4,9 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.enabler.messaging.model.*;
-import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerResult;
-import eu.h2020.symbiote.enabler.resourcemanager.model.ProblematicResourcesHandlerStatus;
-import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
-import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
+import eu.h2020.symbiote.enabler.resourcemanager.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.util.IntervalFormatter;
 
@@ -134,14 +132,17 @@ public final class ProblematicResourcesHandler {
                 log.debug("Task " + taskInfo.getTaskId() + " has allowCaching = TRUE");
 
                 Map<String, String> newResourceUrls = new HashMap<>();
+                ArrayList<QueryResourceResult> results = new ArrayList<>();
 
                 while (newResourceUrls.size() != noNewResourcesNeeded &&
                         taskInfo.getStoredResourceIds().size() != 0) {
                     String candidateResourceId = taskInfo.getStoredResourceIds().get(0);
-                    String candidateResourceUrl = searchHelper.querySingleResource(candidateResourceId);
+                    TaskResponseToComponents taskResponseToComponents = searchHelper.querySingleResource(candidateResourceId);
 
-                    if (candidateResourceUrl != null) {
-                        newResourceUrls.put(candidateResourceId, candidateResourceUrl);
+                    if (taskResponseToComponents != null) {
+                        newResourceUrls.put(candidateResourceId,
+                                taskResponseToComponents.getPlatformProxyResourceInfoList().get(0).getAccessURL());
+                        results.add(taskResponseToComponents.getResourceDescriptionsForEnablerLogic().get(0));
                     }
 
                     //ToDo: add it to another list if CRAM does not respond with a url
@@ -150,7 +151,7 @@ public final class ProblematicResourcesHandler {
 
                 // ToDo: add it to another list, not just remove it
                 taskInfo.deleteResourceIds(problematicResourcesInfo.getProblematicResourceIds());
-                taskInfo.addResourceIds(newResourceUrls);
+                taskInfo.addResourceIds(newResourceUrls, results);
 
                 if (newResourceUrls.size() == noNewResourcesNeeded) {
                     return ProblematicResourcesHandlerResult.resourcesReplacedSuccessfully(taskInfo);
@@ -222,7 +223,7 @@ public final class ProblematicResourcesHandler {
 
         // Inform Enabler Logic about the new resource ids of the task
         ResourcesUpdated resourcesUpdated = new ResourcesUpdated(taskInfo.getTaskId(),
-                taskInfo.getResourceIds());
+                taskInfo.getResourceIds(), taskInfo.getResourceDescriptions());
         String specificEnablerLogicResourcesUpdatedKey = genericEnablerLogicResourcesUpdatedKey + "." +
                 taskInfo.getEnablerLogicName();
         rabbitTemplate.convertAndSend(enablerLogicExchange, specificEnablerLogicResourcesUpdatedKey,

@@ -1,5 +1,6 @@
 package eu.h2020.symbiote.enabler.resourcemanager.integration.utils;
 
+import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.integration.dummyListeners.DummyEnablerLogicListener;
@@ -30,12 +31,13 @@ public class ProblematicResourcesTestHelper {
         // empty constructor
     }
 
-    public static void enoughReplaceableResourcesTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                                                         RabbitTemplate rabbitTemplate,
-                                                                         DummyPlatformProxyListener dummyPlatformProxyListener,
-                                                                         DummyEnablerLogicListener dummyEnablerLogicListener,
-                                                                         String resourceManagerExchangeName,
-                                                                         String symbIoTeCoreUrl) throws Exception {
+    public static void enoughReplaceableResourcesTest(String routingKey,
+                                                      TaskInfoRepository taskInfoRepository,
+                                                      RabbitTemplate rabbitTemplate,
+                                                      DummyPlatformProxyListener dummyPlatformProxyListener,
+                                                      DummyEnablerLogicListener dummyEnablerLogicListener,
+                                                      String resourceManagerExchangeName,
+                                                      String symbIoTeCoreUrl) throws Exception {
 
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<ResourcesUpdated> updateRequestsReceivedByEnablerLogic;
@@ -48,8 +50,19 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        QueryResourceResult result3 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
+        result3.setId("3");
+        results.add(result1);
+        results.add(result2);
+        results.add(result3);
+
         TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
-                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "success");
         taskInfoRepository.save(taskInfo);
 
@@ -59,7 +72,7 @@ public class ProblematicResourcesTestHelper {
 
         ProblematicResourcesInfo problematicResourcesInfo2 = new ProblematicResourcesInfo();
         problematicResourcesInfo2.setTaskId("task2");
-        problematicResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
+        problematicResourcesInfo2.setProblematicResourceIds(Collections.singletonList("resource4"));
 
         ProblematicResourcesMessage problematicResourcesMessage = new ProblematicResourcesMessage();
         problematicResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(problematicResourcesInfo, problematicResourcesInfo2));
@@ -81,6 +94,7 @@ public class ProblematicResourcesTestHelper {
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(5, taskInfo.getResourceIds().size());
+        assertEquals(5, taskInfo.getResourceDescriptions().size());
         assertEquals(1, taskInfo.getStoredResourceIds().size());
         assertEquals(5, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
@@ -90,6 +104,12 @@ public class ProblematicResourcesTestHelper {
         assertEquals("5", taskInfo.getResourceIds().get(2));
         assertEquals("6", taskInfo.getResourceIds().get(3));
         assertEquals("7", taskInfo.getResourceIds().get(4));
+
+        assertEquals("2", taskInfo.getResourceDescriptions().get(0).getId());
+        assertEquals("4", taskInfo.getResourceDescriptions().get(1).getId());
+        assertEquals("5", taskInfo.getResourceDescriptions().get(2).getId());
+        assertEquals("6", taskInfo.getResourceDescriptions().get(3).getId());
+        assertEquals("7", taskInfo.getResourceDescriptions().get(4).getId());
 
         assertEquals("8", taskInfo.getStoredResourceIds().get(0));
 
@@ -157,20 +177,29 @@ public class ProblematicResourcesTestHelper {
         // Test what Enabler Logic receives
         updateRequestsReceivedByEnablerLogic = dummyEnablerLogicListener.getUpdateResourcesReceivedByListener();
         assertEquals(1, updateRequestsReceivedByEnablerLogic.size());
+
         assertEquals(5, updateRequestsReceivedByEnablerLogic.get(0).getNewResources().size());
         assertEquals("2", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(0));
         assertEquals("4", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(1));
         assertEquals("5", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(2));
         assertEquals("6", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(3));
         assertEquals("7", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(4));
+
+        assertEquals(5, updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().size());
+        assertEquals("2", updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().get(0).getId());
+        assertEquals("4", updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().get(1).getId());
+        assertEquals("5", updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().get(2).getId());
+        assertEquals("6", updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().get(3).getId());
+        assertEquals("7", updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().get(4).getId());
     }
 
-    public static void enoughReplaceableResourcesNoCachingTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                                      RabbitTemplate rabbitTemplate,
-                                                      DummyPlatformProxyListener dummyPlatformProxyListener,
-                                                      DummyEnablerLogicListener dummyEnablerLogicListener,
-                                                      String resourceManagerExchangeName,
-                                                      String symbIoTeCoreUrl) throws Exception {
+    public static void enoughReplaceableResourcesNoCachingTest(String routingKey,
+                                                               TaskInfoRepository taskInfoRepository,
+                                                               RabbitTemplate rabbitTemplate,
+                                                               DummyPlatformProxyListener dummyPlatformProxyListener,
+                                                               DummyEnablerLogicListener dummyEnablerLogicListener,
+                                                               String resourceManagerExchangeName,
+                                                               String symbIoTeCoreUrl) throws Exception {
 
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<ResourcesUpdated> updateRequestsReceivedByEnablerLogic;
@@ -188,8 +217,19 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        QueryResourceResult result3 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
+        result3.setId("3");
+        results.add(result1);
+        results.add(result2);
+        results.add(result3);
+
         TaskInfo taskInfo = new TaskInfo("task1", 2, coreQueryRequest, "P0-0-0T0:0:0.1",
-                false, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                false, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfo.setMaxNoResources(2);
         taskInfoRepository.save(taskInfo);
@@ -200,7 +240,7 @@ public class ProblematicResourcesTestHelper {
 
         ProblematicResourcesInfo problematicResourcesInfo2 = new ProblematicResourcesInfo();
         problematicResourcesInfo2.setTaskId("task2");
-        problematicResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
+        problematicResourcesInfo2.setProblematicResourceIds(Collections.singletonList("resource4"));
 
         ProblematicResourcesMessage problematicResourcesMessage = new ProblematicResourcesMessage();
         problematicResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(problematicResourcesInfo, problematicResourcesInfo2));
@@ -222,12 +262,16 @@ public class ProblematicResourcesTestHelper {
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(2, taskInfo.getResourceIds().size());
+        assertEquals(2, taskInfo.getResourceDescriptions().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(2, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
 
         assertEquals("resource1", taskInfo.getResourceIds().get(0));
         assertEquals("resource2", taskInfo.getResourceIds().get(1));
+
+        assertEquals("resource1", taskInfo.getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", taskInfo.getResourceDescriptions().get(1).getId());
 
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource1')", taskInfo.getResourceUrls().get("resource1"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('resource2')", taskInfo.getResourceUrls().get("resource2"));
@@ -266,17 +310,23 @@ public class ProblematicResourcesTestHelper {
         // Test what Enabler Logic receives
         updateRequestsReceivedByEnablerLogic = dummyEnablerLogicListener.getUpdateResourcesReceivedByListener();
         assertEquals(1, updateRequestsReceivedByEnablerLogic.size());
+
         assertEquals(2, updateRequestsReceivedByEnablerLogic.get(0).getNewResources().size());
         assertEquals("resource1", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(0));
         assertEquals("resource2", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(1));
+
+        assertEquals(2, updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().size());
+        assertEquals("resource1", updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().get(0).getId());
+        assertEquals("resource2", updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().get(1).getId());
     }
 
-    public static void enoughRemainingResourcesTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                                      RabbitTemplate rabbitTemplate,
-                                                      DummyPlatformProxyListener dummyPlatformProxyListener,
-                                                      DummyEnablerLogicListener dummyEnablerLogicListener,
-                                                      String resourceManagerExchangeName,
-                                                      String symbIoTeCoreUrl) throws Exception {
+    public static void enoughRemainingResourcesTest(String routingKey,
+                                                    TaskInfoRepository taskInfoRepository,
+                                                    RabbitTemplate rabbitTemplate,
+                                                    DummyPlatformProxyListener dummyPlatformProxyListener,
+                                                    DummyEnablerLogicListener dummyEnablerLogicListener,
+                                                    String resourceManagerExchangeName,
+                                                    String symbIoTeCoreUrl) throws Exception {
 
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<ResourcesUpdated> updateRequestsReceivedByEnablerLogic;
@@ -289,8 +339,19 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        QueryResourceResult result3 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
+        result3.setId("3");
+        results.add(result1);
+        results.add(result2);
+        results.add(result3);
+
         TaskInfo taskInfo = new TaskInfo("task1", 1, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
-                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
@@ -300,7 +361,7 @@ public class ProblematicResourcesTestHelper {
 
         ProblematicResourcesInfo problematicResourcesInfo2 = new ProblematicResourcesInfo();
         problematicResourcesInfo2.setTaskId("task2");
-        problematicResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
+        problematicResourcesInfo2.setProblematicResourceIds(Collections.singletonList("resource4"));
 
         ProblematicResourcesMessage problematicResourcesMessage = new ProblematicResourcesMessage();
         problematicResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(problematicResourcesInfo, problematicResourcesInfo2));
@@ -322,11 +383,13 @@ public class ProblematicResourcesTestHelper {
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(1, taskInfo.getResourceDescriptions().size());
         assertEquals(7, taskInfo.getStoredResourceIds().size());
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, taskInfo.getStatus());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
+        assertEquals("2", taskInfo.getResourceDescriptions().get(0).getId());
 
         assertEquals("4", taskInfo.getStoredResourceIds().get(0));
         assertEquals("5", taskInfo.getStoredResourceIds().get(1));
@@ -349,16 +412,21 @@ public class ProblematicResourcesTestHelper {
         // Test what Enabler Logic receives
         updateRequestsReceivedByEnablerLogic = dummyEnablerLogicListener.getUpdateResourcesReceivedByListener();
         assertEquals(1, updateRequestsReceivedByEnablerLogic.size());
+
         assertEquals(1, updateRequestsReceivedByEnablerLogic.get(0).getNewResources().size());
         assertEquals("2", updateRequestsReceivedByEnablerLogic.get(0).getNewResources().get(0));
+
+        assertEquals(1, updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().size());
+        assertEquals("2", updateRequestsReceivedByEnablerLogic.get(0).getResourceDescriptions().get(0).getId());
     }
 
-    public static void notEnoughResourcesTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                                                            RabbitTemplate rabbitTemplate,
-                                                                            DummyPlatformProxyListener dummyPlatformProxyListener,
-                                                                            DummyEnablerLogicListener dummyEnablerLogicListener,
-                                                                            String resourceManagerExchangeName,
-                                                                            String symbIoTeCoreUrl) throws Exception {
+    public static void notEnoughResourcesTest(String routingKey,
+                                              TaskInfoRepository taskInfoRepository,
+                                              RabbitTemplate rabbitTemplate,
+                                              DummyPlatformProxyListener dummyPlatformProxyListener,
+                                              DummyEnablerLogicListener dummyEnablerLogicListener,
+                                              String resourceManagerExchangeName,
+                                              String symbIoTeCoreUrl) throws Exception {
 
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
@@ -371,8 +439,19 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        QueryResourceResult result3 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
+        result3.setId("3");
+        results.add(result1);
+        results.add(result2);
+        results.add(result3);
+
         TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
-                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                true, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
@@ -382,7 +461,7 @@ public class ProblematicResourcesTestHelper {
 
         ProblematicResourcesInfo problematicResourcesInfo2 = new ProblematicResourcesInfo();
         problematicResourcesInfo2.setTaskId("task2");
-        problematicResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
+        problematicResourcesInfo2.setProblematicResourceIds(Collections.singletonList("resource4"));
 
         ProblematicResourcesMessage problematicResourcesMessage = new ProblematicResourcesMessage();
         problematicResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(problematicResourcesInfo, problematicResourcesInfo2));
@@ -403,6 +482,7 @@ public class ProblematicResourcesTestHelper {
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(3, taskInfo.getResourceIds().size());
+        assertEquals(3, taskInfo.getResourceDescriptions().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(3, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
@@ -411,6 +491,10 @@ public class ProblematicResourcesTestHelper {
         assertEquals("2", taskInfo.getResourceIds().get(0));
         assertEquals("4", taskInfo.getResourceIds().get(1));
         assertEquals("5", taskInfo.getResourceIds().get(2));
+
+        assertEquals("2", taskInfo.getResourceDescriptions().get(0).getId());
+        assertEquals("4", taskInfo.getResourceDescriptions().get(1).getId());
+        assertEquals("5", taskInfo.getResourceDescriptions().get(2).getId());
 
         assertEquals(symbIoTeCoreUrl + "/Sensors('2')", taskInfo.getResourceUrls().get("2"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('4')", taskInfo.getResourceUrls().get("4"));
@@ -427,12 +511,13 @@ public class ProblematicResourcesTestHelper {
         assertEquals(0, updateRequestsReceivedByPlatformProxy.size());
     }
 
-    public static void notEnoughResourcesNoCachingTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                              RabbitTemplate rabbitTemplate,
-                                              DummyPlatformProxyListener dummyPlatformProxyListener,
-                                              DummyEnablerLogicListener dummyEnablerLogicListener,
-                                              String resourceManagerExchangeName,
-                                              String symbIoTeCoreUrl) throws Exception {
+    public static void notEnoughResourcesNoCachingTest(String routingKey,
+                                                       TaskInfoRepository taskInfoRepository,
+                                                       RabbitTemplate rabbitTemplate,
+                                                       DummyPlatformProxyListener dummyPlatformProxyListener,
+                                                       DummyEnablerLogicListener dummyEnablerLogicListener,
+                                                       String resourceManagerExchangeName,
+                                                       String symbIoTeCoreUrl) throws Exception {
 
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
@@ -450,8 +535,19 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        QueryResourceResult result3 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
+        result3.setId("3");
+        results.add(result1);
+        results.add(result2);
+        results.add(result3);
+
         TaskInfo taskInfo = new TaskInfo("task1", 3, coreQueryRequest, "P0-0-0T0:0:0.1",
-                false, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds,
+                false, "P0-0-0T0:0:0.1", true, "testEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
@@ -461,7 +557,7 @@ public class ProblematicResourcesTestHelper {
 
         ProblematicResourcesInfo problematicResourcesInfo2 = new ProblematicResourcesInfo();
         problematicResourcesInfo2.setTaskId("task2");
-        problematicResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
+        problematicResourcesInfo2.setProblematicResourceIds(Collections.singletonList("resource4"));
 
         ProblematicResourcesMessage problematicResourcesMessage = new ProblematicResourcesMessage();
         problematicResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(problematicResourcesInfo, problematicResourcesInfo2));
@@ -482,12 +578,14 @@ public class ProblematicResourcesTestHelper {
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(1, taskInfo.getResourceIds().size());
+        assertEquals(1, taskInfo.getResourceDescriptions().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(1, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
         assertEquals("Not enough resources. Only 1 were found", taskInfo.getMessage());
 
         assertEquals("2", taskInfo.getResourceIds().get(0));
+        assertEquals("2", taskInfo.getResourceDescriptions().get(0).getId());
 
         assertEquals(symbIoTeCoreUrl + "/Sensors('2')", taskInfo.getResourceUrls().get("2"));
 
@@ -502,12 +600,13 @@ public class ProblematicResourcesTestHelper {
         assertEquals(0, updateRequestsReceivedByPlatformProxy.size());
     }
 
-    public static void enoughStoredOnlyResourcesTest(String routingKey, TaskInfoRepository taskInfoRepository,
-                                                                                   RabbitTemplate rabbitTemplate,
-                                                                                   DummyPlatformProxyListener dummyPlatformProxyListener,
-                                                                                   DummyEnablerLogicListener dummyEnablerLogicListener,
-                                                                                   String resourceManagerExchangeName,
-                                                                                   String symbIoTeCoreUrl) throws Exception {
+    public static void enoughStoredOnlyResourcesTest(String routingKey,
+                                                     TaskInfoRepository taskInfoRepository,
+                                                     RabbitTemplate rabbitTemplate,
+                                                     DummyPlatformProxyListener dummyPlatformProxyListener,
+                                                     DummyEnablerLogicListener dummyEnablerLogicListener,
+                                                     String resourceManagerExchangeName,
+                                                     String symbIoTeCoreUrl) throws Exception {
 
         List<PlatformProxyUpdateRequest> updateRequestsReceivedByPlatformProxy;
         List<NotEnoughResourcesAvailable> notEnoughResourcesMessagesReceived;
@@ -520,9 +619,20 @@ public class ProblematicResourcesTestHelper {
         resourceUrls.put("2", symbIoTeCoreUrl + "/Sensors('2')");
         resourceUrls.put("3", symbIoTeCoreUrl + "/Sensors('3')");
 
+        ArrayList<QueryResourceResult> results = new ArrayList<>();
+        QueryResourceResult result1 = new QueryResourceResult();
+        QueryResourceResult result2 = new QueryResourceResult();
+        QueryResourceResult result3 = new QueryResourceResult();
+        result1.setId("1");
+        result2.setId("2");
+        result3.setId("3");
+        results.add(result1);
+        results.add(result2);
+        results.add(result3);
+
         TaskInfo taskInfo = new TaskInfo("task1", 5, new CoreQueryRequest(), "P0-0-0T0:0:0.1",
                 true, "P0-0-0T0:0:0.1", true,
-                "testEnablerLogic", null, resourceIds,
+                "testEnablerLogic", null, resourceIds, results,
                 ResourceManagerTaskInfoResponseStatus.SUCCESS, storedResourceIds, resourceUrls, "message");
         taskInfoRepository.save(taskInfo);
 
@@ -532,7 +642,7 @@ public class ProblematicResourcesTestHelper {
 
         ProblematicResourcesInfo problematicResourcesInfo2 = new ProblematicResourcesInfo();
         problematicResourcesInfo2.setTaskId("task2");
-        problematicResourcesInfo2.setProblematicResourceIds(Arrays.asList("resource4"));
+        problematicResourcesInfo2.setProblematicResourceIds(Collections.singletonList("resource4"));
 
         ProblematicResourcesMessage problematicResourcesMessage = new ProblematicResourcesMessage();
         problematicResourcesMessage.setProblematicResourcesInfoList(Arrays.asList(problematicResourcesInfo, problematicResourcesInfo2));
@@ -553,6 +663,7 @@ public class ProblematicResourcesTestHelper {
 
         taskInfo = taskInfoRepository.findByTaskId("task1");
         assertEquals(4, taskInfo.getResourceIds().size());
+        assertEquals(4, taskInfo.getResourceDescriptions().size());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
         assertEquals(4, taskInfo.getResourceUrls().size());
         assertEquals(ResourceManagerTaskInfoResponseStatus.NOT_ENOUGH_RESOURCES, taskInfo.getStatus());
@@ -562,6 +673,11 @@ public class ProblematicResourcesTestHelper {
         assertEquals("4", taskInfo.getResourceIds().get(1));
         assertEquals("5", taskInfo.getResourceIds().get(2));
         assertEquals("6", taskInfo.getResourceIds().get(3));
+
+        assertEquals("2", taskInfo.getResourceDescriptions().get(0).getId());
+        assertEquals("4", taskInfo.getResourceDescriptions().get(1).getId());
+        assertEquals("5", taskInfo.getResourceDescriptions().get(2).getId());
+        assertEquals("6", taskInfo.getResourceDescriptions().get(3).getId());
 
         assertEquals(symbIoTeCoreUrl + "/Sensors('2')", taskInfo.getResourceUrls().get("2"));
         assertEquals(symbIoTeCoreUrl + "/Sensors('4')", taskInfo.getResourceUrls().get("4"));
