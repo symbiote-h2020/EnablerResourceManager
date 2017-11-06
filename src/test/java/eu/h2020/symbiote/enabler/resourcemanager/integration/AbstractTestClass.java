@@ -260,7 +260,7 @@ public abstract class AbstractTestClass {
                         resource3.setPlatformId("platform3");
                         responseResources.add(resource3);
 
-                        response.setResources(responseResources);
+                        response.setBody(responseResources);
 
                         try {
                             String responseInString = mapper.writeValueAsString(response);
@@ -288,7 +288,7 @@ public abstract class AbstractTestClass {
                         resource5.setPlatformId("platform5");
                         responseResources.add(resource5);
 
-                        response.setResources(responseResources);
+                        response.setBody(responseResources);
 
                         try {
                             String responseInString = mapper.writeValueAsString(response);
@@ -313,7 +313,7 @@ public abstract class AbstractTestClass {
                 resource.setPlatformId("TestPlatform");
                 responseResources.add(resource);
 
-                response.setResources(responseResources);
+                response.setBody(responseResources);
             }
 
             return new ResponseEntity<>(response, headers, HttpStatus.OK);
@@ -346,7 +346,7 @@ public abstract class AbstractTestClass {
                         resource3.setPlatformId("platform3");
                         responseResources.add(resource3);
 
-                        response.setResources(responseResources);
+                        response.setBody(responseResources);
 
                         try {
                             String responseInString = mapper.writeValueAsString(response);
@@ -374,7 +374,7 @@ public abstract class AbstractTestClass {
                         resource5.setPlatformId("platform5");
                         responseResources.add(resource5);
 
-                        response.setResources(responseResources);
+                        response.setBody(responseResources);
 
                         try {
                             String responseInString = mapper.writeValueAsString(response);

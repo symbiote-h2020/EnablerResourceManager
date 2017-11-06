@@ -135,6 +135,16 @@ public class SearchHelper {
             ResponseEntity<QueryResponse> queryResponseEntity;
             SparqlQueryRequest sparqlQueryRequest = taskInfoRequest.getSparqlQueryRequest();
 
+            Map<String, String> securityRequestHeaders =  authorizationManager
+                    .requestHomeToken(SecurityConstants.CORE_AAM_INSTANCE_ID);
+            log.debug("SecurityRequest from platform " + SecurityConstants.CORE_AAM_INSTANCE_ID +
+                    " acquired: " + securityRequestHeaders);
+
+            // Add Security Request Headers
+            for (Map.Entry<String, String> entry : securityRequestHeaders.entrySet()) {
+                httpHeaders.add(entry.getKey(), entry.getValue());
+            }
+
             if (sparqlQueryRequest == null) {
                 HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
                 queryResponseEntity = restTemplate.exchange(
@@ -183,7 +193,7 @@ public class SearchHelper {
                 queryAndProcessSearchResponseResult.setPlatformProxyTaskInfo(requestToPlatformProxy);
 
             }
-        } catch (SecurityException | HttpClientErrorException | HttpServerErrorException e) {
+        } catch (SecurityException | HttpClientErrorException | HttpServerErrorException | SecurityHandlerException e) {
             log.info("", e);
             taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.FAILED);
             taskInfoResponse.setMessage(e.getMessage());

@@ -187,7 +187,7 @@ public class TaskInfoTests {
         resource5.setPlatformId("platform5");
         responseResources.add(resource5);
 
-        response.setResources(responseResources);
+        response.setBody(responseResources);
 
         TaskInfo taskInfo = new TaskInfo();
         taskInfo.setResourceIds(Arrays.asList("resource1", "resource2"));
