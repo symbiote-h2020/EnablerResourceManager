@@ -195,5 +195,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                         return m;
                     });
         }
+
+        getChannel().basicAck(envelope.getDeliveryTag(), false);
     }
 }

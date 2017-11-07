@@ -308,6 +308,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                         return m;
                     });
         }
+        getChannel().basicAck(envelope.getDeliveryTag(), false);
     }
 
     private TaskInfo createUpdatedTaskInfo(ResourceManagerTaskInfoRequest taskInfoRequest, TaskInfo storedTaskInfo) {

@@ -56,5 +56,6 @@ public class PlatformProxyConnectionProblemConsumer extends DefaultConsumer {
         log.info("Received ProblematicResourcesMessage: " + requestInString);
         problematicResourcesHandler.replaceProblematicResources(requestInString, taskInfoRepository);
 
+        getChannel().basicAck(envelope.getDeliveryTag(), false);
     }
 }

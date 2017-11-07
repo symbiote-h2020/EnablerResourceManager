@@ -262,9 +262,9 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
             public Boolean answer(InvocationOnMock invocation) throws Throwable {
                 Object[] args = invocation.getArguments();
                 HttpHeaders httpHeaders = HttpHeaders.class.cast(args[0]);
-                String invalidServiceResponse = httpHeaders.get("invalidServiceResponse").get(0);
 
-                return (invalidServiceResponse != null && invalidServiceResponse.equals("false"));
+                return (httpHeaders.get("invalidServiceResponse") == null ||
+                        httpHeaders.get("invalidServiceResponse").get(0).equals("false"));
             }
         }).when(authorizationManager).verifyServiceResponse(any(), any(), any());
 

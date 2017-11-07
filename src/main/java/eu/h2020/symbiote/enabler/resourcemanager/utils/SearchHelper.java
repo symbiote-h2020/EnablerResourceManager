@@ -158,6 +158,10 @@ public class SearchHelper {
                         buildRequestUrl(taskInfoRequest), HttpMethod.POST, entity, QueryResponse.class);
             }
 
+            if (!authorizationManager.verifyServiceResponse(
+                    queryResponseEntity.getHeaders(), "search", SecurityConstants.CORE_AAM_INSTANCE_ID))
+                throw new SecurityHandlerException("The service response from search could not be verified");
+
             try {
                 log.info("SymbIoTe Core Response: " + mapper.writeValueAsString(queryResponseEntity));
             } catch (JsonProcessingException e) {

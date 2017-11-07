@@ -148,6 +148,7 @@ public class CancelTaskConsumer extends DefaultConsumer {
                     return m;
                 });
 
+        getChannel().basicAck(envelope.getDeliveryTag(), false);
 
         // Inform Platform Proxy
         if (cancelTaskRequestToPlatformProxy.getTaskIdList().size() > 0) {

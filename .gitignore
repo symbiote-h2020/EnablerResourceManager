@@ -140,3 +140,5 @@ target
 # Logs
 logs
 *.log
+
+keystore.jks
