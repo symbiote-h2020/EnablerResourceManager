@@ -142,7 +142,7 @@ public class AuthorizationManager {
                 try {
                     return MutualAuthenticationHelper.isServiceResponseVerified(
                             serviceResponse, securityHandler.getComponentCertificate(componentId, platformId));
-                } catch (NoSuchAlgorithmException | CertificateException e) {
+                } catch (NoSuchAlgorithmException | CertificateException | SecurityHandlerException e) {
                     log.info("Exception during serviceResponse verification", e);
                     return false;
                 }
