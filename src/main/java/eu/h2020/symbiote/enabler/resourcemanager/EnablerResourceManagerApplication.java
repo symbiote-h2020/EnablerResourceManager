@@ -57,7 +57,7 @@ public class EnablerResourceManagerApplication {
     // }
 
     @Bean(name="symbIoTeCoreUrl")
-    String symbIoTeCoreUrl() {
+    public String symbIoTeCoreUrl() {
         return symbIoTeCoreUrl.replaceAll("(/*)$", "");
     }
 
@@ -73,7 +73,7 @@ public class EnablerResourceManagerApplication {
     }
 
     @Bean
-    Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
+    public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
 
         Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
 
@@ -118,13 +118,13 @@ public class EnablerResourceManagerApplication {
     }
 
     @Bean
-    RestTemplate RestTemplate() {
+    public RestTemplate RestTemplate() {
         return new RestTemplate();
     }
 
 
     @Bean
-    AsyncRestTemplate asyncRestTemplate() {
+    public AsyncRestTemplate asyncRestTemplate() {
         return new AsyncRestTemplate();
     }
 
