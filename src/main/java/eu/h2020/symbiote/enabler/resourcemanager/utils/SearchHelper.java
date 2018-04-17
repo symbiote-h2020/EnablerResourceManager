@@ -2,7 +2,6 @@ package eu.h2020.symbiote.enabler.resourcemanager.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
@@ -17,10 +16,8 @@ import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.security.commons.SecurityConstants;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.util.IntervalFormatter;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
@@ -86,6 +83,14 @@ public class SearchHelper {
             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
 
+            Map<String, String> securityRequestHeaders = authorizationManager.requestHomeToken();
+            log.debug("SecurityRequest acquired: " + securityRequestHeaders);
+
+            // Add Security Request Headers
+            for (Map.Entry<String, String> entry : securityRequestHeaders.entrySet()) {
+                httpHeaders.add(entry.getKey(), entry.getValue());
+            }
+
             ResponseEntity<QueryResponse> queryResponseEntity = restTemplate.exchange(
                     buildRequestUrl(resourceId), HttpMethod.GET, entity, QueryResponse.class);
 
@@ -100,7 +105,8 @@ public class SearchHelper {
                 return null;
 
             if (queryResponse.getResources().size() == 1) {
-                TaskResponseToComponents taskResponseToComponents = getUrlsFromCram(queryResponse.getResources().get(0));
+                TaskResponseToComponents taskResponseToComponents = getUrlsFromCram(
+                        queryResponse.getResources().get(0), httpHeaders);
                 if (taskResponseToComponents.getPlatformProxyResourceInfoList().size() == 1)
                     return taskResponseToComponents;
                 else
@@ -109,7 +115,7 @@ public class SearchHelper {
             } else
                 return null;
 
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
+        } catch (SecurityHandlerException | HttpClientErrorException | HttpServerErrorException e) {
             log.info("Exception in querySingleResource", e);
             return null;
         }
@@ -135,10 +141,8 @@ public class SearchHelper {
             ResponseEntity<QueryResponse> queryResponseEntity;
             SparqlQueryRequest sparqlQueryRequest = taskInfoRequest.getSparqlQueryRequest();
 
-            Map<String, String> securityRequestHeaders =  authorizationManager
-                    .requestHomeToken(SecurityConstants.CORE_AAM_INSTANCE_ID);
-            log.debug("SecurityRequest from platform " + SecurityConstants.CORE_AAM_INSTANCE_ID +
-                    " acquired: " + securityRequestHeaders);
+            Map<String, String> securityRequestHeaders = authorizationManager.requestHomeToken();
+            log.debug("SecurityRequest acquired: " + securityRequestHeaders);
 
             // Add Security Request Headers
             for (Map.Entry<String, String> entry : securityRequestHeaders.entrySet()) {
@@ -225,11 +229,11 @@ public class SearchHelper {
         startTimer();
     }
 
-    public void startTimer() {
+    private void startTimer() {
         timer = new Timer();
     }
 
-    public void cancelTimer() {
+    private void cancelTimer() {
         timer.cancel();
         timer.purge();
 
@@ -262,15 +266,8 @@ public class SearchHelper {
         }
     }
 
-    public Timer getTimer() { return timer; }
-    public void setTimer(Timer timer) { this.timer = timer; }
-
     public Map<String, ScheduledTaskInfoUpdate> getScheduledTaskInfoUpdateMap() {
         return scheduledTaskInfoUpdateMap;
-    }
-
-    public void setScheduledTaskInfoUpdateMap(Map<String, ScheduledTaskInfoUpdate> scheduledTaskInfoUpdateMap) {
-        this.scheduledTaskInfoUpdateMap = scheduledTaskInfoUpdateMap;
     }
 
 
@@ -283,31 +280,10 @@ public class SearchHelper {
         List<QueryResourceResult> queryResultLists = queryResponse.getResources();
         TaskResponseToComponents taskResponseToComponents = new TaskResponseToComponents();
 
-        // Process the response for each task
-        for (QueryResourceResult queryResourceResult : queryResultLists) {
-
-            if (taskInfoRequest.getMaxNoResources() != TaskInfo.ALL_AVAILABLE_RESOURCES &&
-                    taskResponseToComponents.getCount().equals(taskInfoRequest.getMaxNoResources()))
-                break;
-
-            TaskResponseToComponents newTaskResponseToComponents = getUrlsFromCram(queryResourceResult);
-            taskResponseToComponents.add(newTaskResponseToComponents);
-
-        }
-
-        return taskResponseToComponents;
-    }
-
-    private TaskResponseToComponents getUrlsFromCram(QueryResourceResult queryResourceResult) {
-        TaskResponseToComponents taskResponseToComponents = new TaskResponseToComponents();
-
         try {
-            Map<String, String> securityRequestHeaders =  authorizationManager
-                    .requestHomeToken(queryResourceResult.getPlatformId());
-            log.debug("SecurityRequest from platform " + queryResourceResult.getPlatformId() + " acquired: " + securityRequestHeaders);
+            Map<String, String> securityRequestHeaders = authorizationManager.requestHomeToken();
+            log.debug("SecurityRequest acquired: " + securityRequestHeaders);
 
-            // Request resourceUrl from CRAM
-            String cramRequestUrl = symbIoTeCoreUrl + "/resourceUrls?id=" + queryResourceResult.getId();
             HttpHeaders cramHttpHeaders = new HttpHeaders();
 
             // Add Security Request Headers
@@ -316,6 +292,31 @@ public class SearchHelper {
             }
             cramHttpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
             cramHttpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+            // Process the response for each task
+            for (QueryResourceResult queryResourceResult : queryResultLists) {
+
+                if (taskInfoRequest.getMaxNoResources() != TaskInfo.ALL_AVAILABLE_RESOURCES &&
+                        taskResponseToComponents.getCount().equals(taskInfoRequest.getMaxNoResources()))
+                    break;
+
+                TaskResponseToComponents newTaskResponseToComponents = getUrlsFromCram(queryResourceResult, cramHttpHeaders);
+                taskResponseToComponents.add(newTaskResponseToComponents);
+
+            }
+        } catch (SecurityHandlerException e) {
+            log.info("Exception in getUrlsFromCram()", e);
+        }
+
+        return taskResponseToComponents;
+    }
+
+    private TaskResponseToComponents getUrlsFromCram(QueryResourceResult queryResourceResult, HttpHeaders cramHttpHeaders) {
+        TaskResponseToComponents taskResponseToComponents = new TaskResponseToComponents();
+
+        try {
+            // Request resourceUrl from CRAM
+            String cramRequestUrl = symbIoTeCoreUrl + "/resourceUrls?id=" + queryResourceResult.getId();
 
             HttpEntity<String> cramEntity = new HttpEntity<>(cramHttpHeaders);
 

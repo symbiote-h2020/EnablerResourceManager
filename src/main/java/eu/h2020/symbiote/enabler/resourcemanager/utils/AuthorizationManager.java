@@ -1,39 +1,20 @@
 package eu.h2020.symbiote.enabler.resourcemanager.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-
-import eu.h2020.symbiote.security.ClientSecurityHandlerFactory;
+import eu.h2020.symbiote.security.ComponentSecurityHandlerFactory;
 import eu.h2020.symbiote.security.commons.SecurityConstants;
-import eu.h2020.symbiote.security.commons.Token;
-import eu.h2020.symbiote.security.commons.credentials.AuthorizationCredentials;
-import eu.h2020.symbiote.security.commons.credentials.HomeCredentials;
-import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
-import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
-import eu.h2020.symbiote.security.communication.payloads.AAM;
-import eu.h2020.symbiote.security.handler.ISecurityHandler;
-import eu.h2020.symbiote.security.helpers.MutualAuthenticationHelper;
-
+import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 
 /**
@@ -47,42 +28,37 @@ public class AuthorizationManager {
 
     private static Log log = LogFactory.getLog(AuthorizationManager.class);
 
-    private String username;
-    private String password;
-    private String caamAddress;
+    private String componentOwnerName;
+    private String componentOwnerPassword;
+    private String aamAddress;
     private String clientId;
-    private String userId;
     private String keystoreName;
     private String keystorePass;
     private Boolean securityEnabled;
 
-    private ISecurityHandler securityHandler;
+    private IComponentSecurityHandler componentSecurityHandler;
 
     @Autowired
-    public AuthorizationManager(@Value("${enablerResourceManager.environment.username}") String username,
-                                @Value("${enablerResourceManager.environment.password}") String password,
-                                @Value("${enablerResourceManager.environment.caamAddress}") String caamAddress,
-                                @Value("${enablerResourceManager.environment.clientId}") String clientId,
-                                @Value("${enablerResourceManager.environment.userId}") String userId,
-                                @Value("${enablerResourceManager.environment.keystoreName}") String keystoreName,
-                                @Value("${enablerResourceManager.environment.keystorePass}") String keystorePass,
-                                @Value("${enablerResourceManager.security.enabled}") Boolean securityEnabled)
-            throws SecurityHandlerException, InvalidArgumentsException, NoSuchAlgorithmException {
+    public AuthorizationManager(@Value("${symbIoTe.component.username}") String componentOwnerName,
+                                @Value("${symbIoTe.component.password}") String componentOwnerPassword,
+                                @Value("${symbIoTe.localaam.url}") String aamAddress,
+                                @Value("${symbIoTe.component.clientId}") String clientId,
+                                @Value("${symbIoTe.component.keystore.path}") String keystoreName,
+                                @Value("${symbIoTe.component.keystore.password}") String keystorePass,
+                                @Value("${symbIoTe.aam.integration}") Boolean securityEnabled)
+            throws SecurityHandlerException {
 
-        Assert.notNull(username,"username can not be null!");
-        this.username = username;
+        Assert.notNull(componentOwnerName,"componentOwnerName can not be null!");
+        this.componentOwnerName = componentOwnerName;
 
-        Assert.notNull(password,"password can not be null!");
-        this.password = password;
+        Assert.notNull(componentOwnerPassword,"componentOwnerPassword can not be null!");
+        this.componentOwnerPassword = componentOwnerPassword;
 
-        Assert.notNull(caamAddress,"caamAddress can not be null!");
-        this.caamAddress = caamAddress;
+        Assert.notNull(aamAddress,"aamAddress can not be null!");
+        this.aamAddress = aamAddress;
 
         Assert.notNull(clientId,"clientId can not be null!");
         this.clientId = clientId;
-
-        Assert.notNull(userId,"userId can not be null!");
-        this.userId = userId;
 
         Assert.notNull(keystoreName,"keystoreName can not be null!");
         this.keystoreName = keystoreName;
@@ -97,28 +73,15 @@ public class AuthorizationManager {
             enableSecurity();
     }
 
-    public Map<String, String> requestHomeToken(String platformId) throws SecurityHandlerException {
-
-        platformId = SecurityConstants.CORE_AAM_INSTANCE_ID;
+    public Map<String, String> requestHomeToken() throws SecurityHandlerException {
 
         if (securityEnabled) {
             try {
-                Set<AuthorizationCredentials> authorizationCredentialsSet = new HashSet<>();
-                Map<String, AAM> availableAAMs = securityHandler.getAvailableAAMs();
-
-                log.info("Getting certificate for " + availableAAMs.get(platformId).getAamInstanceId());
-                securityHandler.getCertificate(availableAAMs.get(platformId), username, password, clientId);
-
-                log.info("Getting token from " + availableAAMs.get(platformId).getAamInstanceId());
-                Token homeToken = securityHandler.login(availableAAMs.get(platformId));
-
-                HomeCredentials homeCredentials = securityHandler.getAcquiredCredentials().get(platformId).homeCredentials;
-                authorizationCredentialsSet.add(new AuthorizationCredentials(homeToken, homeCredentials.homeAAM, homeCredentials));
-
-                return MutualAuthenticationHelper.getSecurityRequest(authorizationCredentialsSet, false)
+                return componentSecurityHandler
+                        .generateSecurityRequestUsingLocalCredentials()
                         .getSecurityRequestHeaderParams();
 
-            } catch (JsonProcessingException | NoSuchAlgorithmException | ValidationException e) {
+            } catch (JsonProcessingException e) {
                 log.error(e);
                 throw new SecurityHandlerException("Failed to generate security request: " + e.getMessage());
             }
@@ -140,9 +103,8 @@ public class AuthorizationManager {
                 return false;
             else {
                 try {
-                    return MutualAuthenticationHelper.isServiceResponseVerified(
-                            serviceResponse, securityHandler.getComponentCertificate(componentId, platformId));
-                } catch (NoSuchAlgorithmException | CertificateException | SecurityHandlerException e) {
+                    return componentSecurityHandler.isReceivedServiceResponseVerified(serviceResponse, componentId, platformId);
+                } catch (SecurityHandlerException e) {
                     log.info("Exception during serviceResponse verification", e);
                     return false;
                 }
@@ -155,42 +117,15 @@ public class AuthorizationManager {
     }
 
 
-    private void enableSecurity() throws SecurityHandlerException, NoSuchAlgorithmException {
-        TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                        return null;
-                    }
-
-                    public void checkClientTrusted(
-                            java.security.cert.X509Certificate[] certs, String authType) {
-                    }
-
-                    public void checkServerTrusted(
-                            java.security.cert.X509Certificate[] certs, String authType) {
-                    }
-                }
-        };
-        // Install the all-trusting trust manager
-        SSLContext sc = SSLContext.getInstance("SSL");
-        try {
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-        }
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-
+    private void enableSecurity() throws SecurityHandlerException {
         securityEnabled = true;
-        securityHandler = ClientSecurityHandlerFactory.getSecurityHandler(caamAddress, keystoreName, keystorePass, userId);
+        componentSecurityHandler = ComponentSecurityHandlerFactory.getComponentSecurityHandler(
+                keystoreName,
+                keystorePass,
+                clientId,
+                aamAddress,
+                componentOwnerName,
+                componentOwnerPassword);
 
-    }
-
-
-    /**
-     * Setters and Getters
-     */
-
-    public ISecurityHandler getSecurityHandler() {
-        return securityHandler;
     }
 }

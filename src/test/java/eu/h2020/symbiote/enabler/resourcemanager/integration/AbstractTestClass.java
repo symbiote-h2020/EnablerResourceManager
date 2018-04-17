@@ -119,7 +119,7 @@ public abstract class AbstractTestClass {
         dummyPlatformProxyListener.clearRequestsReceivedByListener();
         dummyEnablerLogicListener.clearRequestsReceivedByListener();
 
-        doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken(any());
+        doReturn(new HashMap<>()).when(authorizationManager).requestHomeToken();
         doReturn(true).when(authorizationManager).verifyServiceResponse(any(), any(), any());
 
         doAnswer(new RestTemplateAnswer()).when(restTemplate)
