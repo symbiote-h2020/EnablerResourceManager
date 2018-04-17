@@ -367,43 +367,43 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
     }
 
 
-    // @Test
-    public void getResourceDetailsNoResponseTest() throws Exception {
-        log.info("getResourceDetailsNoResponseTest STARTED!");
-
-        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
-        ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
-        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
-
-
-        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
-        CoreQueryRequest coreQueryRequest1 = new CoreQueryRequest.Builder()
-                .locationName("Paris")
-                .observedProperty(Arrays.asList("temperature", "humidity"))
-                .build();
-
-        request1.setTaskId("1");
-        request1.setMinNoResources(2);
-        request1.setCoreQueryRequest(coreQueryRequest1);
-        request1.setQueryInterval("P0-0-0T0:0:0.06");
-        resources.add(request1);
-
-        query.setTasks(resources);
-
-        log.info("Before sending the message");
-        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
-                .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
-        log.info("After sending the message");
-
-        future.addCallback(new ListenableFutureAcquisitionStartCallback("getResourceDetailsNoResponseTest", resultRef));
-
-        while(!future.isDone()) {
-            log.info("Sleeping!!!!!!");
-            TimeUnit.MILLISECONDS.sleep(100);
-        }
-
-        log.info("getResourceDetailsNoResponseTest FINISHED!");
-    }
+//     @Test
+//    public void getResourceDetailsNoResponseTest() throws Exception {
+//        log.info("getResourceDetailsNoResponseTest STARTED!");
+//
+//        final AtomicReference<ResourceManagerAcquisitionStartResponse> resultRef = new AtomicReference<>();
+//        ResourceManagerAcquisitionStartRequest query = new ResourceManagerAcquisitionStartRequest();
+//        ArrayList<ResourceManagerTaskInfoRequest> resources = new ArrayList<>();
+//
+//
+//        ResourceManagerTaskInfoRequest request1 = new ResourceManagerTaskInfoRequest();
+//        CoreQueryRequest coreQueryRequest1 = new CoreQueryRequest.Builder()
+//                .locationName("Paris")
+//                .observedProperty(Arrays.asList("temperature", "humidity"))
+//                .build();
+//
+//        request1.setTaskId("1");
+//        request1.setMinNoResources(2);
+//        request1.setCoreQueryRequest(coreQueryRequest1);
+//        request1.setQueryInterval("P0-0-0T0:0:0.06");
+//        resources.add(request1);
+//
+//        query.setTasks(resources);
+//
+//        log.info("Before sending the message");
+//        RabbitConverterFuture<ResourceManagerAcquisitionStartResponse> future = asyncRabbitTemplate
+//                .convertSendAndReceive(resourceManagerExchangeName, startDataAcquisitionRoutingKey, query);
+//        log.info("After sending the message");
+//
+//        future.addCallback(new ListenableFutureAcquisitionStartCallback("getResourceDetailsNoResponseTest", resultRef));
+//
+//        while(!future.isDone()) {
+//            log.info("Sleeping!!!!!!");
+//            TimeUnit.MILLISECONDS.sleep(100);
+//        }
+//
+//        log.info("getResourceDetailsNoResponseTest FINISHED!");
+//    }
 
     @Test
     public void getResourceDetailsBadRequestTest() throws Exception {
@@ -833,8 +833,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
         // Test what Enabler Logic receives
         assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
-        assertEquals(true,
-                resultRef.get().getMessage().contains(IllegalArgumentException.class.getName() + ": Invalid format:"));
+        assertTrue(resultRef.get().getMessage().contains("Invalid format"));
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -844,10 +843,10 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
         // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
-        assertEquals(null, taskInfo);
+        assertNull(taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("2");
-        assertEquals(null, taskInfo);
+        assertNull(taskInfo);
 
         log.info("wrongQueryIntervalFormatTest FINISHED!");
     }
@@ -878,8 +877,7 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
         // Test what Enabler Logic receives
         assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
-        assertEquals(true,
-                resultRef.get().getMessage().contains(IllegalArgumentException.class.getName() + ": Invalid format:"));
+        assertTrue(resultRef.get().getMessage().contains("Invalid format"));
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -889,10 +887,10 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
         // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
-        assertEquals(null, taskInfo);
+        assertNull(taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("2");
-        assertEquals(null, taskInfo);
+        assertNull(taskInfo);
 
         log.info("wrongCacheIntervalFormatTest FINISHED!");
     }

@@ -181,20 +181,20 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         TaskInfo storedTaskInfo6 = taskInfoRepository.findByTaskId("6");
 
         // Only task3.equals(storedTaskInfo3) should be true, because updateTask3 is the only one where nothing changes
-        assertEquals(false, task1.equals(storedTaskInfo1));
-        assertEquals(true, task2.equals(storedTaskInfo2));
-        assertEquals(true, task3.equals(storedTaskInfo3));
-        assertEquals(false, task4.equals(storedTaskInfo4));
-        assertEquals(false, task5.equals(storedTaskInfo5));
-        assertEquals(false, task6.equals(storedTaskInfo6));
+        assertNotEquals(storedTaskInfo1, task1);
+        assertEquals(storedTaskInfo2, task2);
+        assertEquals(storedTaskInfo3, task3);
+        assertNotEquals(storedTaskInfo4, task4);
+        assertNotEquals(storedTaskInfo5, task5);
+        assertNotEquals(storedTaskInfo6, task6);
 
         // Only updatedTask1.equals(storedTaskInfo1), because it has modified resources
-        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
-        assertEquals(true, updatedTask2.equals(storedTaskInfo2));
-        assertEquals(true, updatedTask3.equals(storedTaskInfo3));
-        assertEquals(true, updatedTask4.equals(storedTaskInfo4));
-        assertEquals(true, updatedTask5.equals(storedTaskInfo5));
-        assertEquals(true, updatedTask6.equals(storedTaskInfo6));
+        assertNotEquals(storedTaskInfo1, updatedTask1);
+        assertEquals(storedTaskInfo2, updatedTask2);
+        assertEquals(storedTaskInfo3, updatedTask3);
+        assertEquals(storedTaskInfo4, updatedTask4);
+        assertEquals(storedTaskInfo5, updatedTask5);
+        assertEquals(storedTaskInfo6, updatedTask6);
 
         // Test what is stored in the database
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
@@ -405,9 +405,9 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
-        assertEquals(true, foundTask1);
-        assertEquals(true, foundTask5);
-        assertEquals(true, foundTask6);
+        assertTrue(foundTask1);
+        assertTrue(foundTask5);
+        assertTrue(foundTask6);
 
         log.info("updateTaskTest FINISHED!");
     }
@@ -512,14 +512,14 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
 
         // In the 1st and 3rd tasks nothing changes, since the sparqlQuery which is set does not change so the coreQueryRequest
         // is set into that of the storedTaskInfo. In the 2nd case, the sparqlQuery changes.
-        assertEquals(true, task1.equals(storedTaskInfo1));
-        assertEquals(false, task2.equals(storedTaskInfo2));
-        assertEquals(true, task3.equals(storedTaskInfo3));
+        assertEquals(storedTaskInfo1, task1);
+        assertNotEquals(storedTaskInfo2, task2);
+        assertEquals(storedTaskInfo3, task3);
 
         // In the 1st and 3rd cases the coreQueryRequest is different. In the 2nd case the resources change.
-        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
-        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
-        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
+        assertNotEquals(storedTaskInfo1, updatedTask1);
+        assertNotEquals(storedTaskInfo2, updatedTask2);
+        assertNotEquals(storedTaskInfo3, updatedTask3);
 
 
         // Test what is stored in the database
@@ -629,7 +629,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
-        assertEquals(true, foundTask2);
+        assertTrue(foundTask2);
 
         log.info("updateTaskTest FINISHED!");
     }
@@ -660,8 +660,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
 
         // Test what Enabler Logic receives
         assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
-        assertEquals(true,
-                resultRef.get().getMessage().contains(IllegalArgumentException.class.getName() + ": Invalid format:"));
+        assertTrue(resultRef.get().getMessage().contains("Invalid format"));
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -671,10 +670,10 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
 
         // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
-        assertEquals(null, taskInfo);
+        assertNull(taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("2");
-        assertEquals(null, taskInfo);
+        assertNull(taskInfo);
 
         log.info("wrongQueryIntervalFormatUpdateTest FINISHED!");
 
@@ -706,8 +705,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
 
         // Test what Enabler Logic receives
         assertEquals(ResourceManagerTasksStatus.FAILED_WRONG_FORMAT_INTERVAL, resultRef.get().getStatus());
-        assertEquals(true,
-                resultRef.get().getMessage().contains(IllegalArgumentException.class.getName() + ": Invalid format:"));
+        assertTrue(resultRef.get().getMessage().contains("Invalid format"));
 
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -717,10 +715,10 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
 
         // Test what is stored in the database
         TaskInfo taskInfo = taskInfoRepository.findByTaskId("1");
-        assertEquals(null, taskInfo);
+        assertNull(taskInfo);
 
         taskInfo = taskInfoRepository.findByTaskId("2");
-        assertEquals(null, taskInfo);
+        assertNull(taskInfo);
 
         log.info("wrongCacheIntervalFormatUpdateTest FINISHED!");
     }
@@ -803,12 +801,12 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
 
         // Both tasks change their informPlatformProxy field
-        assertEquals(false, task1.equals(storedTaskInfo1));
-        assertEquals(false, task2.equals(storedTaskInfo2));
+        assertNotEquals(storedTaskInfo1, task1);
+        assertNotEquals(storedTaskInfo2, task2);
 
         // Only updatedTask1.equals(storedTaskInfo1) should be false, because it has modified resources
-        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
-        assertEquals(true, updatedTask2.equals(storedTaskInfo2));
+        assertNotEquals(storedTaskInfo1, updatedTask1);
+        assertEquals(storedTaskInfo2, updatedTask2);
 
         // Test what is stored in the database
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
@@ -963,12 +961,12 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         TaskInfo storedTaskInfo2 = taskInfoRepository.findByTaskId("2");
 
         // Both tasks change their informPlatformProxy field
-        assertEquals(false, task1.equals(storedTaskInfo1));
-        assertEquals(false, task2.equals(storedTaskInfo2));
+        assertNotEquals(storedTaskInfo1, task1);
+        assertNotEquals(storedTaskInfo2, task2);
 
         // Only updatedTask1.equals(storedTaskInfo1) should be false, because it has modified resources
-        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
-        assertEquals(true, updatedTask2.equals(storedTaskInfo2));
+        assertNotEquals(storedTaskInfo1, updatedTask1);
+        assertEquals(storedTaskInfo2, updatedTask2);
 
         // Test what is stored in the database
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
@@ -1075,8 +1073,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
-        assertEquals(true, foundTask1);
-        assertEquals(true, foundTask2);
+        assertTrue(foundTask1);
+        assertTrue(foundTask2);
         
         log.info("updateTaskWithInformPlatformProxyBecomingTrueTest FINISHED!");
     }
@@ -1220,18 +1218,18 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         TaskInfo storedTaskInfo4 = taskInfoRepository.findByTaskId("4");
 
         // All tasks change their allowCaching field
-        assertEquals(false, task1.equals(storedTaskInfo1));
-        assertEquals(false, task2.equals(storedTaskInfo2));
-        assertEquals(false, task3.equals(storedTaskInfo3));
-        assertEquals(false, task4.equals(storedTaskInfo4));
+        assertNotEquals(storedTaskInfo1, task1);
+        assertNotEquals(storedTaskInfo2, task2);
+        assertNotEquals(storedTaskInfo3, task3);
+        assertNotEquals(storedTaskInfo4, task4);
 
         // Both should be false, because the stored resources are cleared
-        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
-        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
+        assertNotEquals(storedTaskInfo1, updatedTask1);
+        assertNotEquals(storedTaskInfo2, updatedTask2);
 
         // Because the storedResources are updated
-        assertEquals(false, updatedTask3.equals(storedTaskInfo3));
-        assertEquals(false, updatedTask4.equals(storedTaskInfo4));
+        assertNotEquals(storedTaskInfo3, updatedTask3);
+        assertNotEquals(storedTaskInfo4, updatedTask4);
 
         // Test if the stored resources were cleared in the first 2 tasks
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
@@ -1391,8 +1389,8 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
-        assertEquals(true, foundTask1);
-        assertEquals(true, foundTask4);
+        assertTrue(foundTask1);
+        assertTrue(foundTask4);
         
         log.info("updateTaskWithAllowCachingTest FINISHED!");
     }
@@ -1518,14 +1516,14 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         TaskInfo storedTaskInfo3 = taskInfoRepository.findByTaskId("3");
 
         // All tasks change their allowCaching field
-        assertEquals(false, task1.equals(storedTaskInfo1));
-        assertEquals(false, task2.equals(storedTaskInfo2));
-        assertEquals(false, task3.equals(storedTaskInfo3));
+        assertNotEquals(storedTaskInfo1, task1);
+        assertNotEquals(storedTaskInfo2, task2);
+        assertNotEquals(storedTaskInfo3, task3);
 
         // Both should be false, because the stored resources are changed in every case
-        assertEquals(false, updatedTask1.equals(storedTaskInfo1));
-        assertEquals(false, updatedTask2.equals(storedTaskInfo2));
-        assertEquals(false, updatedTask3.equals(storedTaskInfo3));
+        assertNotEquals(storedTaskInfo1, updatedTask1);
+        assertNotEquals(storedTaskInfo2, updatedTask2);
+        assertNotEquals(storedTaskInfo3, updatedTask3);
 
         // Test if the stored resources were cleared in the first 1 task
         assertEquals(2, storedTaskInfo1.getResourceIds().size());
@@ -1849,17 +1847,17 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         TaskInfo storedTaskInfo5 = taskInfoRepository.findByTaskId("5");
 
         // All tasks minNoResources field has been changed
-        assertEquals(false, task1.equals(storedTaskInfo1));
-        assertEquals(false, task2.equals(storedTaskInfo2));
-        assertEquals(false, task3.equals(storedTaskInfo3));
-        assertEquals(false, task4.equals(storedTaskInfo4));
-        assertEquals(false, task5.equals(storedTaskInfo5));
+        assertNotEquals(storedTaskInfo1, task1);
+        assertNotEquals(storedTaskInfo2, task2);
+        assertNotEquals(storedTaskInfo3, task3);
+        assertNotEquals(storedTaskInfo4, task4);
+        assertNotEquals(storedTaskInfo5, task5);
 
-        assertEquals(true, updatedTask1.equals(storedTaskInfo1)); // Nothing changes
-        assertEquals(false, updatedTask2.equals(storedTaskInfo2)); // The storedResourcesIds are updated
-        assertEquals(false, updatedTask3.equals(storedTaskInfo3)); // The status changed to NOT_ENOUGH_RESOURCES
-        assertEquals(false, updatedTask4.equals(storedTaskInfo4)); // The status changed to NOT_ENOUGH_RESOURCES
-        assertEquals(false, updatedTask5.equals(storedTaskInfo5)); // The status changed to SUCCESS
+        assertEquals(storedTaskInfo1, updatedTask1); // Nothing changes
+        assertNotEquals(storedTaskInfo2, updatedTask2); // The storedResourcesIds are updated
+        assertNotEquals(storedTaskInfo3, updatedTask3); // The status changed to NOT_ENOUGH_RESOURCES
+        assertNotEquals(storedTaskInfo4, updatedTask4); // The status changed to NOT_ENOUGH_RESOURCES
+        assertNotEquals(storedTaskInfo5, updatedTask5); // The status changed to SUCCESS
 
         // Check the statuses
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
@@ -2024,7 +2022,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
 
         boolean foundTask2 = false;
         boolean foundTask5 = false;
-        
+
         for (PlatformProxyUpdateRequest request : taskUpdateRequestsReceivedByListener) {
 
             log.info("Task id = " + request.getTaskId());
@@ -2064,9 +2062,9 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
-        assertEquals(true, foundTask2);
-        assertEquals(true, foundTask5);
-        
+        assertTrue(foundTask2);
+        assertTrue(foundTask5);
+
         log.info("changeInMinNoResourcesTest FINISHED!");
     }
 
@@ -2165,13 +2163,13 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
         TaskInfo storedTaskInfo3 = taskInfoRepository.findByTaskId("3");
 
         // All tasks minNoResources field has been changed
-        assertEquals(false, task1.equals(storedTaskInfo1));
-        assertEquals(false, task2.equals(storedTaskInfo2));
-        assertEquals(false, task3.equals(storedTaskInfo3));
+        assertNotEquals(storedTaskInfo1, task1);
+        assertNotEquals(storedTaskInfo2, task2);
+        assertNotEquals(storedTaskInfo3, task3);
 
-        assertEquals(false, updatedTask1.equals(storedTaskInfo1)); // The resourceIds are updated
-        assertEquals(false, updatedTask2.equals(storedTaskInfo2)); // The resourceIds are updated
-        assertEquals(false, updatedTask3.equals(storedTaskInfo3)); // The resourceIds changed
+        assertNotEquals(storedTaskInfo1, updatedTask1); // The resourceIds are updated
+        assertNotEquals(storedTaskInfo2, updatedTask2); // The resourceIds are updated
+        assertNotEquals(storedTaskInfo3, updatedTask3); // The resourceIds changed
 
         // Check the statuses
         assertEquals(ResourceManagerTaskInfoResponseStatus.SUCCESS, storedTaskInfo1.getStatus());
@@ -2340,9 +2338,9 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
             fail("The code should not reach here, because no other tasks should be received by the platform proxy");
         }
 
-        assertEquals(true, foundTask1);
-        assertEquals(true, foundTask2);
-        assertEquals(true, foundTask3);
+        assertTrue(foundTask1);
+        assertTrue(foundTask2);
+        assertTrue(foundTask3);
 
         log.info("changeInMaxNoResourcesTest FINISHED!");
     }

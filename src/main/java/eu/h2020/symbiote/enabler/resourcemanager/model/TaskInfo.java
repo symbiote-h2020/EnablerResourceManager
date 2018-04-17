@@ -8,6 +8,7 @@ import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoRequest;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponse;
 import eu.h2020.symbiote.enabler.messaging.model.ResourceManagerTaskInfoResponseStatus;
+import org.springframework.data.annotation.PersistenceConstructor;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,13 +21,6 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
     private List<String> storedResourceIds;
     private Map<String, String> resourceUrls;
 
-    public TaskInfo() {
-        setResourceIds(new ArrayList<>());
-        setResourceDescriptions(new ArrayList<>());
-        storedResourceIds = new ArrayList<>();
-        resourceUrls = new HashMap<>();
-    }
-
     public TaskInfo(String taskId, Integer minNoResources, CoreQueryRequest coreQueryRequest,
                     String queryInterval, Boolean allowCaching, String cachingInterval,
                     Boolean informPlatformProxy, String enablerLogicName, SparqlQueryRequest sparqlQuery,
@@ -36,6 +30,21 @@ public class TaskInfo extends ResourceManagerTaskInfoResponse {
 
         super(taskId, minNoResources, coreQueryRequest, queryInterval, allowCaching, cachingInterval,
                 informPlatformProxy, enablerLogicName, sparqlQuery, resourceIds, resourceDescriptions,
+                status, message);
+        setStoredResourceIds(storedResourceIds);
+        setResourceUrls(resourceUrls);
+    }
+
+    @PersistenceConstructor
+    public TaskInfo(String taskId, Integer minNoResources, Integer maxNoResources, CoreQueryRequest coreQueryRequest,
+                    String queryInterval, Boolean allowCaching, String cachingInterval,
+                    Boolean informPlatformProxy, String enablerLogicName, SparqlQueryRequest sparqlQueryRequest,
+                    List<String> resourceIds, List<QueryResourceResult> resourceDescriptions,
+                    ResourceManagerTaskInfoResponseStatus status,
+                    List<String> storedResourceIds, Map<String, String>  resourceUrls, String message) {
+
+        super(taskId, minNoResources, maxNoResources, coreQueryRequest, queryInterval, allowCaching, cachingInterval,
+                informPlatformProxy, enablerLogicName, sparqlQueryRequest, resourceIds, resourceDescriptions,
                 status, message);
         setStoredResourceIds(storedResourceIds);
         setResourceUrls(resourceUrls);
