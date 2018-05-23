@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
+import java.util.stream.Collectors;
 
 /**
  * Created by vasgl on 7/20/2017.
@@ -177,6 +178,11 @@ public class SearchHelper {
 
             // Finalizing task response to EnablerLogic
             taskInfoResponse.setResourceIds(taskResponseToComponents.getResourceIdsForEnablerLogic());
+            taskInfoResponse.setResourceUrls(
+                    taskResponseToComponents.getPlatformProxyResourceInfoList().stream()
+                            .collect(Collectors.toMap(PlatformProxyResourceInfo::getResourceId,
+                                    PlatformProxyResourceInfo::getAccessURL))
+            );
             taskInfoResponse.setResourceDescriptions(taskResponseToComponents.getResourceDescriptionsForEnablerLogic());
             if (taskInfoResponse.getResourceIds().size() >= taskInfoResponse.getMinNoResources()) {
                 taskInfoResponse.setStatus(ResourceManagerTaskInfoResponseStatus.SUCCESS);

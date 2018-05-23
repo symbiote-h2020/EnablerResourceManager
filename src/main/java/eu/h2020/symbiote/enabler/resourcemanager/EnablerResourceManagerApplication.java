@@ -48,6 +48,7 @@ public class EnablerResourceManagerApplication {
     private String symbIoTeCoreUrl;
 
     public static void main(String[] args) {
+    	WaitForPort.waitForServices(WaitForPort.findProperty("SPRING_BOOT_WAIT_FOR_SERVICES"));
         SpringApplication.run(EnablerResourceManagerApplication.class, args);
     }
 

@@ -82,6 +82,10 @@ public class TaskInfoTests {
         SparqlQueryRequest sparqlQueryRequest = null;
         List<String> resourceIds = Arrays.asList("1", "2");
 
+        HashMap<String, String> resourceUrls = new HashMap<>();
+        resourceUrls.put("1", "1.com");
+        resourceUrls.put("2", "2.com");
+
         QueryResourceResult result1 = new QueryResourceResult();
         QueryResourceResult result2 = new QueryResourceResult();
         result1.setId("1");
@@ -93,7 +97,7 @@ public class TaskInfoTests {
         ResourceManagerTaskInfoResponse response = new ResourceManagerTaskInfoResponse(
                 taskId, minNoResources, maxNoResources, coreQueryRequest, queryInterval,
                 allowCaching, cachingInterval, informPlatformProxy, enablerLogicName,
-                sparqlQueryRequest, resourceIds, resourceDescriptions, status, message
+                sparqlQueryRequest, resourceIds, resourceUrls, resourceDescriptions, status, message
         );
 
         TaskInfo taskInfo = new TaskInfo(response);
@@ -102,6 +106,7 @@ public class TaskInfoTests {
         assertEquals(response.getCoreQueryRequest().getLocation_name(), taskInfo.getCoreQueryRequest().getLocation_name());
         assertEquals(response.getCoreQueryRequest().getObserved_property(), taskInfo.getCoreQueryRequest().getObserved_property());
         assertEquals(response.getResourceIds(), taskInfo.getResourceIds());
+        assertEquals(response.getResourceUrls(), taskInfo.getResourceUrls());
         assertEquals(response.getResourceDescriptions(), taskInfo.getResourceDescriptions());
         assertEquals(response.getQueryInterval(), taskInfo.getQueryInterval());
         assertEquals(response.getAllowCaching(), taskInfo.getAllowCaching());
@@ -111,7 +116,7 @@ public class TaskInfoTests {
         assertEquals(response.getStatus(), taskInfo.getStatus());
         assertEquals(response.getMessage(), taskInfo.getMessage());
         assertEquals(0, taskInfo.getStoredResourceIds().size());
-        assertEquals(0, taskInfo.getResourceUrls().size());
+        assertEquals(2, taskInfo.getResourceUrls().size());
     }
 
     @Test
