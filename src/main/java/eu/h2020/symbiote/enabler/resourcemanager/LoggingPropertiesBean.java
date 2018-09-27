@@ -24,6 +24,7 @@ public class LoggingPropertiesBean implements InitializingBean {
 		logProperty("symbIoTe.localaam.url");
 		logProperty("rabbit.host");
 		logProperty("rabbit.username");
+		logProperty("symbiote.enabler.core.interface.url");
 		log.debug("***************************************************");
 	}
 
