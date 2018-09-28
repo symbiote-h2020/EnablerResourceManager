@@ -362,7 +362,7 @@ public class TaskInfoTests {
                 .build();
 
         SparqlQueryRequest sparqlQueryRequest = new SparqlQueryRequest("taskInfo1",
-                SparqlQueryOutputFormat.COUNT);
+                SparqlQueryOutputFormat.COUNT, null);
 
         ArrayList<String> resourceIds = new ArrayList<>();
         resourceIds.add("1");

@@ -428,7 +428,7 @@ public class UpdateTaskConsumerTests extends AbstractTestClass {
                 .build();
 
         SparqlQueryRequest sparqlQueryRequest = new SparqlQueryRequest("Zurich",
-                SparqlQueryOutputFormat.COUNT);
+                SparqlQueryOutputFormat.COUNT, null);
                 List<String> resourceIds = Arrays.asList("resource1", "resource2");
         List<String> storedResourceIds = Arrays.asList("3", "4");
 

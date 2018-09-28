@@ -163,9 +163,9 @@ public class StartDataAcquisitionConsumerTests extends AbstractTestClass {
 
         ResourceManagerAcquisitionStartRequest query = createValidQueryToResourceManager(2);
         SparqlQueryRequest sparqlQueryRequest1 = new SparqlQueryRequest("Paris",
-                SparqlQueryOutputFormat.COUNT);
+                SparqlQueryOutputFormat.COUNT, null);
         SparqlQueryRequest sparqlQueryRequest2 = new SparqlQueryRequest("Athens",
-                SparqlQueryOutputFormat.COUNT);
+                SparqlQueryOutputFormat.COUNT, null);
         query.getTasks().get(0).setSparqlQueryRequest(sparqlQueryRequest1);
         query.getTasks().get(1).setSparqlQueryRequest(sparqlQueryRequest2);
 
