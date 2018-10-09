@@ -3,7 +3,7 @@ FROM openjdk:8-jre-alpine
 WORKDIR /home
 
 ENV componentName "EnablerResourceManager"
-ENV componentVersion 2.0.4
+ENV componentVersion 2.0.5
 
 RUN apk --no-cache add \
 	git \
