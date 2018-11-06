@@ -1,27 +1,23 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponse;
 import eu.h2020.symbiote.enabler.messaging.model.CancelTaskResponseStatus;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
-
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 /**
@@ -32,29 +28,43 @@ public class CancelTaskConsumer extends DefaultConsumer {
     private static Log log = LogFactory.getLog(CancelTaskConsumer.class);
 
 
-    @Autowired
     private TaskInfoRepository taskInfoRepository;
-
-    @Autowired
     private RabbitTemplate rabbitTemplate;
-
-    @Autowired
     private SearchHelper searchHelper;
-
-    @Value("${rabbit.exchange.enablerPlatformProxy.name}")
     private String platformProxyExchange;
-
-    @Value("${rabbit.routingKey.enablerPlatformProxy.cancelTasks}")
     private String platformProxyCancelTasksRoutingKey;
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
      * Managers beans passed as parameters because of lack of possibility to inject it to consumer.
      *
-     * @param channel           the channel to which this consumer is attached
+     * @param channel               the channel to which this consumer is attached
+     * @param taskInfoRepository    the TaskInfoRepository
+     * @param rabbitTemplate        the rabbitTemplate to be used to send messages
+     * @param searchHelper          the search helper
+     * @param platformProxyExchange the name of the platform exchange
+     * @param platformProxyCancelTasksRoutingKey the key for canceling tasks on the Platform Proxy
      */
-    public CancelTaskConsumer(Channel channel) {
+    public CancelTaskConsumer(Channel channel, TaskInfoRepository taskInfoRepository,
+                              RabbitTemplate rabbitTemplate, SearchHelper searchHelper,
+                              String platformProxyExchange, String platformProxyCancelTasksRoutingKey) {
         super(channel);
+
+        Assert.notNull(taskInfoRepository,"taskInfoRepository can not be null!");
+        this.taskInfoRepository = taskInfoRepository;
+
+        Assert.notNull(rabbitTemplate,"rabbitTemplate can not be null!");
+        this.rabbitTemplate = rabbitTemplate;
+
+        Assert.notNull(searchHelper,"searchHelper can not be null!");
+        this.searchHelper = searchHelper;
+
+        Assert.notNull(platformProxyExchange,"platformProxyExchange can not be null!");
+        this.platformProxyExchange = platformProxyExchange;
+
+        Assert.notNull(platformProxyCancelTasksRoutingKey,"platformProxyCancelTasksRoutingKey can not be null!");
+        this.platformProxyCancelTasksRoutingKey = platformProxyCancelTasksRoutingKey;
+
     }
 
     /**
@@ -72,7 +82,7 @@ public class CancelTaskConsumer extends DefaultConsumer {
                                AMQP.BasicProperties properties, byte[] body) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
-        String requestInString = new String(body, "UTF-8");
+        String requestInString = new String(body, StandardCharsets.UTF_8);
         CancelTaskRequest cancelTaskRequestToPlatformProxy = new CancelTaskRequest();
         CancelTaskResponse cancelTaskResponse = new CancelTaskResponse();
         ArrayList<String> nonExistentTasks = new ArrayList<>();
@@ -99,24 +109,12 @@ public class CancelTaskConsumer extends DefaultConsumer {
                     nonExistentTasks.add(id);
                 }
             }
-        } catch (JsonParseException | JsonMappingException e) {
-            log.error("Error occurred during deserializing CancelTaskRequest", e);
+        } catch (Throwable t) {
+            log.error("Error occurred during deserializing CancelTaskRequest", t);
 
             CancelTaskResponse errorResponse = new CancelTaskResponse();
             errorResponse.setStatus(CancelTaskResponseStatus.FAILED);
-            errorResponse.setMessage(e.toString());
-
-            rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
-                    m -> {
-                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
-                        return m;
-                    });
-        } catch (Exception e) {
-            log.error("Error occurred during deserializing CancelTaskRequest", e);
-
-            CancelTaskResponse errorResponse = new CancelTaskResponse();
-            errorResponse.setStatus(CancelTaskResponseStatus.FAILED);
-            errorResponse.setMessage(e.toString());
+            errorResponse.setMessage(t.toString());
 
             rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
                     m -> {
@@ -130,16 +128,17 @@ public class CancelTaskConsumer extends DefaultConsumer {
             cancelTaskResponse.setStatus(CancelTaskResponseStatus.SUCCESS);
             cancelTaskResponse.setMessage("ALL tasks were deleted!");
         } else {
-            String message = "Non-existent task ids : [";
+            StringBuilder message = new StringBuilder("Non-existent task ids : [");
 
             for (String id : nonExistentTasks) {
-                message += id + ", ";
+                message.append(id).append(", ");
             }
-            message = message.substring(0, message.length() - 2);
-            message += "]";
+
+            message.delete(message.length() - 2, message.length());
+            message.append("]");
 
             cancelTaskResponse.setStatus(CancelTaskResponseStatus.NOT_ALL_TASKS_EXIST);
-            cancelTaskResponse.setMessage(message);
+            cancelTaskResponse.setMessage(message.toString());
         }
 
         rabbitTemplate.convertAndSend(properties.getReplyTo(), cancelTaskResponse,

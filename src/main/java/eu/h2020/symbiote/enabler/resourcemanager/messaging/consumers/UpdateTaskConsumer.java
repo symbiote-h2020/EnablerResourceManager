@@ -3,12 +3,10 @@ package eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.SparqlQueryRequest;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
@@ -19,18 +17,15 @@ import eu.h2020.symbiote.enabler.resourcemanager.model.TaskResponseToComponents;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
 import eu.h2020.symbiote.util.IntervalFormatter;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,39 +42,54 @@ public class UpdateTaskConsumer extends DefaultConsumer {
 
     private static Log log = LogFactory.getLog(UpdateTaskConsumer.class);
 
-    @Autowired
+    private TaskInfoRepository taskInfoRepository;
     private RabbitTemplate rabbitTemplate;
-
-    @Autowired
     private SearchHelper searchHelper;
-
-    @Value("${rabbit.exchange.enablerPlatformProxy.name}")
     private String platformProxyExchange;
-
-    @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStartRequested}")
     private String platformProxyAcquisitionStartRequestedRoutingKey;
-
-    @Value("${rabbit.routingKey.enablerPlatformProxy.taskUpdated}")
     private String platformProxyTaskUpdatedKey;
-
-    @Value("${rabbit.routingKey.enablerPlatformProxy.cancelTasks}")
     private String platformProxyCancelTasksRoutingKey;
 
-    @Autowired
-    @Qualifier("symbIoTeCoreUrl")
-    private String symbIoTeCoreUrl;
-
-    @Autowired
-    private TaskInfoRepository taskInfoRepository;
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
      * Managers beans passed as parameters because of lack of possibility to inject it to consumer.
      *
      * @param channel           the channel to which this consumer is attached
+     * @param taskInfoRepository    the TaskInfoRepository
+     * @param rabbitTemplate        the rabbitTemplate to be used to send messages
+     * @param searchHelper          the search helper
+     * @param platformProxyExchange the name of the platform exchange
+     * @param platformProxyAcquisitionStartRequestedRoutingKey the key for starting tasks on the Platform Proxy
+     * @param platformProxyTaskUpdatedKey the key for updating tasks on the Platform Proxy
+     * @param platformProxyCancelTasksRoutingKey the key for canceling tasks on the Platform Proxy
      */
-    public UpdateTaskConsumer(Channel channel) {
+    public UpdateTaskConsumer(Channel channel, TaskInfoRepository taskInfoRepository,
+                              RabbitTemplate rabbitTemplate, SearchHelper searchHelper,
+                              String platformProxyExchange, String platformProxyAcquisitionStartRequestedRoutingKey,
+                              String platformProxyTaskUpdatedKey, String platformProxyCancelTasksRoutingKey) {
         super(channel);
+
+        Assert.notNull(taskInfoRepository,"taskInfoRepository can not be null!");
+        this.taskInfoRepository = taskInfoRepository;
+
+        Assert.notNull(rabbitTemplate,"rabbitTemplate can not be null!");
+        this.rabbitTemplate = rabbitTemplate;
+
+        Assert.notNull(searchHelper,"searchHelper can not be null!");
+        this.searchHelper = searchHelper;
+
+        Assert.notNull(taskInfoRepository,"platformProxyExchange can not be null!");
+        this.platformProxyExchange = platformProxyExchange;
+
+        Assert.notNull(taskInfoRepository,"platformProxyAcquisitionStartRequestedRoutingKey can not be null!");
+        this.platformProxyAcquisitionStartRequestedRoutingKey = platformProxyAcquisitionStartRequestedRoutingKey;
+
+        Assert.notNull(platformProxyTaskUpdatedKey,"platformProxyTaskUpdatedKey can not be null!");
+        this.platformProxyTaskUpdatedKey = platformProxyTaskUpdatedKey;
+
+        Assert.notNull(taskInfoRepository,"platformProxyCancelTasksRoutingKey can not be null!");
+        this.platformProxyCancelTasksRoutingKey = platformProxyCancelTasksRoutingKey;
     }
 
     /**
@@ -97,7 +107,7 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                                AMQP.BasicProperties properties, byte[] body) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
-        String requestInString = new String(body, "UTF-8");
+        String requestInString = new String(body, StandardCharsets.UTF_8);
         ResourceManagerUpdateResponse response  = new ResourceManagerUpdateResponse();
         ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = new ArrayList<>();
         ArrayList<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList = new ArrayList<>();
@@ -118,10 +128,10 @@ public class UpdateTaskConsumer extends DefaultConsumer {
                 SparqlQueryRequest sparqlQueryRequest = taskInfoRequest.getSparqlQueryRequest();
 
                 // ToDO: Check if Task exists
-                if ((sparqlQueryRequest == null && (storedTaskInfo.getSparqlQueryRequest() != null ||
-                        (storedTaskInfo.getSparqlQueryRequest() == null &&
-                                (coreQueryRequest == null || coreQueryRequest.equals(storedTaskInfo.getCoreQueryRequest()))))) ||
-                        (sparqlQueryRequest != null && sparqlQueryRequest.equals(storedTaskInfo.getSparqlQueryRequest()))) {
+                if ((sparqlQueryRequest == null &&
+                        (storedTaskInfo.getSparqlQueryRequest() != null ||
+                                (coreQueryRequest == null || coreQueryRequest.equals(storedTaskInfo.getCoreQueryRequest())))) ||
+                    (sparqlQueryRequest != null && sparqlQueryRequest.equals(storedTaskInfo.getSparqlQueryRequest()))) {
 
                     log.info("The CoreQueryRequest of the task " + taskInfoRequest.getTaskId() + " did not change.");
 
@@ -642,13 +652,10 @@ public class UpdateTaskConsumer extends DefaultConsumer {
         }
 
         private ResourceManagerTaskInfoResponseStatus getResponseStatus() { return responseStatus; }
-        private void setResponseStatus(ResourceManagerTaskInfoResponseStatus responseStatus) { this.responseStatus = responseStatus; }
 
-        public String getResponseMessage() { return responseMessage; }
-        public void setResponseMessage(String responseMessage) { this.responseMessage = responseMessage; }
+        String getResponseMessage() { return responseMessage; }
 
         private boolean isInformPlatformProxy() { return informPlatformProxy; }
-        private void setInformPlatformProxy(boolean informPlatformProxy) { this.informPlatformProxy = informPlatformProxy; }
     }
 }
 

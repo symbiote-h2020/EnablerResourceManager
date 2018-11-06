@@ -1,12 +1,16 @@
 package eu.h2020.symbiote.enabler.resourcemanager.messaging;
 
-import com.rabbitmq.client.*;
-
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.Consumer;
 import eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers.*;
-
+import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.ProblematicResourcesHandler;
+import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -14,6 +18,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -66,7 +72,13 @@ public class RabbitManager {
     private boolean platformProxyExchangeAutodelete;
     @Value("${rabbit.exchange.enablerPlatformProxy.internal}")
     private boolean platformProxyExchangeInternal;
-    
+    @Value("${rabbit.routingKey.enablerPlatformProxy.cancelTasks}")
+    private String platformProxyCancelTasksRoutingKey;
+    @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStartRequested}")
+    private String platformProxyAcquisitionStartRequestedRoutingKey;
+    @Value("${rabbit.routingKey.enablerPlatformProxy.taskUpdated}")
+    private String platformProxyTaskUpdatedKey;
+
     @Value("${rabbit.queueName.resourceManager.startDataAcquisition}")
     private String startDataAcquisitionQueueName;
     @Value("${rabbit.routingKey.resourceManager.startDataAcquisition}")
@@ -93,20 +105,37 @@ public class RabbitManager {
     private String updateTaskRoutingKey;
 
     private Connection connection;
+    private Map<String, Object> queueArgs;
 
-    @Autowired 
     private AutowireCapableBeanFactory beanFactory;
+    private TaskInfoRepository taskInfoRepository;
+    private RabbitTemplate rabbitTemplate;
+    private SearchHelper searchHelper;
+    private ProblematicResourcesHandler problematicResourcesHandler;
 
-    public RabbitManager() {
+    @Autowired
+    public RabbitManager(AutowireCapableBeanFactory beanFactory,
+                         TaskInfoRepository taskInfoRepository,
+                         RabbitTemplate rabbitTemplate,
+                         SearchHelper searchHelper,
+                         ProblematicResourcesHandler problematicResourcesHandler,
+                         @Value("${spring.rabbitmq.template.reply-timeout}") Long rabbitTimeout) {
+        queueArgs = new HashMap<>();
+        queueArgs.put("x-message-ttl", rabbitTimeout);
+
+        this.beanFactory = beanFactory;
+        this.taskInfoRepository = taskInfoRepository;
+        this.rabbitTemplate = rabbitTemplate;
+        this.searchHelper = searchHelper;
+        this.problematicResourcesHandler = problematicResourcesHandler;
     }
 
     /**
      * Initiates connection with Rabbit server using parameters from ConfigProperties
      *
-     * @throws IOException
-     * @throws TimeoutException
+     * @throws IOException if it cannot create the ConnectionFactory
      */
-    public Connection getConnection() throws IOException, TimeoutException {
+    private void getConnection() throws IOException, TimeoutException {
         if (connection == null) {
             ConnectionFactory factory = new ConnectionFactory();
             factory.setHost(this.rabbitHost);
@@ -114,23 +143,21 @@ public class RabbitManager {
             factory.setPassword(this.rabbitPassword);
             this.connection = factory.newConnection();
         }
-        return this.connection;
     }
 
     /**
      * Method creates channel and declares Rabbit exchanges.
      * It triggers start of all consumers used in Registry communication.
      */
-    public void init() {
+    public void init() throws IOException, TimeoutException{
         Channel channel = null;
         log.info("Rabbit is being initialized!");
 
         try {
             getConnection();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
         }
 
         if (connection != null) {
@@ -206,196 +233,142 @@ public class RabbitManager {
     /**
      * Method gathers all of the rabbit consumer starter methods
      */
-    public void startConsumers() {
-        try {
-            startConsumerOfStartDataAcquisition();
-            startConsumerOfCancelTaskRequest();
-            startConsumerOfPlatformProxyConnectionProblem();
-            startConsumerOfEnablerLogicWrongData();
-            startConsumerOfUpdateTask();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private void startConsumers() throws IOException {
+
+        startConsumerOfStartDataAcquisition();
+        startConsumerOfCancelTaskRequest();
+        startConsumerOfPlatformProxyConnectionProblem();
+        startConsumerOfEnablerLogicWrongData();
+        startConsumerOfUpdateTask();
+
     }
 
-    // public void sendPlaceholderMessage(String placeholder) { // arg should be object instead of String, e.g. Resource
-    //     Gson gson = new Gson();
-    //     String message = gson.toJson(placeholder);
-    //     sendMessage(this.placeholderExchangeName, this.placeholderRoutingKey, message);
-    //     log.info("- placeholder message sent");
-    // }
-
-    public void sendCustomMessage(String exchange, String routingKey, String objectInJson) {
-        sendMessage(exchange, routingKey, objectInJson);
-        log.info("- Custom message sent");
-    }
 
     /**
      * Method creates queue and binds it globally available exchange and adequate Routing Key.
      * It also creates a consumer for messages incoming to this queue, regarding to StartDataAcquisition requests.
      *
-     * @throws InterruptedException
-     * @throws IOException
+     * @throws IOException if it cannot create the Channel
      */
-    private void startConsumerOfStartDataAcquisition() throws InterruptedException, IOException {
+    private void startConsumerOfStartDataAcquisition() throws IOException {
        
         String queueName = startDataAcquisitionQueueName;
         Channel channel;
 
-        try {
-            channel = this.connection.createChannel();
-            channel.queueDeclare(queueName, true, false, false, null);
-            channel.queueBind(queueName, this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
-//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
-            log.info("Receiver waiting for StartDataAcquisition messages....");
+        channel = this.connection.createChannel();
+        channel.queueDeclare(queueName, true, false, false, queueArgs);
+        channel.queueBind(queueName, this.resourceManagerExchangeName, this.startDataAcquisitionRoutingKey);
+        // channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
-            Consumer consumer = new StartDataAcquisitionConsumer(channel);
-            beanFactory.autowireBean(consumer);
-            channel.basicConsume(queueName, false, consumer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        log.info("Receiver waiting for StartDataAcquisition messages....");
+
+        Consumer consumer = new StartDataAcquisitionConsumer(
+                channel, taskInfoRepository, rabbitTemplate, searchHelper,
+                platformProxyExchangeName, platformProxyAcquisitionStartRequestedRoutingKey);
+        beanFactory.autowireBean(consumer);
+        channel.basicConsume(queueName, false, consumer);
+
     }
 
     /**
      * Method creates queue and binds it globally available exchange and adequate Routing Key.
      * It also creates a consumer for messages incoming to this queue, regarding to CancelTaskRequests.
      *
-     * @throws InterruptedException
-     * @throws IOException
+     * @throws IOException if it cannot create the Channel
      */
-    private void startConsumerOfCancelTaskRequest() throws InterruptedException, IOException {
+    private void startConsumerOfCancelTaskRequest() throws IOException {
 
         String queueName = cancelTaskQueueName;
         Channel channel;
 
-        try {
-            channel = this.connection.createChannel();
-            channel.queueDeclare(queueName, true, false, false, null);
-            channel.queueBind(queueName, this.resourceManagerExchangeName, this.cancelTaskRoutingKey);
-//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
+        channel = this.connection.createChannel();
+        channel.queueDeclare(queueName, true, false, false, queueArgs);
+        channel.queueBind(queueName, this.resourceManagerExchangeName, this.cancelTaskRoutingKey);
+        // channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
-            log.info("Receiver waiting for CancelTaskRequests....");
+        log.info("Receiver waiting for CancelTaskRequests....");
 
-            Consumer consumer = new CancelTaskConsumer(channel);
-            beanFactory.autowireBean(consumer);
-            channel.basicConsume(queueName, false, consumer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Consumer consumer = new CancelTaskConsumer(
+                channel, taskInfoRepository, rabbitTemplate, searchHelper,
+                platformProxyExchangeName, platformProxyCancelTasksRoutingKey );
+        beanFactory.autowireBean(consumer);
+        channel.basicConsume(queueName, false, consumer);
+
     }
 
     /**
      * Method creates queue and binds it globally available exchange and adequate Routing Key.
      * It also creates a consumer for messages incoming to this queue, regarding to Platform Proxy Connections problems.
      *
-     * @throws InterruptedException
-     * @throws IOException
+     * @throws IOException if it cannot create the Channel
      */
-    private void startConsumerOfPlatformProxyConnectionProblem() throws InterruptedException, IOException {
+    private void startConsumerOfPlatformProxyConnectionProblem() throws IOException {
 
         String queueName = unavailableResourcesQueueName;
         Channel channel;
 
-        try {
-            channel = this.connection.createChannel();
-            channel.queueDeclare(queueName, true, false, false, null);
-            channel.queueBind(queueName, this.resourceManagerExchangeName, this.unavailableResourcesRoutingKey);
-//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
+        channel = this.connection.createChannel();
+        channel.queueDeclare(queueName, true, false, false, queueArgs);
+        channel.queueBind(queueName, this.resourceManagerExchangeName, this.unavailableResourcesRoutingKey);
+        // channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
-            log.info("Receiver waiting for UnavailableResources....");
+        log.info("Receiver waiting for UnavailableResources....");
 
-            Consumer consumer = new PlatformProxyConnectionProblemConsumer(channel);
-            beanFactory.autowireBean(consumer);
-            channel.basicConsume(queueName, false, consumer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Consumer consumer = new PlatformProxyConnectionProblemConsumer(channel, taskInfoRepository, problematicResourcesHandler);
+        beanFactory.autowireBean(consumer);
+        channel.basicConsume(queueName, false, consumer);
+
     }
 
     /**
      * Method creates queue and binds it globally available exchange and adequate Routing Key.
      * It also creates a consumer for messages incoming to this queue, regarding to Enabler Logic Wrong Data messages.
      *
-     * @throws InterruptedException
-     * @throws IOException
+     * @throws IOException if it cannot create the Channel
      */
-    private void startConsumerOfEnablerLogicWrongData() throws InterruptedException, IOException {
+    private void startConsumerOfEnablerLogicWrongData() throws IOException {
 
         String queueName = wrongDataQueueName;
         Channel channel;
 
-        try {
-            channel = this.connection.createChannel();
-            channel.queueDeclare(queueName, true, false, false, null);
-            channel.queueBind(queueName, this.resourceManagerExchangeName, this.wrongDataRoutingKey);
-//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
+        channel = this.connection.createChannel();
+        channel.queueDeclare(queueName, true, false, false, queueArgs);
+        channel.queueBind(queueName, this.resourceManagerExchangeName, this.wrongDataRoutingKey);
+        // channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
-            log.info("Receiver waiting for WrongData messages....");
+        log.info("Receiver waiting for WrongData messages....");
 
-            Consumer consumer = new EnablerLogicWrongDataConsumer(channel);
-            beanFactory.autowireBean(consumer);
-            channel.basicConsume(queueName, false, consumer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Consumer consumer = new EnablerLogicWrongDataConsumer(channel, taskInfoRepository, problematicResourcesHandler);
+        beanFactory.autowireBean(consumer);
+        channel.basicConsume(queueName, false, consumer);
+
     }
 
     /**
      * Method creates queue and binds it globally available exchange and adequate Routing Key.
      * It also creates a consumer for messages incoming to this queue, regarding to Enabler Logic Wrong Data messages.
      *
-     * @throws InterruptedException
-     * @throws IOException
+     * @throws IOException if it cannot create the Channel
      */
-    private void startConsumerOfUpdateTask() throws InterruptedException, IOException {
+    private void startConsumerOfUpdateTask() throws IOException {
 
         String queueName = updateTaskQueueName;
         Channel channel;
 
-        try {
-            channel = this.connection.createChannel();
-            channel.queueDeclare(queueName, true, false, false, null);
-            channel.queueBind(queueName, this.resourceManagerExchangeName, this.updateTaskRoutingKey);
-//            channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
+        channel = this.connection.createChannel();
+        channel.queueDeclare(queueName, true, false, false, queueArgs);
+        channel.queueBind(queueName, this.resourceManagerExchangeName, this.updateTaskRoutingKey);
+        // channel.basicQos(1); // to spread the load over multiple servers we set the prefetchCount setting
 
-            log.info("Receiver waiting for UpdateTask messages....");
+        log.info("Receiver waiting for UpdateTask messages....");
 
-            Consumer consumer = new UpdateTaskConsumer(channel);
-            beanFactory.autowireBean(consumer);
-            channel.basicConsume(queueName, false, consumer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+        Consumer consumer = new UpdateTaskConsumer(
+                channel, taskInfoRepository, rabbitTemplate, searchHelper, platformProxyExchangeName,
+                platformProxyAcquisitionStartRequestedRoutingKey, platformProxyTaskUpdatedKey, platformProxyCancelTasksRoutingKey);
+        beanFactory.autowireBean(consumer);
+        channel.basicConsume(queueName, false, consumer);
 
-    /**
-     * Method publishes given message to the given exchange and routing key.
-     * Props are set for correct message handle on the receiver side.
-     *
-     * @param exchange   name of the proper Rabbit exchange, adequate to topic of the communication
-     * @param routingKey name of the proper Rabbit routing key, adequate to topic of the communication
-     * @param message    message content in JSON String format
-     */
-    private void sendMessage(String exchange, String routingKey, String message) {
-        AMQP.BasicProperties props;
-        Channel channel = null;
-        try {
-            channel = this.connection.createChannel();
-            props = new AMQP.BasicProperties()
-                    .builder()
-                    .contentType("application/json")
-                    .build();
-
-            channel.basicPublish(exchange, routingKey, props, message.getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            closeChannel(channel);
-        }
     }
 
     /**
@@ -407,10 +380,8 @@ public class RabbitManager {
         try {
             if (channel != null && channel.isOpen())
                 channel.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 }

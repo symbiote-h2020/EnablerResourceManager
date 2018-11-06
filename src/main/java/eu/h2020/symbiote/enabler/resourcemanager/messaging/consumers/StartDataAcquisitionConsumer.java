@@ -3,29 +3,24 @@ package eu.h2020.symbiote.enabler.resourcemanager.messaging.consumers;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.enabler.resourcemanager.model.QueryAndProcessSearchResponseResult;
 import eu.h2020.symbiote.enabler.resourcemanager.model.TaskInfo;
 import eu.h2020.symbiote.enabler.resourcemanager.repository.TaskInfoRepository;
 import eu.h2020.symbiote.enabler.resourcemanager.utils.SearchHelper;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 
@@ -39,33 +34,43 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
 
     private static Log log = LogFactory.getLog(StartDataAcquisitionConsumer.class);
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    @Autowired
-    private SearchHelper searchHelper;
-
-    @Value("${rabbit.exchange.enablerPlatformProxy.name}") 
-    private String platformProxyExchange; 
-
-    @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStartRequested}") 
-    private String platformProxyAcquisitionStartRequestedRoutingKey; 
-
-    @Autowired
-    @Qualifier("symbIoTeCoreUrl")
-    private String symbIoTeCoreUrl;
-
-    @Autowired
     private TaskInfoRepository taskInfoRepository;
+    private RabbitTemplate rabbitTemplate;
+    private SearchHelper searchHelper;
+    private String platformProxyExchange;
+    private String platformProxyAcquisitionStartRequestedRoutingKey;
+
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
      * Managers beans passed as parameters because of lack of possibility to inject it to consumer.
      *
      * @param channel           the channel to which this consumer is attached
+     * @param taskInfoRepository    the TaskInfoRepository
+     * @param rabbitTemplate        the rabbitTemplate to be used to send messages
+     * @param searchHelper          the search helper
+     * @param platformProxyExchange the name of the platform exchange
+     * @param platformProxyAcquisitionStartRequestedRoutingKey the key for starting tasks on the Platform Proxy
      */
-    public StartDataAcquisitionConsumer(Channel channel) {
+    public StartDataAcquisitionConsumer(Channel channel, TaskInfoRepository taskInfoRepository,
+                                        RabbitTemplate rabbitTemplate, SearchHelper searchHelper,
+                                        String platformProxyExchange, String platformProxyAcquisitionStartRequestedRoutingKey) {
         super(channel);
+
+        Assert.notNull(taskInfoRepository,"taskInfoRepository can not be null!");
+        this.taskInfoRepository = taskInfoRepository;
+
+        Assert.notNull(rabbitTemplate,"rabbitTemplate can not be null!");
+        this.rabbitTemplate = rabbitTemplate;
+
+        Assert.notNull(searchHelper,"searchHelper can not be null!");
+        this.searchHelper = searchHelper;
+
+        Assert.notNull(taskInfoRepository,"platformProxyExchange can not be null!");
+        this.platformProxyExchange = platformProxyExchange;
+
+        Assert.notNull(taskInfoRepository,"platformProxyAcquisitionStartRequestedRoutingKey can not be null!");
+        this.platformProxyAcquisitionStartRequestedRoutingKey = platformProxyAcquisitionStartRequestedRoutingKey;
     }
 
     /**
@@ -83,7 +88,7 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                                AMQP.BasicProperties properties, byte[] body) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
-        String requestInString = new String(body, "UTF-8");
+        String requestInString = new String(body, StandardCharsets.UTF_8);
         ResourceManagerAcquisitionStartResponse response  = new ResourceManagerAcquisitionStartResponse();
         ArrayList<ResourceManagerTaskInfoResponse> resourceManagerTaskInfoResponseList = new ArrayList<>();
         ArrayList<PlatformProxyTaskInfo> platformProxyAcquisitionStartRequestList = new ArrayList<>();
@@ -136,14 +141,15 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                 response.setStatus(ResourceManagerTasksStatus.FAILED);
                 response.setMessage(message);
             } else if (failedTasks.size() < response.getTasks().size()) {
-                String message = "Failed tasks id : [";
+                StringBuilder sb = new StringBuilder("Failed tasks id : [");
 
                 for (String id : failedTasks) {
-                    message += id + ", ";
+                    sb.append(id).append(", ");
                 }
-                message = message.substring(0, message.length() - 2);
-                message += "]";
+                sb.delete(sb.length() - 2, sb.length());
+                sb.append("]");
 
+                String message = sb.toString();
                 log.info(message);
                 response.setStatus(ResourceManagerTasksStatus.PARTIAL_SUCCESS);
                 response.setMessage(message);
@@ -182,12 +188,12 @@ public class StartDataAcquisitionConsumer extends DefaultConsumer {
                         m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
                         return m;
                     });
-        } catch (Exception e) {
-            log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", e);
+        } catch (Throwable t) {
+            log.error("Error occurred during deserializing ResourceManagerAcquisitionStartRequest", t);
 
             ResourceManagerAcquisitionStartResponse errorResponse = new ResourceManagerAcquisitionStartResponse();
             errorResponse.setStatus(ResourceManagerTasksStatus.FAILED);
-            errorResponse.setMessage(e.toString());
+            errorResponse.setMessage(t.toString());
 
             rabbitTemplate.convertAndSend(properties.getReplyTo(), errorResponse,
                     m -> {

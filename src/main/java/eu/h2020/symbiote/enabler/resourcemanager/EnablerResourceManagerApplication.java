@@ -52,16 +52,10 @@ public class EnablerResourceManagerApplication {
         SpringApplication.run(EnablerResourceManagerApplication.class, args);
     }
 
-    // @Bean
-    // public AlwaysSampler defaultSampler() {
-    //     return new AlwaysSampler();
-    // }
-
     @Bean(name="symbIoTeCoreUrl")
     public String symbIoTeCoreUrl() {
         return symbIoTeCoreUrl.replaceAll("(/*)$", "");
     }
-
 
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
@@ -78,7 +72,7 @@ public class EnablerResourceManagerApplication {
 
         Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
 
-        /**
+        /*
          * It is necessary to register the GeoJsonModule, otherwise the GeoJsonPoint cannot
          * be deserialized by Jackson2JsonMessageConverter.
          */
