@@ -164,27 +164,42 @@ public class RabbitManager {
             try {
                 channel = this.connection.createChannel();
 
-                channel.exchangeDeclare(this.resourceManagerExchangeName,
-                        this.resourceManagerExchangeType,
-                        this.resourceManagerExchangeDurable,
-                        this.resourceManagerExchangeAutodelete,
-                        this.resourceManagerExchangeInternal,
-                        null);
+                try {
+                    channel.exchangeDeclarePassive(this.resourceManagerExchangeName);
+                } catch (IOException ioe) {
+                    channel = this.connection.createChannel();
+                    channel.exchangeDeclare(this.resourceManagerExchangeName,
+                            this.resourceManagerExchangeType,
+                            this.resourceManagerExchangeDurable,
+                            this.resourceManagerExchangeAutodelete,
+                            this.resourceManagerExchangeInternal,
+                            null);
+                }
 
-                channel.exchangeDeclare(this.enablerLogicExchangeName,
-                        this.enablerLogicExchangeType,
-                        this.enablerLogicExchangeDurable,
-                        this.enablerLogicExchangeAutodelete,
-                        this.enablerLogicExchangeInternal,
-                        null);
-
-                channel.exchangeDeclare(this.platformProxyExchangeName,
-                        this.platformProxyExchangeType,
-                        this.platformProxyExchangeDurable,
-                        this.platformProxyExchangeAutodelete,
-                        this.platformProxyExchangeInternal,
-                        null);
-
+                try {
+                    channel.exchangeDeclarePassive(this.enablerLogicExchangeName);
+                } catch (IOException ioe) {
+                    channel = this.connection.createChannel();
+                    channel.exchangeDeclare(this.enablerLogicExchangeName,
+                            this.enablerLogicExchangeType,
+                            this.enablerLogicExchangeDurable,
+                            this.enablerLogicExchangeAutodelete,
+                            this.enablerLogicExchangeInternal,
+                            null);
+                }
+                
+                try {
+                    channel.exchangeDeclarePassive(this.platformProxyExchangeName);
+                } catch (IOException ioe) {
+                    channel = this.connection.createChannel();
+                    channel.exchangeDeclare(this.platformProxyExchangeName,
+                            this.platformProxyExchangeType,
+                            this.platformProxyExchangeDurable,
+                            this.platformProxyExchangeAutodelete,
+                            this.platformProxyExchangeInternal,
+                            null);
+                }
+                
                 startConsumers();
 
             } catch (IOException e) {
