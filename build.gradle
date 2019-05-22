@@ -48,6 +48,13 @@ repositories {
     }
 }
 
+eclipse {
+    classpath {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
 // Spring related configs
 dependencyManagement {
     imports {
@@ -97,7 +104,6 @@ dependencies {
 }
 
 // publication
-
 jar {
        baseName = 'EnablerResourceManager'
        version = project.version
@@ -106,7 +112,6 @@ jar {
 bootRepackage {
     classifier = 'run'
 }
-
 
 task generateJavaDocs(type: Javadoc) {
     source = sourceSets.main.allJava
