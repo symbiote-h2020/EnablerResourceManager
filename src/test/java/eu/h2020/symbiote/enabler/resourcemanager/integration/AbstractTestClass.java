@@ -39,6 +39,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -55,6 +56,7 @@ import static org.mockito.Mockito.*;
 @Configuration
 @ComponentScan
 @ActiveProfiles("test")
+@TestPropertySource("/test.properties")
 public abstract class AbstractTestClass {
 
     private static Log log = LogFactory
